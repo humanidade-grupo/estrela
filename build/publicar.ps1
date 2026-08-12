@@ -91,13 +91,16 @@ if ($codigo -ne 0) { Falhar "encrypt_painel.py saiu com codigo $codigo (veja a m
 # --- 2. bumpar o cache do service worker ------------------------------------
 # Sem isso quem tem o PWA instalado continua vendo a versao antiga offline.
 Write-Host '  [2/4] bumpando o cache do service worker...' -ForegroundColor Cyan
+# UTF-8 explicito nas DUAS pontas. Sem -Encoding na leitura o 5.1 assume ANSI
+# e os acentos dos comentarios viram mojibake; e Set-Content -Encoding utf8
+# grava COM BOM. Por isso .NET na escrita: UTF8Encoding($false) = sem BOM.
 $swArq = Join-Path $RAIZ 'docs\sw.js'
-$sw    = Get-Content $swArq -Raw
+$sw    = Get-Content $swArq -Raw -Encoding UTF8
 $hoje  = (Get-Date).ToString('yyMMdd')
 if ($sw -match "estrela-painel-(\d{6})-(\d+)") {
   $n = if ($Matches[1] -eq $hoje) { [int]$Matches[2] + 1 } else { 1 }
   $sw = $sw -replace "estrela-painel-\d{6}-\d+", "estrela-painel-$hoje-$n"
-  Set-Content -Path $swArq -Value $sw -Encoding utf8 -NoNewline
+  [System.IO.File]::WriteAllText($swArq, $sw, (New-Object System.Text.UTF8Encoding $false))
   Write-Host "        CACHE = estrela-painel-$hoje-$n"
 } else {
   Falhar 'nao achei a linha do CACHE em docs/sw.js.'
