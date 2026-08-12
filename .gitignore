@@ -25,3 +25,6 @@ __pycache__/
 # Ambiente
 .env
 *.env
+
+# Cofre de segredos (DPAPI) — mora fora do repo, mas nunca versionar
+*.sec

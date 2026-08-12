@@ -48,33 +48,56 @@ Em **12/08/2026** três ajustes de interface foram feitos **direto no
 precisam ser reaplicados na mão (tudo mora em `mkFilters` e nas três chamadas
 `mkFilters(...)`, cerca de 60 linhas no total).
 
-## Gerar
+## Publicar (caminho normal: um duplo-clique)
 
 **1.** Exporte o painel aberto do Cowork para `C:\Users\ricar\Downloads\painel-aberto.html`.
 
-**2.** Ponha o token do Worker no ambiente da sessão (some ao fechar a janela):
+**2.** Duplo-clique em **`PUBLICAR.cmd`**, na raiz do repositório. Ele faz os
+quatro passos de uma vez: gera o painel criptografado, bumpa o cache do service
+worker, commita e dá push.
+
+**3.** Confira em `https://humanidade-grupo.github.io/estrela/` (o GitHub Pages
+leva ~1 minuto para trocar a versão).
+
+### Os segredos, uma vez só
+
+Na **primeira** execução o `PUBLICAR.cmd` pede o token do Worker e a senha do
+painel em campo oculto e guarda os dois cifrados em
+`%LOCALAPPDATA%\estrela-hub\*.sec`. A cifragem é **DPAPI**: só a sua conta do
+Windows, nesta máquina, decifra aqueles arquivos — nem o script nem o
+repositório guardam segredo em texto claro. Das próximas vezes ele não pergunta
+mais nada, e a publicação vira só o duplo-clique.
+
+> A senha do painel já ficava salva em texto claro no `localStorage` do
+> navegador de quem abre o painel (é assim que a casca evita pedir a senha toda
+> vez). O cofre DPAPI é mais protegido que isso, não menos. Trocou a senha ou o
+> token? Apague o `.sec` correspondente e o script pergunta de novo.
+
+Para regravar um segredo sem publicar nada, apague o `.sec` e rode o
+`PUBLICAR.cmd` — ele pergunta antes de qualquer outra coisa.
+
+### À mão, se precisar
+
+O caminho manual continua valendo — útil para depurar um passo isolado:
 
 ```bash
 $env:PAINEL_TOKEN = "<token guardado no gerenciador de senhas>"
 ```
 
-**3.** Gere. A senha do painel é pedida duas vezes e não aparece na tela:
-
 ```bash
 cd C:\Users\ricar\Documents\GitHub\estrela; python build\encrypt_painel.py "$env:USERPROFILE\Downloads\painel-aberto.html"
 ```
 
-**4.** Bumpe a versão do cache do service worker — sem isso, quem tem o PWA
-instalado continua na versão antiga do arquivo em modo offline. Edite
-`docs/sw.js`: `CACHE = 'estrela-painel-AAMMDD-N'`.
-
-**5.** Commite e publique:
+Depois bumpe `CACHE` em `docs/sw.js` (`estrela-painel-AAMMDD-N`) — sem isso quem
+tem o PWA instalado continua na versão antiga em modo offline — e commite:
 
 ```bash
 cd C:\Users\ricar\Documents\GitHub\estrela; git add docs/ && git commit -m "gestao: painel <data>" && git push
 ```
 
-**6.** Confira em `https://humanidade-grupo.github.io/estrela/`.
+O `build/publicar.ps1` aceita `-SemPrompt` (aborta em vez de perguntar, para
+execução sem humano na frente) e `-Cofre <pasta>` (cofre alternativo, usado para
+ensaiar a publicação numa cópia do repositório).
 
 ## As quatro travas
 
