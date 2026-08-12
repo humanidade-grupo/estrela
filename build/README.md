@@ -134,16 +134,41 @@ Em outra janela, dispare qualquer pergunta no painel. O log mostra
 `hashRecebido` (o que o painel mandou) e `hashEsperado` (o que o Worker tem).
 São hashes truncados — não expõem o token.
 
-Divergiram? Rode o **comando de ressincronização** abaixo. Ele grava o token no
-Worker, **confirma com uma requisição real**, e só então gera o painel — se o
-`secret put` falhar, aborta sem gerar nada:
+Divergiram? **Duplo-clique em `CONSERTAR-CHAT.cmd`** (raiz do repositório). Ele
+regrava no Worker o token que já está no cofre e confirma com uma requisição
+real. Depois rode o `PUBLICAR.cmd`, que é quem injeta o token no painel.
+
+Compare o `hash` que ele imprime com o `hashEsperado` do log. Iguais =
+sincronizado.
+
+Para trocar o token por um novo (e não só reenviar o atual):
 
 ```bash
-cd C:\Users\ricar\Documents\GitHub\estrela; $t = python -c "import secrets; print(secrets.token_urlsafe(32))"; if ([string]::IsNullOrWhiteSpace($t)) { Write-Host "ABORTADO" -ForegroundColor Red } else { $t | npx.cmd wrangler secret put PAINEL_TOKEN --config chat-proxy\wrangler.toml; Start-Sleep -Seconds 40; $b = @{tabela="## T`nA`tB`n1`t2"; mensagens=@(@{role="user";content="oi"})} | ConvertTo-Json -Depth 5 -Compress; $st = 0; try { $st = [int](Invoke-WebRequest -Uri "https://estrela-painel-chat.ricardocandrade.workers.dev" -Method POST -Headers @{"Origin"="https://humanidade-grupo.github.io";"Content-Type"="application/json";"Authorization"="Bearer $t"} -Body $b -UseBasicParsing).StatusCode } catch { $st = [int]$_.Exception.Response.StatusCode }; if ($st -ne 200) { Write-Host "ABORTADO: Worker respondeu $st. Nada foi gerado." -ForegroundColor Red } else { $env:PAINEL_TOKEN = $t; $t | Set-Clipboard; python build\encrypt_painel.py "$env:USERPROFILE\Downloads\painel-aberto.html" } }
+cd C:\Users\ricar\Documents\GitHub\estrela; powershell -ExecutionPolicy Bypass -File build\rotacionar-token.ps1
 ```
 
-Compare o `hash` que o script imprime com o `hashEsperado` do log. Iguais =
-sincronizado.
+### ⚠️ O `\n` no `wrangler secret put` — causa raiz do 401 crônico
+
+Este README recomendava, até 12/08/2026, ressincronizar com
+`$t | npx.cmd wrangler secret put PAINEL_TOKEN`. **Esse comando é o próprio
+defeito.** O pipeline do PowerShell acrescenta uma quebra de linha ao valor, o
+wrangler grava o `\n` junto, e o segredo fica com 44 caracteres enquanto o
+painel manda 43. O Worker compara com `!==` e devolve 401 — para sempre, e a
+"receita de conserto" reproduzia o problema a cada tentativa.
+
+Confirmado no log do Worker em 12/08/2026:
+`{"tamanhoRecebido":43,"tamanhoEsperado":44}`.
+
+O `rotacionar-token.ps1` escreve direto no stdin do processo com `.Write()`
+(nunca `WriteLine()`), então o valor vai exato. **Nunca mande um segredo para o
+wrangler pelo pipeline do PowerShell.**
+
+### ⚠️ Ordem dos passos numa rotação
+
+O passo irreversível é o `secret put`: a partir dele o Worker só aceita o valor
+novo. Por isso o token vai para o cofre **antes** da confirmação. Abortar sem
+guardar — como a primeira tentativa de 12/08/2026 fazia — perde o token e deixa
+o Worker esperando um valor que ninguém tem, com o chat morto até outra rotação.
 
 > ⚠️ **`--config chat-proxy\wrangler.toml` é obrigatório** em qualquer comando
 > `wrangler` rodado fora da pasta `chat-proxy/`. Sem ele o wrangler não acha o
