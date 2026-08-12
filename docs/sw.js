@@ -1,9 +1,9 @@
-/* Estrela Urbanidade — Painel Comercial
-   Service worker: instalação PWA + reserva offline.
+﻿/* Estrela Urbanidade â€” Painel Comercial
+   Service worker: instalaÃ§Ã£o PWA + reserva offline.
    Gerado em: 12/08/2026
-   Estratégia: rede primeiro (pega versão nova quando online), cache como
-   reserva offline. A cada deploy, bumpar a versão em CACHE. */
-const CACHE = 'estrela-painel-260812-5';
+   EstratÃ©gia: rede primeiro (pega versÃ£o nova quando online), cache como
+   reserva offline. A cada deploy, bumpar a versÃ£o em CACHE. */
+const CACHE = 'estrela-painel-260812-6';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./'])).then(() => self.skipWaiting()));
