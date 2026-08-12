@@ -3,7 +3,7 @@
    Gerado em: 12/08/2026
    Estratégia: rede primeiro (pega versão nova quando online), cache como
    reserva offline. A cada deploy, bumpar a versão em CACHE. */
-const CACHE = 'estrela-painel-260812-1';
+const CACHE = 'estrela-painel-260812-2';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./'])).then(() => self.skipWaiting()));

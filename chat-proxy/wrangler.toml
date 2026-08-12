@@ -1,0 +1,15 @@
+# ============================================
+# grupo-humanidade / hub comercial / gestao / estrela
+# Gerado em: 11/08/2026 22:00
+# Configuracao do Cloudflare Worker que faz proxy para a API do Claude.
+# Segredos (ANTHROPIC_API_KEY, PAINEL_TOKEN) NAO ficam aqui — sao definidos
+# com `wrangler secret put`. Ver README.md.
+# ============================================
+
+name = "estrela-painel-chat"
+main = "worker.js"
+compatibility_date = "2026-08-11"
+
+# Sem [vars] — as duas variaveis sao secrets, definidas via CLI:
+#   wrangler secret put ANTHROPIC_API_KEY
+#   wrangler secret put PAINEL_TOKEN

@@ -1,0 +1,27 @@
+# ============================================
+# grupo-humanidade / hub comercial / gestao / estrela
+# Gerado em: 11/08/2026 23:10
+# Impede que o painel ABERTO (com os numeros de vendas em texto claro)
+# entre num repositorio publico por descuido. So' o index.html
+# criptografado, dentro de docs/, pode ser versionado.
+# ============================================
+
+# Painel aberto exportado do Cowork — nunca versionar
+painel-aberto*.html
+*-aberto.html
+*.plaintext.html
+
+# Saidas de teste do encrypt_painel.py
+saida-teste.html
+build/saida*.html
+
+# Cache local do wrangler — guarda o id e o nome (e-mail) da conta Cloudflare
+.wrangler/
+
+# Python
+__pycache__/
+*.pyc
+
+# Ambiente
+.env
+*.env
