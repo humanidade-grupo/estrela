@@ -10,7 +10,11 @@
 
 const ORIGEM_PERMITIDA = 'https://humanidade-grupo.github.io';
 const MODELO = 'claude-opus-5';
-const MAX_TOKENS_RESPOSTA = 2048;
+// Teto de saida. No Opus 5 o raciocinio vem ligado por padrao e divide este
+// teto com o texto da resposta — com 2048, perguntas que exigem agregacao
+// sobre centenas de linhas gastavam tudo pensando e devolviam texto vazio.
+// So' se paga o que e' realmente gerado; isto e' folga, nao custo fixo.
+const MAX_TOKENS_RESPOSTA = 16000;
 const MAX_BYTES_REQUISICAO = 512 * 1024; // teto do corpo: ~512 KB
 
 // Prompt de sistema. Fonte: instrucoes-ia-painel.md (Cowork, 12/08/2026),
@@ -128,8 +132,49 @@ function erro(mensagem, status, origem) {
   });
 }
 
+// Le uma copia do stream so' para registrar stop_reason e uso. Nao bloqueia a
+// entrega ao navegador (roda em ctx.waitUntil sobre a outra ponta do tee).
+// stop_reason "max_tokens" com caracteresDeTexto 0 = raciocinio consumiu o
+// teto e nao sobrou resposta: e' hora de subir MAX_TOKENS_RESPOSTA.
+async function registrarUso(stream) {
+  try {
+    const leitor = stream.getReader();
+    const dec = new TextDecoder();
+    let sobra = '';
+    let stop = null;
+    let uso = null;
+    let caracteresDeTexto = 0;
+    for (;;) {
+      const { done, value } = await leitor.read();
+      if (done) break;
+      sobra += dec.decode(value, { stream: true });
+      const linhas = sobra.split('\n');
+      sobra = linhas.pop();
+      for (const linha of linhas) {
+        if (!linha.startsWith('data: ')) continue;
+        let ev;
+        try {
+          ev = JSON.parse(linha.slice(6));
+        } catch {
+          continue;
+        }
+        if (ev.type === 'content_block_delta' && ev.delta?.type === 'text_delta') {
+          caracteresDeTexto += ev.delta.text.length;
+        }
+        if (ev.type === 'message_delta') {
+          stop = ev.delta?.stop_reason ?? stop;
+          uso = ev.usage ?? uso;
+        }
+      }
+    }
+    console.log('RESPOSTA ' + JSON.stringify({ stop_reason: stop, caracteresDeTexto, uso }));
+  } catch (e) {
+    console.log('falha ao registrar uso: ' + String(e));
+  }
+}
+
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const origem = request.headers.get('Origin');
     const corsOrigem = origem === ORIGEM_PERMITIDA ? origem : ORIGEM_PERMITIDA;
 
@@ -223,7 +268,10 @@ export default {
       return erro('Falha ao consultar o modelo.', 502, corsOrigem);
     }
 
-    return new Response(resposta.body, {
+    const [paraCliente, paraLog] = resposta.body.tee();
+    ctx.waitUntil(registrarUso(paraLog));
+
+    return new Response(paraCliente, {
       status: 200,
       headers: {
         'Content-Type': 'text/event-stream; charset=utf-8',
