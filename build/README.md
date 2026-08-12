@@ -31,6 +31,23 @@ Cowork  ──exporta──▶  painel-aberto.html  (numeros em texto claro)
 | `shell.template.html` | Tela de senha + rotina de descriptografia. `__PAYLOAD__` e `__GERADO_EM__` são preenchidos na geração. |
 | `_extrair_template.py` | Uso único: regerou o template a partir do `docs/index.html` publicado. Só rodar de novo se a casca mudar. |
 
+## ⚠️ O `painel-aberto.html` já não é uma cópia crua do Cowork
+
+Em **12/08/2026** três ajustes de interface foram feitos **direto no
+`painel-aberto.html`**, não no artefato do Cowork:
+
+1. **Misto** e **Terceiros** nascem desmarcados nos filtros (todas as abas) —
+   via a opção `off` de cada grupo em `mkFilters`.
+2. O chip **Todos** virou alternador: marcado, o clique **limpa** o grupo.
+3. O grupo **Fase (Vale)** só aparece quando o Empreendimento está isolado em
+   *Estrela do Vale*; escondido, volta sozinho ao padrão (todas as fases) —
+   via as opções `visivel` e `syncVis` em `mkFilters`.
+
+**Uma reexportação do Cowork apaga os três.** Antes de sobrescrever o
+`painel-aberto.html`, ou o artefato do Cowork já traz esses ajustes, ou eles
+precisam ser reaplicados na mão (tudo mora em `mkFilters` e nas três chamadas
+`mkFilters(...)`, cerca de 60 linhas no total).
+
 ## Gerar
 
 **1.** Exporte o painel aberto do Cowork para `C:\Users\ricar\Downloads\painel-aberto.html`.

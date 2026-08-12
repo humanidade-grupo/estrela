@@ -95,7 +95,14 @@
 .eu-chat-baixo button{flex:0 0 auto;padding:0 15px;border:none;border-radius:9px;background:#0e9fc4;
   color:#04121a;font-weight:700;cursor:pointer}
 .eu-chat-baixo button:disabled{opacity:.45;cursor:default}
-@media(max-width:520px){.eu-chat{right:10px;left:10px;width:auto;bottom:80px}}`;
+@media(max-width:520px){.eu-chat{right:10px;left:10px;width:auto}}
+/* Ate' 640px o painel troca as abas pelo menu fixo do rodape (.bnav, ~59px +
+   area segura). O botao do chat sobe acima dele para nao cobrir "V x E". */
+@media(max-width:640px){
+  .eu-chat-bt{bottom:calc(72px + env(safe-area-inset-bottom))}
+  .eu-chat{bottom:calc(136px + env(safe-area-inset-bottom));
+    max-height:calc(100vh - 200px)}
+}`;
 
   const marcacao = `
 <div class="eu-chat-topo">

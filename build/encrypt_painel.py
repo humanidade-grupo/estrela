@@ -43,9 +43,13 @@ SAIDA = RAIZ / "docs" / "index.html"
 # estava na casca de senha e' descartado no destravamento. Estas tags precisam
 # existir DENTRO do painel, senao o navegador para de oferecer "Instalar app"
 # depois que o usuario destrava.
+# Cada par e' (marcador procurado no painel, linha a injetar se faltar) — a
+# checagem e' tag a tag para que um painel que ja' traga uma delas nao impeca
+# a injecao das outras.
 PWA_HEAD = (
-    '<link rel="manifest" href="./manifest.webmanifest">\n'
-    '<link rel="apple-touch-icon" href="./icone-eu-180.png">\n'
+    ('rel="manifest"', '<link rel="manifest" href="./manifest.webmanifest">'),
+    ('rel="icon"', '<link rel="icon" type="image/png" href="./icone-eu-192.png">'),
+    ("apple-touch-icon", '<link rel="apple-touch-icon" href="./icone-eu-180.png">'),
 )
 
 # Registrar de novo e' inofensivo (no-op se ja' registrado pela casca) e cobre
@@ -126,10 +130,11 @@ def main() -> None:
     # --- 2. painel aberto + tags de PWA + widget --------------------------
     painel = entrada.read_text(encoding="utf-8")
 
-    if 'rel="manifest"' in painel:
-        print("AVISO: painel ja' traz <link rel=manifest>; nao reinjetado.")
+    faltantes = [linha for marcador, linha in PWA_HEAD if marcador not in painel]
+    if not faltantes:
+        print("AVISO: painel ja' traz as tags de PWA; nada reinjetado.")
     elif "</head>" in painel:
-        painel = painel.replace("</head>", PWA_HEAD + "</head>", 1)
+        painel = painel.replace("</head>", "\n".join(faltantes) + "\n</head>", 1)
     else:
         abortar("</head> nao encontrado: sem ele as tags de PWA nao entram e "
                 "o 'Instalar app' quebra depois do document.write().")
@@ -142,6 +147,7 @@ def main() -> None:
         painel += bloco
 
     for esperado, rotulo in (('rel="manifest"', "link do manifest"),
+                             ('rel="icon"', "favicon"),
                              ("apple-touch-icon", "apple-touch-icon"),
                              ("serviceWorker.register", "registro do service worker"),
                              ("eu-chat-bt", "botao do widget de chat")):
@@ -169,7 +175,8 @@ def main() -> None:
 
     # --- 5. montagem do HTML final ----------------------------------------
     agora = datetime.now().strftime("%d/%m/%Y %H:%M")
-    html = (TEMPLATE.read_text(encoding="utf-8")
+    casca = TEMPLATE.read_text(encoding="utf-8")
+    html = (casca
             .replace("__PAYLOAD__", payload)
             .replace("__GERADO_EM__", agora))
 
@@ -177,11 +184,17 @@ def main() -> None:
     if token in html:
         abortar("o PAINEL_TOKEN aparece em texto claro no HTML gerado.")
 
-    texto_painel = painel
-    amostras = [texto_painel[i:i + 40]
-                for i in range(0, max(1, len(texto_painel) - 40), max(1, len(texto_painel) // 25))][:25]
-    vazadas = [a for a in amostras if a and a in html]
+    # Amostras do painel aberto que reaparecem no HTML final. Um trecho que ja'
+    # existe na casca CRUA (boilerplate de CSS que o painel e o widget dividem
+    # com a tela de senha — "align-items:center", "border-radius", etc.) nao e'
+    # vazamento: ele estaria ali com ou sem o painel. Sem essa ressalva a trava
+    # dispara sozinha assim que o widget muda de tamanho e desloca as amostras.
+    passo = max(1, len(painel) // 25)
+    amostras = [painel[i:i + 40] for i in range(0, max(1, len(painel) - 40), passo)][:25]
+    vazadas = [a for a in amostras if a and a in html and a not in casca]
     if vazadas:
+        for a in vazadas:
+            print(f"  VAZOU: {a!r}", file=sys.stderr)
         abortar(f"{len(vazadas)} trecho(s) do painel aberto aparecem em texto claro no HTML gerado.")
 
     # --- 7. gravacao -------------------------------------------------------
