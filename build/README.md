@@ -81,6 +81,36 @@ o navegador descriptografou o payload gerado pelo Python (9.902 bytes), a tabela
 renderizou, o botão "Perguntar ao Claude" apareceu, e a extração da tabela
 produziu o TSV esperado.
 
+## Se o chat der 401
+
+O painel e o Worker guardam o mesmo token; 401 significa que eles divergiram.
+Provoque uma falha de auth de propósito e leia os hashes no log:
+
+```bash
+cd C:\Users\ricar\Documents\GitHub\estrela\chat-proxy; npx.cmd wrangler tail --format pretty
+```
+
+Em outra janela, dispare qualquer pergunta no painel. O log mostra
+`hashRecebido` (o que o painel mandou) e `hashEsperado` (o que o Worker tem).
+São hashes truncados — não expõem o token.
+
+Divergiram? Rode o **comando de ressincronização** abaixo. Ele grava o token no
+Worker, **confirma com uma requisição real**, e só então gera o painel — se o
+`secret put` falhar, aborta sem gerar nada:
+
+```bash
+cd C:\Users\ricar\Documents\GitHub\estrela; $t = python -c "import secrets; print(secrets.token_urlsafe(32))"; if ([string]::IsNullOrWhiteSpace($t)) { Write-Host "ABORTADO" -ForegroundColor Red } else { $t | npx.cmd wrangler secret put PAINEL_TOKEN --config chat-proxy\wrangler.toml; Start-Sleep -Seconds 40; $b = @{tabela="## T`nA`tB`n1`t2"; mensagens=@(@{role="user";content="oi"})} | ConvertTo-Json -Depth 5 -Compress; $st = 0; try { $st = [int](Invoke-WebRequest -Uri "https://estrela-painel-chat.ricardocandrade.workers.dev" -Method POST -Headers @{"Origin"="https://humanidade-grupo.github.io";"Content-Type"="application/json";"Authorization"="Bearer $t"} -Body $b -UseBasicParsing).StatusCode } catch { $st = [int]$_.Exception.Response.StatusCode }; if ($st -ne 200) { Write-Host "ABORTADO: Worker respondeu $st. Nada foi gerado." -ForegroundColor Red } else { $env:PAINEL_TOKEN = $t; $t | Set-Clipboard; python build\encrypt_painel.py "$env:USERPROFILE\Downloads\painel-aberto.html" } }
+```
+
+Compare o `hash` que o script imprime com o `hashEsperado` do log. Iguais =
+sincronizado.
+
+> ⚠️ **`--config chat-proxy\wrangler.toml` é obrigatório** em qualquer comando
+> `wrangler` rodado fora da pasta `chat-proxy/`. Sem ele o wrangler não acha o
+> `wrangler.toml`, falha com *"Required Worker name missing"* — e num comando
+> longo esse erro passa despercebido no meio da saída. Foi exatamente assim que
+> o painel foi publicado uma vez com um token que o Worker não conhecia.
+
 ## Nunca versionar
 
 O `painel-aberto.html` tem os números em texto claro e **não pode entrar no

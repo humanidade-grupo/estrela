@@ -188,9 +188,15 @@ def main() -> None:
     saida.parent.mkdir(parents=True, exist_ok=True)
     saida.write_text(html, encoding="utf-8", newline="\n")
 
+    # Hash truncado do token embutido: seguro de mostrar e de comparar com o
+    # log do Worker. Se este valor nao bater com o que o Worker registra, o
+    # painel e o proxy estao dessincronizados e o chat vai responder 401.
+    impressao = hashlib.sha256(token.encode("utf-8")).hexdigest()[:8]
+
     print()
     print(f"  entrada .... {entrada}  ({len(claro):,} bytes)".replace(",", "."))
     print(f"  widget ..... {WIDGET.name} (token injetado)")
+    print(f"  token ...... {len(token)} caracteres, hash {impressao}")
     print(f"  saida ...... {saida}  ({len(html):,} bytes)".replace(",", "."))
     print(f"  gerado em .. {agora}")
     print("  travas ..... marcador OK / round-trip OK / token nao vazou / dados nao vazaram")

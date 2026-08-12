@@ -60,6 +60,20 @@ export default {
     const auth = request.headers.get('Authorization') || '';
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
     if (!env.PAINEL_TOKEN || token !== env.PAINEL_TOKEN) {
+      // Diagnostico sem expor segredo: hash truncado dos dois lados. Se estes
+      // valores divergirem, o painel foi gerado com um token diferente do que
+      // esta' no Worker — ver build/README.md, secao "Se o chat der 401".
+      const hash = async (s) => {
+        if (!s) return '(vazio)';
+        const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+        return [...new Uint8Array(d)].slice(0, 4).map((b) => b.toString(16).padStart(2, '0')).join('');
+      };
+      console.log('AUTH FALHOU ' + JSON.stringify({
+        tamanhoRecebido: token.length,
+        tamanhoEsperado: (env.PAINEL_TOKEN || '').length,
+        hashRecebido: await hash(token),
+        hashEsperado: await hash(env.PAINEL_TOKEN),
+      }));
       return erro('Token inválido.', 401, corsOrigem);
     }
 
