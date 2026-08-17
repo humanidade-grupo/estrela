@@ -3,7 +3,7 @@
    Atualizado em: 17/08/2026 — painel passou a ler do Cofre (deixou de embutir dado).
    Estratégia: rede primeiro (pega versão nova quando online), cache como
    reserva offline. A cada deploy, bumpar a versão em CACHE. */
-const CACHE = 'estrela-painel-260818-3';
+const CACHE = 'estrela-painel-260818-4';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./'])).then(() => self.skipWaiting()));

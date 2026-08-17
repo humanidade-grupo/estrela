@@ -1464,6 +1464,7 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
   var CHAVE_CACHE = 'painel_comercial_cache';   // trocada em 17/08: o objeto agora traz as duas empresas
   var CHAVE_EMP   = 'painel_empresa';           // qual metade estava aberta da última vez
   var MARCA_FRESCA = 'painel_acabou_de_buscar'; // posta pelo botão Atualizar, lida no arranque
+  var RECADO_SYNC  = 'painel_recado_sync';      // o que a importação sob demanda respondeu
 
   var carga = document.getElementById('carga');
 
@@ -1533,11 +1534,21 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
       bt.classList.add('girando');
       var rotulo = bt.querySelector('.rot');
       if (rotulo) rotulo.textContent = 'buscando…';
-      buscar(token).then(function (j) {
+
+      /* Importa a empresa que está na tela, não as duas. O Cofre só se
+         atualiza sozinho de 4 em 4 horas: sem isto, o botão releria os mesmos
+         números de até quatro horas atrás com cara de novos. Sincronizar as
+         duas dobraria a espera para ver um número que está numa só. */
+      var emp = document.body.classList.contains('emp-ps') ? 'ps' : 'eu';
+
+      buscar(token, emp).then(function (j) {
         if (!j || !j.ok) throw new Error((j && j.error) || 'resposta sem dado');
+        var s = (emp === 'ps') ? (j.ps && j.ps.sync) : j.sync;
         try {
           localStorage.setItem(CHAVE_CACHE, JSON.stringify(j));
           sessionStorage.setItem(MARCA_FRESCA, '1');
+          // o recado da importação atravessa a recarga
+          sessionStorage.setItem(RECADO_SYNC, JSON.stringify({ emp: emp, s: s || null }));
         } catch (e) {}
         location.reload();
       }).catch(function (e) {
@@ -1581,6 +1592,30 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
     var salvo = 'eu';
     try { salvo = localStorage.getItem(CHAVE_EMP) || 'eu'; } catch (e) {}
     trocarEmpresa(salvo);
+
+    /* O que a importação sob demanda respondeu, dito na tela. "Atualizar" que
+       não atualizou e não avisa é a mesma mentira do portão que chamava erro
+       de servidor de token inválido: a pessoa segue confiando num número
+       velho justamente por ter feito o gesto de renovar. */
+    try {
+      var rec = sessionStorage.getItem(RECADO_SYNC);
+      if (rec) {
+        sessionStorage.removeItem(RECADO_SYNC);
+        var o = JSON.parse(rec), r = o.s;
+        var nome = (o.emp === 'ps') ? 'Parque da Saudade' : 'Estrela Urbanidade';
+        var bom = !!(r && (r.feito || r.recente));
+        var txt;
+        if (!r) txt = '⚠ A porta não disse se importou. Os números podem ser os da última rodada.';
+        else if (r.feito) txt = '✓ <b>' + nome + '</b> importado agora — ' + r.resumo + ' no Cofre.';
+        else if (r.recente) txt = '✓ <b>' + nome + '</b> já estava atualizado (' + r.motivo + ').';
+        else txt = '⚠ Não consegui importar o <b>' + nome + '</b>: ' + String(r.motivo).replace(/[<>&]/g, '') +
+                   '. A tela mostra a última importação que deu certo.';
+        selo(txt, !bom);
+        setTimeout(function () {
+          atualizarSelo(document.body.classList.contains('emp-ps') ? 'ps' : 'eu');
+        }, 8000);
+      }
+    } catch (e) {}
   }
 
   function doCache() {
@@ -1617,13 +1652,16 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
      E a Estrela manda: se ela falhar, não há painel. Se o Parque falhar, a
      Estrela sobe assim mesmo e a metade PS avisa por que está vazia — meia
      tela honesta é melhor que tela nenhuma. */
-  function buscar(token) {
+  function buscar(token, sincronizar) {
     var q = API + '?token=' + encodeURIComponent(token);
-    passo('lendo a Estrela…');
-    return comPrazo(q + '&app=estrela&fn=dados', 30000, 'A Estrela').then(function (eu) {
+    // importar da fonte demora mais que só ler o Cofre — o prazo acompanha
+    var sEU = (sincronizar === 'eu') ? '&sync=1' : '';
+    var sPS = (sincronizar === 'ps') ? '&sync=1' : '';
+    passo(sEU ? 'importando as vendas da Estrela…' : 'lendo a Estrela…');
+    return comPrazo(q + '&app=estrela&fn=dados' + sEU, sEU ? 90000 : 30000, 'A Estrela').then(function (eu) {
       if (!eu || !eu.ok) return eu || { ok: false };
-      passo('lendo o Parque…');
-      return comPrazo(q + '&app=vendas&fn=dados', 30000, 'O Parque').then(function (ps) {
+      passo(sPS ? 'importando as vendas do Parque…' : 'lendo o Parque…');
+      return comPrazo(q + '&app=vendas&fn=dados' + sPS, sPS ? 90000 : 30000, 'O Parque').then(function (ps) {
         if (ps && ps.ok) { eu.ps = ps; }
         else { eu.ps = null; eu.psErro = (ps && ps.error) || 'resposta sem dado'; }
         return eu;
