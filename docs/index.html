@@ -1056,6 +1056,20 @@ let _rt;window.addEventListener('resize',()=>{clearTimeout(_rt);_rt=setTimeout(r
       .then(function (r) { return r.json(); });
   }
 
+  /* A porta devolve {ok:false} para DUAS coisas muito diferentes: token errado
+     e erro dentro do Apps Script. Tratar as duas como "token não aceito" manda
+     quem está na frente da tela rotacionar o token atrás de um bug — foi o que
+     aconteceu em 17/08. Aqui elas se separam. */
+  function recado(j) {
+    var e = (j && j.error) ? String(j.error) : '';
+    if (!e) return 'O Cofre respondeu sem dado. Recarregue; se insistir, é erro do servidor.';
+    if (/token/i.test(e)) return 'Token não aceito. Confira e tente de novo.';
+    return 'O token passou, mas o Cofre falhou ao montar o dado:\n' + e;
+  }
+  function tokenRuim(j) {
+    return !j || !j.error || /token/i.test(String(j.error));
+  }
+
   function portao(mensagem) {
     if (carga) carga.style.display = 'none';
     if (document.getElementById('gate')) {
@@ -1086,7 +1100,10 @@ let _rt;window.addEventListener('resize',()=>{clearTimeout(_rt);_rt=setTimeout(r
           subir(j, false);
         } else {
           bt.disabled = false;
-          er.textContent = 'Token não aceito. Confira e tente de novo.';
+          er.textContent = recado(j);
+          // erro de servidor não é culpa de quem digitou: guarda o token para
+          // que um recarregar depois do conserto não peça tudo de novo
+          if (!tokenRuim(j)) { try { localStorage.setItem(CHAVE_TOKEN, t); } catch (e) {} }
         }
       }).catch(function () {
         bt.disabled = false;
@@ -1104,10 +1121,22 @@ let _rt;window.addEventListener('resize',()=>{clearTimeout(_rt);_rt=setTimeout(r
     if (j && j.ok) {
       try { localStorage.setItem(CHAVE_CACHE, JSON.stringify(j)); } catch (e) {}
       subir(j, false);
-    } else {
+    } else if (tokenRuim(j)) {
       // token revogado ou rotacionado
       localStorage.removeItem(CHAVE_TOKEN);
       portao('O token deixou de valer. Digite o novo.');
+    } else {
+      // o token vale; quem falhou foi o Cofre. Não apagar o token, e dizer o
+      // que de fato aconteceu — inclusive usando a cópia local, se houver.
+      var c = doCache();
+      if (c) { subir(c, true); }
+      else if (carga) {
+        carga.style.display = '';
+        carga.innerHTML = '<div style="text-align:center;max-width:420px;line-height:1.6">' +
+          'O Cofre respondeu com erro.<br><span style="color:#f87171;font-size:13px;word-break:break-word">' +
+          String(j.error).replace(/[<>&]/g, '') + '</span><br>' +
+          '<span style="color:#64748b;font-size:13px">O token está válido — isto é falha do servidor.</span></div>';
+      }
     }
   }).catch(function () {
     // offline: usa a última cópia, deixando claro que é cópia
