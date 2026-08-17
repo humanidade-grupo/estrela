@@ -4,6 +4,35 @@
  Como gerar e publicar uma versao nova do Painel Vendas x Estoque.
 ============================================ -->
 
+> ## ⛔ APOSENTADO EM 17/08/2026 — não use este caminho
+>
+> O painel deixou de embutir dado. Ele agora **lê do Cofre** pela porta única
+> (`?app=estrela&fn=dados&token=…`), e por isso **não há mais o que criptografar**:
+> o `docs/index.html` publicado não carrega número nenhum, só a tela e o portão
+> de token. Quem protege o dado agora é o token, que nunca fica no arquivo.
+>
+> **Consequências práticas:**
+>
+> | Antes | Agora |
+> |---|---|
+> | `painel-aberto.html` → `encrypt_painel.py` → `docs/index.html` | `docs/index.html` **é** a fonte — edite-o direto |
+> | Publicar = exportar do Cowork + rodar o gerador | Publicar = commit + push (e bumpar o `CACHE` do `sw.js`) |
+> | Dado novo = republicar o painel | Dado novo = a importação de 4h do Cofre, sozinha |
+> | Senha do painel (PBKDF2+AES) | Token do Cofre, digitado uma vez por aparelho |
+>
+> `encrypt_painel.py`, `shell.template.html`, `_extrair_template.py`,
+> `publicar.ps1` e `PUBLICAR.cmd` **não têm mais função**. Ficam aqui como
+> histórico até serem removidos.
+>
+> **Os três ajustes de interface descritos abaixo** (Misto/Terceiros
+> desmarcados · `Todos` alternador · Fase só com o Vale isolado) foram
+> **reimplementados** no `docs/index.html` em 17/08 a partir desta descrição —
+> o `painel-aberto.html` que os continha só existia no Downloads e se perdeu.
+> Era exatamente o risco que este README antecipou. Agora eles moram no
+> arquivo versionado, e não há mais como perdê-los.
+
+---
+
 # Geração do painel
 
 Transforma o painel **aberto** (exportado do Cowork) no `docs/index.html`
