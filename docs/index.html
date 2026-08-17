@@ -383,6 +383,7 @@ align-items:center;gap:3px;cursor:pointer;min-width:0}
 
 <!-- ================= PARQUE DA SAUDADE ================= -->
 <section class="panel ps" id="pPS1">
+  <div id="psErro"></div>
   <div class="chips" id="psMeses" style="margin:0 0 14px"></div>
 
   <div class="kpis" id="psKpis"></div>
@@ -1228,6 +1229,21 @@ function quebra(elId, lista, campo){
 
 /* ---------- render ---------- */
 function render(){
+  /* Metade que não carregou tem que DIZER isso. Vazia e silenciosa, ela é
+     indistinguível de um mês sem vendas — e alguém acabaria concluindo que o
+     Parque não vendeu nada. */
+  const bx = $('#psErro');
+  if (bx) {
+    bx.innerHTML = D.erro
+      ? '<div class="card" style="border-color:rgba(248,113,113,.35)">'+
+        '<h3 style="color:var(--crit)">O Parque não carregou</h3>'+
+        '<p class="note" style="margin:0">'+String(D.erro).replace(/[<>&]/g,'')+
+        '<br>A metade da Estrela ao lado está normal. Recarregue a página; '+
+        'se insistir, o problema é na rota <code>?app=vendas&amp;fn=dados</code>.</p></div>'
+      : '';
+  }
+  if (D.erro) return;
+
   montarChipsMes('#psMeses'); montarChipsMes('#psMeses2');
 
   const mes = D.meses.filter(m=>m.ym===ymAtivo)[0];
@@ -1438,7 +1454,9 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
       selo('⚠ <b>Sem conexão com o Cofre.</b> Cópia local — ' + nome +
            ' atualizado em <b>' + quando + '</b>. Recarregue quando voltar o sinal.', true);
     } else {
-      selo('Cofre — ' + nome + ' · atualizado em <b>' + quando + '</b>');
+      var ms = ps ? CARIMBO.msPs : CARIMBO.msEu;
+      selo('Cofre — ' + nome + ' · atualizado em <b>' + quando + '</b>' +
+           (ms ? ' · resposta em ' + (ms / 1000).toFixed(1) + 's' : ''));
     }
   }
 
@@ -1464,7 +1482,7 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
 
   function subir(dados, doCache) {
     window.__DADOS__ = dados;
-    window.__DADOS_PS__ = dados.ps || { vendas: [], meses: [], metas: {} };
+    window.__DADOS_PS__ = dados.ps || { vendas: [], meses: [], metas: {}, erro: dados.psErro || 'não carregou' };
     if (carga) carga.remove();
     var g = document.getElementById('gate'); if (g) g.remove();
 
@@ -1480,6 +1498,9 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
     CARIMBO.eu = dados.atualizado_em;
     CARIMBO.ps = (dados.ps && dados.ps.atualizado_em) || '';
     CARIMBO.copia = !!doCache;
+    // quanto o servidor levou, por rota — some da tela se a porta não mandar
+    CARIMBO.msEu = dados.ms || 0;
+    CARIMBO.msPs = (dados.ps && dados.ps.ms) || 0;
 
     var pPS = document.getElementById('empPS'), pEU = document.getElementById('empEU');
     if (pPS) pPS.onclick = function () { trocarEmpresa('ps'); };
@@ -1494,22 +1515,50 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
     try { return JSON.parse(localStorage.getItem(CHAVE_CACHE) || 'null'); } catch (e) { return null; }
   }
 
-  /* Uma porta, duas rotas, uma digitação de token. As duas chamadas partem
-     juntas: o gargalo é a latência do Apps Script, não o tamanho da resposta,
-     então buscar em série dobraria a espera sem economizar nada. Se QUALQUER
-     uma falhar, a falha inteira sobe — meio painel carregado é pior que
-     painel que não abre, porque não se sabe qual metade está velha. */
+  /* Diz em que passo a carga está. Uma palavra parada na tela não distingue
+     "demorando" de "morto" — foi assim que o painel ficou preso em
+     "carregando…" em 17/08 sem ninguém saber o que olhar. */
+  function passo(txt) {
+    if (carga) carga.textContent = txt;
+  }
+
+  /* fetch NÃO tem timeout. Sem isto, uma resposta que nunca chega deixa a tela
+     em silêncio para sempre. Trinta segundos é generoso para o Apps Script e
+     curto o bastante para virar mensagem antes de a pessoa desistir. */
+  function comPrazo(url, ms, oque) {
+    return new Promise(function (resolve, reject) {
+      var venceu = false;
+      var t = setTimeout(function () {
+        venceu = true;
+        reject(new Error(oque + ' não respondeu em ' + (ms / 1000) + 's'));
+      }, ms);
+      fetch(url)
+        .then(function (r) { return r.json(); })
+        .then(function (j) { if (!venceu) { clearTimeout(t); resolve(j); } })
+        .catch(function (e) { if (!venceu) { clearTimeout(t); reject(e); } });
+    });
+  }
+
+  /* Uma porta, duas rotas, uma digitação de token — mas EM SÉRIE, não juntas.
+     O Apps Script enfileira execuções do mesmo usuário: disparar as duas ao
+     mesmo tempo não divide a espera, só esconde qual das duas está demorando.
+     E a Estrela manda: se ela falhar, não há painel. Se o Parque falhar, a
+     Estrela sobe assim mesmo e a metade PS avisa por que está vazia — meia
+     tela honesta é melhor que tela nenhuma. */
   function buscar(token) {
     var q = API + '?token=' + encodeURIComponent(token);
-    return Promise.all([
-      fetch(q + '&app=estrela&fn=dados').then(function (r) { return r.json(); }),
-      fetch(q + '&app=vendas&fn=dados').then(function (r) { return r.json(); })
-    ]).then(function (rs) {
-      var eu = rs[0] || {ok:false}, ps = rs[1] || {ok:false};
-      if (!eu.ok) return eu;
-      if (!ps.ok) return { ok:false, error: 'Parque: ' + (ps.error || 'resposta sem dado') };
-      eu.ps = ps;
-      return eu;
+    passo('lendo a Estrela…');
+    return comPrazo(q + '&app=estrela&fn=dados', 30000, 'A Estrela').then(function (eu) {
+      if (!eu || !eu.ok) return eu || { ok: false };
+      passo('lendo o Parque…');
+      return comPrazo(q + '&app=vendas&fn=dados', 30000, 'O Parque').then(function (ps) {
+        if (ps && ps.ok) { eu.ps = ps; }
+        else { eu.ps = null; eu.psErro = (ps && ps.error) || 'resposta sem dado'; }
+        return eu;
+      }).catch(function (e) {
+        eu.ps = null; eu.psErro = String(e.message || e);
+        return eu;
+      });
     });
   }
 
