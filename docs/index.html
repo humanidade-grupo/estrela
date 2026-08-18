@@ -127,6 +127,11 @@ display:inline-flex;align-items:center;justify-content:center}
 background:rgba(13,22,38,.92);backdrop-filter:blur(12px);border-top:1px solid var(--edge2);
 padding:4px 4px calc(4px + env(safe-area-inset-bottom));
 display:none;grid-template-columns:repeat(4,1fr)}
+/* CADA barra inferior crava a propria contagem de colunas — a da Estrela aqui,
+   a do Parque em #bnavPS mais abaixo. Errar a conta nao quebra nada visivel no
+   desktop (a barra so aparece no celular): o botao a mais cai numa segunda fila
+   e o rodape dobra de altura. Somou ou tirou aba? acerte a contagem NAS DUAS. */
+#bnav{grid-template-columns:repeat(5,1fr)}
 .bnav button{border:none;background:none;color:var(--text-3);font:inherit;cursor:pointer;
 display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;border-radius:10px}
 .bnav button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;
@@ -221,7 +226,7 @@ body.emp-eu #bnavPS,body.emp-eu #tabsPS{display:none !important}
 body.emp-ps #bnav,body.emp-ps #tabsEU{display:none !important}
 body.emp-ps .panel:not(.ps){display:none !important}
 body.emp-eu .panel.ps{display:none !important}
-#bnavPS{grid-template-columns:repeat(2,1fr)}
+#bnavPS{grid-template-columns:repeat(3,1fr)}
 
 /* barra de meta: preenchimento = realizado sobre o desafio; o traço é a meta oficial */
 .metabar{position:relative;height:16px;background:rgba(255,255,255,.06);
@@ -283,6 +288,7 @@ align-items:center;gap:3px;cursor:pointer;min-width:0}
 <div class="tabs" id="tabsPS" role="tablist">
   <button class="tab" role="tab" aria-selected="true" data-p="pPS1" type="button">Mês</button>
   <button class="tab" role="tab" aria-selected="false" data-p="pPS2" type="button">Quebras</button>
+  <button class="tab" role="tab" aria-selected="false" data-p="pPSX" type="button">Executivo (v2)</button>
 </div>
 
 <div class="tabs" id="tabsEU" role="tablist">
@@ -290,6 +296,7 @@ align-items:center;gap:3px;cursor:pointer;min-width:0}
   <button class="tab" role="tab" aria-selected="false" data-p="pEst" type="button">Estoque</button>
   <button class="tab" role="tab" aria-selected="false" data-p="pVen" type="button">Vendas</button>
   <button class="tab" role="tab" aria-selected="false" data-p="pSin" type="button">Vendas × Estoque</button>
+  <button class="tab" role="tab" aria-selected="false" data-p="pEUX" type="button">Executivo (v2)</button>
 </div>
 
 <!-- ================= DASHBOARD ================= -->
@@ -417,6 +424,12 @@ align-items:center;gap:3px;cursor:pointer;min-width:0}
   </div>
 </section>
 
+
+<!-- ================= EXECUTIVO v2 (Estrela) ================= -->
+<section class="panel" id="pEUX">
+  <iframe id="fExecEU" title="Visão executiva — Estrela Urbanidade" loading="lazy" style="width:100%;border:0;display:block;min-height:70vh"></iframe>
+</section>
+
 <!-- ================= PARQUE DA SAUDADE ================= -->
 <section class="panel ps" id="pPS1">
   <div id="psErro"></div>
@@ -488,6 +501,12 @@ align-items:center;gap:3px;cursor:pointer;min-width:0}
     <div id="psBrkModal"></div>
   </div>
 </section>
+
+<!-- ================= EXECUTIVO v2 (Parque) ================= -->
+<section class="panel ps" id="pPSX">
+  <iframe id="fExecPS" title="Visão executiva — Parque da Saudade" loading="lazy" style="width:100%;border:0;display:block;min-height:70vh"></iframe>
+</section>
+
 </div>
 
 <nav class="bnav" id="bnavPS">
@@ -497,6 +516,9 @@ align-items:center;gap:3px;cursor:pointer;min-width:0}
   <button type="button" data-p="pPS2" aria-selected="false">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6.4 6.4"/></svg>
     <span>Quebras</span></button>
+  <button type="button" data-p="pPSX" aria-selected="false">
+    <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
+    <span>Executivo</span></button>
 </nav>
 
 <nav class="bnav" id="bnav">
@@ -512,6 +534,9 @@ align-items:center;gap:3px;cursor:pointer;min-width:0}
   <button type="button" data-p="pSin" aria-selected="false">
     <svg viewBox="0 0 24 24"><path d="M7 20V10"/><path d="M12 20V4"/><path d="M17 20v-7"/><path d="M3 20h18"/></svg>
     <span>V × E</span></button>
+  <button type="button" data-p="pEUX" aria-selected="false">
+    <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
+    <span>Executivo</span></button>
 </nav>
 <div class="tooltip" id="tip"></div>
 
@@ -1859,6 +1884,40 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
         'Não consegui falar com o Cofre e não há cópia neste aparelho.<br>' +
         '<span style="color:#64748b;font-size:13px">Verifique a conexão e recarregue.</span></div>';
     }
+  });
+})();
+</script>
+<script>
+/* ---------- aba Executivo (v2) ----------
+   A tela executiva e' um documento inteiro, com camada de dados propria: ~15
+   funcoes e 11 classes tem o mesmo nome das daqui (buscar, portao, .wrap,
+   .card...). Por isso ela entra numa MOLDURA e nao colada neste corpo — cada
+   uma fica no seu escopo e nenhuma pisa na outra.
+   A moldura so carrega quando alguem abre a aba: quem nunca clicar nao paga
+   uma segunda ida ao Cofre. A empresa vai daqui pra dentro, pela URL.
+   Ligado por addEventListener de proposito: os .onclick das abas ja tem dono
+   (irPara / irParaPS) e nao podem ser sobrescritos. */
+(function () {
+  var ORIGEM = location.origin;
+  function montar(emp) {
+    var f = document.getElementById(emp === 'ps' ? 'fExecPS' : 'fExecEU');
+    if (f && !f.getAttribute('src')) f.setAttribute('src', 'v2/?embed=1&emp=' + emp);
+  }
+  document.addEventListener('click', function (ev) {
+    var b = (ev.target && ev.target.closest) ? ev.target.closest('[data-p]') : null;
+    if (!b) return;
+    if (b.dataset.p === 'pEUX') montar('eu');
+    if (b.dataset.p === 'pPSX') montar('ps');
+  });
+  /* a moldura nao tem altura propria: quem sabe o tamanho e' a pagina de dentro */
+  window.addEventListener('message', function (ev) {
+    if (ev.origin !== ORIGEM) return;
+    var d = ev.data;
+    if (!d || d.tipo !== 'v2:altura') return;
+    ['fExecEU', 'fExecPS'].forEach(function (id) {
+      var x = document.getElementById(id);
+      if (x && x.contentWindow === ev.source) x.style.height = Math.max(400, d.altura) + 'px';
+    });
   });
 })();
 </script>

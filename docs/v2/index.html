@@ -149,6 +149,14 @@
   #selo.velho{background:rgba(69,26,3,.96);color:#fbbf24;border-top-color:rgba(245,158,11,.4)}
   #selo.velho b{color:#fcd34d}
   body.tem-selo{padding-bottom:34px}
+
+  /* ---------- embutido como aba do painel atual ----------
+     Cabecalho e seletor de empresa ja existem na pagina de fora; repetir os
+     dois aqui dentro seria moldura dentro de moldura. Os filtros proprios
+     (mes, janela, atualizar) ficam: sao desta tela, nao ha equivalente la. */
+  body.embutido header.top{display:none}
+  body.embutido .filters .seg{display:none}
+  body.embutido .wrap{padding-top:10px}
 </style>
 </head>
 <body class="emp-eu">
@@ -1031,6 +1039,32 @@ window.__renderEU = function (dados) {
   var CHAVE_CACHE = 'painel_v2_cache';
   var CHAVE_EMP = 'painel_v2_empresa';
 
+  /* ---------- modo embutido ----------
+     Quando o painel atual carrega esta pagina numa moldura, a empresa deixa
+     de ser escolha daqui: ela vem de fora, pela URL. Sem isso teriamos dois
+     seletores discordando na mesma tela. */
+  var EMBUTIDO = false, EMP_URL = null;
+  try {
+    var _q = new URLSearchParams(location.search);
+    EMBUTIDO = _q.get('embed') === '1' || window.self !== window.top;
+    if (_q.get('emp') === 'ps' || _q.get('emp') === 'eu') EMP_URL = _q.get('emp');
+  } catch (e) {}
+  if (EMBUTIDO) { try { document.body.classList.add('embutido'); } catch (e) {} }
+
+  /* a moldura nao adivinha a altura do conteudo; quem sabe e esta pagina */
+  function avisarAltura() {
+    if (!EMBUTIDO) return;
+    try {
+      var h = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+      parent.postMessage({ tipo: 'v2:altura', altura: h }, location.origin);
+    } catch (e) {}
+  }
+  if (EMBUTIDO) {
+    window.addEventListener('load', avisarAltura);
+    window.addEventListener('resize', avisarAltura);
+    try { new ResizeObserver(avisarAltura).observe(document.body); } catch (e) {}
+  }
+
   var carga = document.getElementById('carga');
   function passo(t) { var p = document.getElementById('cargaPasso'); if (p) p.textContent = t; }
   function fecharCarga() { if (!carga) return; carga.style.opacity = '0'; setTimeout(function () { if (carga && carga.parentNode) carga.remove(); carga = null; }, 320); }
@@ -1071,7 +1105,7 @@ window.__renderEU = function (dados) {
     document.body.classList.toggle('emp-eu', !ps);
     $('#empPS').setAttribute('aria-selected', ps);
     $('#empEU').setAttribute('aria-selected', !ps);
-    try { localStorage.setItem(CHAVE_EMP, ps ? 'ps' : 'eu'); } catch (e) {}
+    if (!EMBUTIDO) { try { localStorage.setItem(CHAVE_EMP, ps ? 'ps' : 'eu'); } catch (e) {} }
     /* re-render na cor da empresa (as cores dos SVGs são resolvidas na hora) */
     if (DADOS) {
       if (ps) { try { window.__renderPS(DADOS.ps, YM_PS); } catch (e) { console.error('PS:', e); } }
@@ -1095,8 +1129,8 @@ window.__renderEU = function (dados) {
     $('#empPS').onclick = function () { trocarEmpresa('ps'); };
     $('#empEU').onclick = function () { trocarEmpresa('eu'); };
     ligarRecarregar();
-    var salvo = 'eu';
-    try { salvo = localStorage.getItem(CHAVE_EMP) || 'eu'; } catch (e) {}
+    var salvo = EMP_URL || 'eu';
+    if (!EMP_URL) { try { salvo = localStorage.getItem(CHAVE_EMP) || 'eu'; } catch (e) {} }
     trocarEmpresa(salvo);
   }
 
