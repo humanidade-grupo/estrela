@@ -1442,9 +1442,43 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
         border-radius:10px;padding:12px;font-size:15px;font-weight:650;cursor:pointer;font-family:inherit}
   #gate button:disabled{opacity:.5;cursor:default}
   #gate .err{color:#f87171;font-size:13px;margin-top:12px;min-height:18px;line-height:1.45}
-  #carga{position:fixed;inset:0;z-index:9998;background:#0b1220;display:flex;
-        align-items:center;justify-content:center;color:#93a3b8;
+  #carga{position:fixed;inset:0;z-index:9998;background:#0b1220;display:flex;flex-direction:column;
+        align-items:center;justify-content:center;gap:22px;transition:opacity .3s;color:#93a3b8;
         font:15px ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+  /* A bola. Distração enquanto o Cofre responde — o texto do passo continua
+     embaixo dela, porque é ele que distingue "demorando" de "morto". */
+  #cargaPasso{font-size:14px;letter-spacing:.02em;min-height:20px;text-align:center}
+  /* A linha discreta. Só aparece quando a espera passa de 8s — antes disso
+     não há nada a dizer, e frase que aparece cedo demais vira ruído. */
+  #cargaDica{margin-top:-12px;font-size:11.5px;line-height:1.5;color:#5a6b82;
+        text-align:center;max-width:280px;opacity:0;transition:opacity .45s}
+  #cargaDica.ver{opacity:1}
+  .pista{position:relative;width:200px;height:112px}
+  .pista .chao{position:absolute;left:50%;bottom:-6px;width:70px;height:8px;margin-left:-35px;
+        border-radius:50%;background:rgba(255,255,255,.13);filter:blur(3px);
+        animation:carga-sombra 1.1s linear infinite}
+  .pista .roda{position:absolute;left:50%;bottom:0;width:56px;height:56px;margin-left:-28px;
+        animation:carga-rolar 2.2s ease-in-out infinite alternate}
+  .pista .salta{width:100%;height:100%;animation:carga-pular .55s ease-out infinite alternate}
+  .pista .amassa{width:100%;height:100%;transform-origin:50% 100%;
+        animation:carga-amassar 1.1s linear infinite}
+  .pista .bola{display:block;width:100%;height:100%;color:#fff;
+        animation:carga-girar 2.2s ease-in-out infinite alternate}
+  .pista .bola svg{display:block;width:100%;height:100%}
+  /* 56px de diametro dao 176px de circunferencia — o percurso de ida (176px)
+     e exatamente uma volta, entao ela rola de verdade, nao patina. */
+  @keyframes carga-rolar  {from{transform:translateX(-88px)} to{transform:translateX(88px)}}
+  @keyframes carga-girar  {from{transform:rotate(-360deg)}   to{transform:rotate(360deg)}}
+  @keyframes carga-pular  {from{transform:translateY(0)}     to{transform:translateY(-46px)}}
+  @keyframes carga-amassar{0%,100%{transform:scale(1.10,.88)} 14%,86%{transform:scale(1,1)}}
+  @keyframes carga-sombra {0%,100%{opacity:.9;transform:scaleX(1)} 50%{opacity:.35;transform:scaleX(.62)}}
+  @media(max-width:480px){
+    .pista{width:170px;height:96px}
+    .pista .roda{width:46px;height:46px;margin-left:-23px}
+    @keyframes carga-rolar{from{transform:translateX(-72px)} to{transform:translateX(72px)}}}
+  @media(prefers-reduced-motion:reduce){
+    .pista .roda,.pista .salta,.pista .amassa,.pista .bola,.pista .chao{animation:none}
+    .pista .bola{opacity:.85}}
   #selo{position:fixed;left:0;right:0;bottom:0;z-index:60;
         background:rgba(11,18,32,.94);border-top:1px solid rgba(255,255,255,.09);
         color:#7d8ea6;font:11.5px/1.5 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif;
@@ -1457,7 +1491,15 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
     #selo{bottom:62px}}
 </style>
 
-<div id="carga">carregando…</div>
+<div id="carga">
+  <div class="pista"><div class="chao"></div>
+    <div class="roda"><div class="salta"><div class="amassa">
+      <span class="bola"><svg viewBox="0 0 512.000000 512.000000" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g transform="translate(0.000000,512.000000) scale(0.333333,-0.333333)" fill="currentColor"><path d="M749 1317 c-354 -18 -600 -388 -481 -726 128 -365 590 -486 878 -230 389 348 126 981 -397 956z m127 -69 c87 -19 93 -25 68 -82 -7 -17 -24 -55 -37 -86 -14 -31 -33 -74 -43 -97 -21 -49 -41 -94 -70 -161 -27 -62 -38 -72 -75 -65 -24 5 -24 18 1 51 103 137 44 313 -119 357 -53 14 -57 30 -14 50 81 38 202 52 289 33z m179 -74 c29 -15 104 -86 108 -103 6 -23 13 -17 -168 -151 -88 -66 -96 -70 -104 -56 -7 13 0 29 107 272 21 46 29 52 57 38z m-462 -68 c104 -33 147 -153 89 -245 -78 -122 -266 -90 -299 51 -29 123 89 232 210 194z m621 -121 c22 -15 55 -129 55 -191 0 -39 12 -36 -179 -36 -232 0 -233 -17 12 164 96 72 98 73 112 63z m-884 -130 c3 -2 13 -13 21 -25 8 -12 20 -28 26 -36 19 -28 12 -36 -33 -36 -29 0 -30 0 -37 8 -13 16 -6 79 10 89 7 4 6 4 13 0z m371 -161 c27 -1 32 -2 39 -8 15 -13 13 -15 -117 -144 -133 -133 -134 -134 -147 -134 -55 0 -191 236 -158 276 7 10 178 14 383 10z m545 -5 c44 -29 -94 -281 -153 -281 -14 0 -24 9 -149 134 -150 151 -150 150 -56 152 161 2 351 0 358 -5z m-446 -98 c13 -4 214 -201 222 -217 7 -18 0 -26 -36 -44 -123 -59 -276 -59 -403 0 -58 27 -60 23 67 151 118 118 119 118 150 110z"/></g></svg></span>
+    </div></div></div>
+  </div>
+  <div id="cargaPasso">Aquecendo…</div>
+  <div id="cargaDica"></div>
+</div>
 
 <script>
 (function () {
@@ -1469,6 +1511,27 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
   var RECADO_SYNC  = 'painel_recado_sync';      // o que a importação sob demanda respondeu
 
   var carga = document.getElementById('carga');
+
+  /* Piso de tempo da tela de carga. Sem ele, quem tem cache local ve a bola
+     por 200ms — um piscar que parece defeito. 1,4s e uma ida e volta completa. */
+  var CARGA_MIN = 1400, CARGA_T0 = Date.now();
+  /* Duas etapas de espera. Aos 8s a tela só avisa que ainda está viva; aos 20s
+     ela diz em que passo está parada — a partir daí a frase simpática vira
+     fachada, e fachada foi o que escondeu a pane de 17/08. */
+  var CARGA_DICAS = [
+    setTimeout(function () { dica('A bola já vai subir'); }, 8000),
+    setTimeout(function () { dica(PASSO_TEC ? 'ainda ' + PASSO_TEC : 'ainda esperando o Cofre responder…'); }, 20000)
+  ];
+  function fecharCarga() {
+    CARGA_DICAS.forEach(clearTimeout);
+    if (!carga) return;
+    var falta = Math.max(0, CARGA_MIN - (Date.now() - CARGA_T0));
+    setTimeout(function () {
+      if (!carga) return;
+      carga.style.opacity = '0';
+      setTimeout(function () { if (carga && carga.parentNode) carga.remove(); }, 320);
+    }, falta);
+  }
 
   function selo(texto, velho) {
     var el = document.getElementById('selo');
@@ -1567,7 +1630,7 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
   function subir(dados, doCache) {
     window.__DADOS__ = dados;
     window.__DADOS_PS__ = dados.ps || { vendas: [], meses: [], metas: {}, erro: dados.psErro || 'não carregou' };
-    if (carga) carga.remove();
+    fecharCarga();
     var g = document.getElementById('gate'); if (g) g.remove();
 
     // Cada metade é isolada da outra. Antes de existirem duas, um erro no
@@ -1627,8 +1690,17 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
   /* Diz em que passo a carga está. Uma palavra parada na tela não distingue
      "demorando" de "morto" — foi assim que o painel ficou preso em
      "carregando…" em 17/08 sem ninguém saber o que olhar. */
+  var PASSO_TEC = '';
   function passo(txt) {
-    if (carga) carga.textContent = txt;
+    PASSO_TEC = txt;                      // guardado para a dica dos 20s
+    var p = document.getElementById('cargaPasso');
+    if (p) p.textContent = 'Aquecendo\u2026';
+  }
+  function dica(txt) {
+    var d = document.getElementById('cargaDica');
+    if (!d) return;
+    d.textContent = txt;
+    d.classList.add('ver');
   }
 
   /* fetch NÃO tem timeout. Sem isto, uma resposta que nunca chega deixa a tela
