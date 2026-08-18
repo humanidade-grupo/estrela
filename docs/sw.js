@@ -1,9 +1,9 @@
 /* Estrela Urbanidade — Painel Comercial
    Service worker: instalação PWA + reserva offline.
-   Atualizado em: 17/08/2026 — icone do app passou a ser a marca do Grupo Humanidade.
+   Atualizado em: 17/08/2026 — icone proprio do Painel Comercial (marca em relevo sobre metal escuro).
    Estratégia: rede primeiro (pega versão nova quando online), cache como
    reserva offline. A cada deploy, bumpar a versão em CACHE. */
-const CACHE = 'estrela-painel-260818-5';
+const CACHE = 'estrela-painel-260818-6';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./'])).then(() => self.skipWaiting()));
