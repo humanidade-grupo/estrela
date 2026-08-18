@@ -19,6 +19,11 @@
 > | Publicar = exportar do Cowork + rodar o gerador | Publicar = commit + push (e bumpar o `CACHE` do `sw.js`) |
 > | Dado novo = republicar o painel | Dado novo = a importação de 4h do Cofre, sozinha |
 > | Senha do painel (PBKDF2+AES) | Token do Cofre, digitado uma vez por aparelho |
+> | `chat-proxy/widget.js` injetado na cifra | [`docs/chat.js`](../docs/chat.js), servido pelo Pages — ver [`chat-proxy/README.md`](../chat-proxy/README.md) |
+>
+> **O chat foi vítima desta mudança e ficou um dia fora do ar.** Ele não estava
+> no `docs/index.html`: quem o colocava lá era o passo de injeção do
+> `encrypt_painel.py`, que morreu junto com a cifra. Religado em 18/08.
 >
 > `encrypt_painel.py`, `shell.template.html`, `_extrair_template.py`,
 > `publicar.ps1` e `PUBLICAR.cmd` **não têm mais função**. Ficam aqui como

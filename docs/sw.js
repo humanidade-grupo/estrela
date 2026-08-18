@@ -1,9 +1,9 @@
 /* Estrela Urbanidade — Painel Comercial
    Service worker: instalação PWA + reserva offline.
-   Atualizado em: 17/08/2026 — bola de carga animada na tela de espera.
+   Atualizado em: 18/08/2026 — chat do painel religado (docs/chat.js).
    Estratégia: rede primeiro (pega versão nova quando online), cache como
    reserva offline. A cada deploy, bumpar a versão em CACHE. */
-const CACHE = 'estrela-painel-260818-7';
+const CACHE = 'estrela-painel-260818-8';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./'])).then(() => self.skipWaiting()));

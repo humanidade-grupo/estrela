@@ -1501,6 +1501,11 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
   <div id="cargaDica"></div>
 </div>
 
+<!-- Chat do painel. Carregado AQUI, antes do arranque, e sem defer: quando há
+     cópia local o arranque chama __ligarChat() de forma síncrona, ainda
+     durante o parse — com defer a função não existiria ainda. -->
+<script src="./chat.js"></script>
+
 <script>
 (function () {
   var API = 'https://script.google.com/macros/s/AKfycbydLmUEX3g6FeojFGAcVHfNKoPsr4d9oTBUdi7GtcfsirQL6xHJM0BELVGcCrcqrICY/exec';
@@ -1657,6 +1662,12 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
     var salvo = 'eu';
     try { salvo = localStorage.getItem(CHAVE_EMP) || 'eu'; } catch (e) {}
     trocarEmpresa(salvo);
+
+    // Chat: só agora, com o portão fora e a empresa já escolhida — ele lê a
+    // classe do body para saber sobre quem responder. Isolado como as duas
+    // metades: um defeito no chat não pode derrubar o painel.
+    try { window.__ligarChat(); }
+    catch (e) { console.error('Chat não subiu:', e); }
 
     /* O que a importação sob demanda respondeu, dito na tela. "Atualizar" que
        não atualizou e não avisa é a mesma mentira do portão que chamava erro
