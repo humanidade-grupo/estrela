@@ -92,6 +92,13 @@
   .lab-t{fill:var(--ink2);font-size:11px}
   .val-t{fill:var(--ink);font-size:11.5px;font-weight:600}
   .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--ink2);margin-top:8px}
+  /* controles do termômetro, dentro do card */
+  .termobar{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-bottom:10px}
+  .termobar .seg{padding:2px}
+  .termobar .seg button{padding:4px 11px;font-size:11.5px}
+  .chk{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink2);cursor:pointer;
+        background:var(--card2);border:1px solid var(--edge);border-radius:9px;padding:5px 10px}
+  .chk input{accent-color:var(--accent);margin:0}
   .legend i{width:9px;height:9px;border-radius:3px;display:inline-block;margin-right:5px;vertical-align:-1px}
 
   .statuschip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;border-radius:8px;padding:4px 10px}
@@ -269,6 +276,12 @@ function fBRL(x) {
 function fPct(x, d) { return fN(x, d == null ? 1 : d) + '%'; }
 
 var MES_ABREV = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+
+/* Termômetro: onde a série de referência começa. Jan–mar/26 é gestão
+   anterior — 18 vendas em três meses — e contamina qualquer mediana.
+   Daqui para a frente a lista se monta sozinha a cada mês que fecha. */
+var TERMO_INICIO = 202604;
+var TERMO = { medida: 'n', meses: true, proj: true, tabela: false };
 function ymLabel(ym) { var a = Math.floor(ym / 100), m = ym % 100; return MES_ABREV[m - 1] + '/' + String(a).slice(2); }
 function ymShift(ym, n) { var a = Math.floor(ym / 100), m = ym % 100 - 1 + n; return (a + Math.floor(m / 12)) * 100 + (((m % 12) + 12) % 12) + 1; }
 function diasNoMes(ym) { return new Date(Math.floor(ym / 100), ym % 100, 0).getDate(); }
@@ -442,11 +455,20 @@ window.__renderPS = function (dados, ymSel) {
   /* -------- ritmo -------- */
   g.appendChild(el('<div class="sect"><h2>Ritmo do mês</h2><div class="ln"></div><span class="tag">calculado da aba Vendas do Cofre</span></div>'));
 
-  var cCurva = el('<div class="card s8"><h3>Curva do mês — realizado × trilha da meta' + (ymAnt ? ' × ' + esc(ymLabel(ymAnt)) : '') + '</h3>' +
-    '<div class="why">acumulado dia a dia; a trilha é o caminho linear até a meta — a distância entre as linhas é o atraso, em jazigos</div><div id="psCurva"></div>' +
-    '<div class="legend"><span><i style="background:' + C.accent + '"></i>' + esc(ymLabel(ym)) + ' (real)</span>' +
-    (metaOf ? '<span><i style="background:' + C.gray + '"></i>Trilha da meta (' + metaOf + ')</span>' : '') +
-    (ymAnt ? '<span><i style="background:' + C.blue + '"></i>' + esc(ymLabel(ymAnt)) + '</span>' : '') + '</div></div>');
+  var cCurva = el('<div class="card s8"><h3>Termômetro do mês — ' + esc(ymLabel(ym)) + '</h3>' +
+    '<div class="why">acumulado dia a dia contra o território conhecido: onde a operação já esteve neste mesmo dia. ' +
+    'A projeção aplica o perfil mediano ao acumulado de hoje — não é meta, e pode ser desligada.</div>' +
+    '<div class="termobar">' +
+      '<div class="seg" role="group" aria-label="Medida">' +
+        '<button id="tmN" type="button" aria-selected="true">Vendas</button>' +
+        '<button id="tmV" type="button" aria-selected="false">Valor</button></div>' +
+      '<label class="chk"><input type="checkbox" id="tm_meses"> meses</label>' +
+      '<label class="chk"><input type="checkbox" id="tm_proj"> projeção</label>' +
+      '<label class="chk"><input type="checkbox" id="tm_tabela"> tabela</label>' +
+    '</div>' +
+    '<div id="psCurva"></div><div class="legend" id="psTermoLeg"></div>' +
+    '<div class="why" id="psTermoCap" style="margin:10px 0 0"></div>' +
+    '<div id="psTermoTab"></div></div>');
   g.appendChild(cCurva);
 
   var cHeat = el('<div class="card s4"><h3>Quando o Parque vende</h3><div class="why">vendas por dia da semana — últimas 8 semanas</div><div id="psHeat"></div><div id="psHeatNota" style="font-size:11.5px;color:var(--ink2);margin-top:10px"></div></div>');
@@ -520,48 +542,295 @@ window.__renderPS = function (dados, ymSel) {
     $('#psCone').appendChild(svg);
   })();
 
-  /* curva do mês */
+  /* ================= termômetro do mês =================
+     Substitui a curva contra a trilha da meta. A pergunta mudou: não é mais
+     "estou dentro da meta", e sim "como estou contra o que a operação costuma
+     fazer neste mesmo dia". A meta continua no velocímetro, no card de meses
+     e no placar — não se perdeu, mudou de lugar.
+
+     Tudo é calculado do Cofre na hora. A especificação veio acompanhada de um
+     HTML de estudo com os números congelados numa constante; copiar aquilo
+     daria um gráfico parado no dia da extração. A série de referência também
+     é calculada: meses completos desde TERMO_INICIO e anteriores ao exibido.
+     Em setembro ela vira abr–ago sozinha, sem ninguém editar lista nenhuma. */
   (function () {
-    var w = 720, h = 210, px = 34, py = 12, pb = 26, pr = 56, svg = S(w, h);
-    var topo = Math.max(metaOf || 0, total, doAnt.length, 10);
-    var x = function (d) { return px + (d - 1) * (w - px - pr) / (nDias - 1); };
-    var y = function (v) { return h - pb - (v / topo) * (h - py - pb); };
-    var passos = 4;
-    for (var i = 0; i <= passos; i++) {
-      var v = Math.round(topo / passos * i);
-      N('line', { x1: px, y1: y(v), x2: w - pr, y2: y(v), stroke: C.grid }, svg);
-      T(px - 6, y(v) + 3.5, fN(v), 'axis-t', 'end', svg);
+    var DIAS = 31;
+    var alvo = $('#psCurva');
+    if (!alvo) return;
+
+    function mediana(a) {
+      if (!a.length) return 0;
+      var s = a.slice().sort(function (x, y) { return x - y; }), m = s.length >> 1;
+      return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
     }
-    [1, 5, 10, 15, 20, 25, nDias].forEach(function (d) { T(x(d), h - 8, String(d), 'axis-t', 'middle', svg); });
-    if (metaOf) {
-      N('line', { x1: x(1), y1: y(metaOf / nDias), x2: x(nDias), y2: y(metaOf), stroke: C.gray, 'stroke-width': 2, 'stroke-linecap': 'round' }, svg);
-      T(x(nDias) + 6, y(metaOf) + 3, 'meta ' + metaOf, 'axis-t', 'start', svg);
+    function topoBonito(v) {
+      if (!(v > 0)) return 1;
+      var p = Math.pow(10, Math.floor(Math.log10(v))), e = [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10];
+      for (var i = 0; i < e.length; i++) if (e[i] * p >= v) return e[i] * p;
+      return 10 * p;
     }
-    if (doAnt.length) {
-      var pd2 = {}; doAnt.forEach(function (v) { var d = Number(String(v.data).slice(8, 10)); pd2[d] = (pd2[d] || 0) + 1; });
-      var acc2 = 0, nd2 = ymAnt ? diasNoMes(ymAnt) : nDias, pts = [];
-      for (var d2 = 1; d2 <= nd2; d2++) { acc2 += (pd2[d2] || 0); if (d2 <= nDias) pts.push([x(d2), y(acc2)]); }
-      N('path', { d: pts.map(function (p, i) { return (i ? 'L' : 'M') + p[0] + ' ' + p[1]; }).join(' '), stroke: C.blue, 'stroke-width': 2, fill: 'none', opacity: .55, 'stroke-linejoin': 'round' }, svg);
-      T(x(nDias) + 6, y(acc2) + 3, ymLabel(ymAnt) + ' ' + acc2, 'axis-t', 'start', svg);
+    function diaSemana(ymX, d) {
+      return new Date(Math.floor(ymX / 100), (ymX % 100) - 1, d).getDay();
     }
-    var fim = mesCorrente ? diaRef : nDias;
-    var lp = '';
-    for (var d3 = 1; d3 <= fim; d3++) lp += (d3 === 1 ? 'M' : 'L') + x(d3) + ' ' + y(acum[d3 - 1]) + ' ';
-    N('path', { d: lp + 'L' + x(fim) + ' ' + y(0) + ' L' + x(1) + ' ' + y(0) + ' Z', fill: C.accent, opacity: .1 }, svg);
-    N('path', { d: lp, stroke: C.accent, 'stroke-width': 2.5, fill: 'none', 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, svg);
-    var pe = N('circle', { cx: x(fim), cy: y(total), r: 4.5, fill: C.accent, stroke: C.card, 'stroke-width': 2 }, svg);
-    pe.dataset.tip = '<b>' + fim + '/' + ymLabel(ym).split('/')[0] + ' — ' + fN(total) + ' acumuladas</b>' +
-      (esperado && mesCorrente ? '<br><span>ideal até hoje: ' + fN(esperado, 0) + '</span>' : '');
-    T(x(fim), y(total) - 10, fN(total), 'val-t', 'middle', svg);
-    if (esperado && mesCorrente && esperado > total) {
-      N('line', { x1: x(fim), y1: y(total), x2: x(fim), y2: y(esperado), stroke: C.warn, 'stroke-width': 1.5, 'stroke-dasharray': '2 4' }, svg);
-      T(x(fim) + 7, y((total + esperado) / 2), '−' + fN(esperado - total, 0), 'axis-t', 'start', svg).setAttribute('fill', C.warn);
+
+    function desenhar() {
+      var medida = TERMO.medida;
+      var vale = function (v) { return medida === 'n' ? 1 : Number(v.venda || 0); };
+      var fmt = function (x) { return medida === 'n' ? fN(x, 0) : fBRL(x); };
+
+      /* acumulado dia a dia de um mês. Mês de 30 dias repete o dia 30 na
+         posição 31: sem isso a faixa despencaria no último dia por motivo de
+         calendário, não de venda. */
+      function acumDe(ymX) {
+        var pd = {}, nd = diasNoMes(ymX), out = [], acc = 0, d, i;
+        for (i = 0; i < V.length; i++) {
+          if (V[i].ym !== ymX) continue;
+          d = Number(String(V[i].data).slice(8, 10));
+          if (d >= 1 && d <= 31) pd[d] = (pd[d] || 0) + vale(V[i]);
+        }
+        for (d = 1; d <= nd; d++) { acc += (pd[d] || 0); out.push(acc); }
+        while (out.length < DIAS) out.push(out[out.length - 1]);
+        return out;
+      }
+
+      var refYms = [], i2;
+      for (i2 = 0; i2 < V.length; i2++) {
+        var yy = V[i2].ym;
+        if (yy >= TERMO_INICIO && yy < ym && refYms.indexOf(yy) < 0) refYms.push(yy);
+      }
+      refYms.sort(function (a, b) { return a - b; });
+      var refs = refYms.map(function (y) { return { ym: y, label: ymLabel(y), acum: acumDe(y) }; });
+      var faixaLab = refs.length ? refs[0].label + '–' + refs[refs.length - 1].label : '';
+
+      var cur = acumDe(ym);
+      var fim = Math.max(1, Math.min(mesCorrente ? diaRef : nDias, nDias));
+      var hojeAcum = cur[fim - 1] || 0;
+
+      /* faixa e mediana pedem 2+ meses: com um só, a "faixa" seria a própria
+         linha e a mediana fingiria ser referência */
+      var env = null, d0;
+      if (refs.length >= 2) {
+        env = { min: [], max: [], med: [] };
+        for (d0 = 0; d0 < DIAS; d0++) {
+          var col = refs.map(function (r) { return r.acum[d0]; });
+          env.min.push(Math.min.apply(null, col));
+          env.max.push(Math.max.apply(null, col));
+          env.med.push(mediana(col));
+        }
+      }
+
+      /* perfil: fração do total do mês já feita até cada dia, na mediana dos
+         meses de referência — "no dia 15 costuma-se ter 42% do mês feito" */
+      var perfil = null, p0;
+      if (refs.length) {
+        perfil = [];
+        for (p0 = 0; p0 < DIAS; p0++) {
+          perfil.push(mediana(refs.map(function (r) {
+            var t = r.acum[DIAS - 1];
+            return t > 0 ? r.acum[p0] / t : 0;
+          })));
+        }
+      }
+
+      /* projeção: só no mês em curso e só se há de onde projetar. Assume que
+         o resto do mês se comporta como a mediana histórica — não sabe de
+         feriado, campanha nem vendedor de férias. Não é meta. */
+      var proj = null, totalProj = null;
+      if (TERMO.proj && mesCorrente && perfil && perfil[fim - 1] > 0 && hojeAcum > 0) {
+        totalProj = hojeAcum / perfil[fim - 1];
+        proj = [];
+        for (var q = fim - 1; q < nDias; q++) proj.push(perfil[q] * totalProj);
+      }
+
+      var w = 720, h = 300, px = 48, pr = 78, py = 16, pb = 34;
+      var iw = w - px - pr, ih = h - py - pb;
+      var topo = topoBonito(Math.max(
+        env ? Math.max.apply(null, env.max) : 0,
+        totalProj || 0,
+        Math.max.apply(null, cur.slice(0, fim)), 1) * 1.06);
+      var X = function (d) { return px + (d - 1) * iw / (DIAS - 1); };
+      var Y = function (v) { return py + ih - (v / topo) * ih; };
+      var svg = S(w, h);
+      var passo = iw / (DIAS - 1);
+
+      /* fins de semana do mês exibido: explicam por que a curva deita */
+      for (var fd = 1; fd <= nDias; fd++) {
+        var dw = diaSemana(ym, fd);
+        if (dw !== 0 && dw !== 6) continue;
+        N('rect', { x: Math.max(px, X(fd) - passo / 2), y: py, width: passo, height: ih,
+                    fill: '#ffffff', opacity: .025 }, svg);
+      }
+
+      for (var t = 0; t <= 4; t++) {
+        var vv = topo * t / 4, yv = Y(vv);
+        N('line', { x1: px, y1: yv, x2: px + iw, y2: yv, stroke: C.grid }, svg);
+        T(px - 8, yv + 3, medida === 'n' ? fN(vv, 0) : fBRL(vv), 'axis-t', 'end', svg);
+      }
+      [1, 5, 10, 15, 20, 25, nDias].forEach(function (d) {
+        T(X(d), py + ih + 18, String(d), 'axis-t', 'middle', svg);
+      });
+      T(px + iw / 2, py + ih + 31, 'dia do mês', 'axis-t', 'middle', svg);
+
+      var rot = [];
+      if (env) {
+        var band = '', b1, b2;
+        for (b1 = 0; b1 < DIAS; b1++) band += (b1 ? 'L' : 'M') + X(b1 + 1) + ' ' + Y(env.max[b1]);
+        for (b2 = DIAS - 1; b2 >= 0; b2--) band += 'L' + X(b2 + 1) + ' ' + Y(env.min[b2]);
+        N('path', { d: band + 'Z', fill: C.gray, opacity: .13 }, svg);
+      }
+      if (TERMO.meses) refs.forEach(function (r) {
+        var p1 = '';
+        for (var k = 0; k < DIAS; k++) p1 += (k ? 'L' : 'M') + X(k + 1) + ' ' + Y(r.acum[k]);
+        N('path', { d: p1, stroke: C.gray, 'stroke-width': 1.5, fill: 'none', opacity: .42,
+                    'stroke-linecap': 'round' }, svg);
+        rot.push({ y: Y(r.acum[DIAS - 1]), t: r.label, c: C.muted, s: 10.5, w: 400 });
+      });
+      if (env) {
+        var pm = '';
+        for (var m1 = 0; m1 < DIAS; m1++) pm += (m1 ? 'L' : 'M') + X(m1 + 1) + ' ' + Y(env.med[m1]);
+        N('path', { d: pm, stroke: C.gray, 'stroke-width': 2, fill: 'none',
+                    'stroke-dasharray': '6 4', 'stroke-linecap': 'round' }, svg);
+        rot.push({ y: Y(env.med[DIAS - 1]), t: 'mediana', c: C.ink2, s: 11, w: 500 });
+      }
+
+      N('line', { x1: X(15), y1: py + 6, x2: X(15), y2: py + ih, stroke: C.muted,
+                  'stroke-dasharray': '2 5', opacity: .8 }, svg);
+      T(X(15) + 5, py + 13, 'fim da 1ª quinzena', 'axis-t', 'start', svg);
+
+      if (proj) {
+        var pp = '';
+        for (var j = 0; j < proj.length; j++) pp += (j ? 'L' : 'M') + X(fim + j) + ' ' + Y(proj[j]);
+        N('path', { d: pp, stroke: C.accent, 'stroke-width': 2, fill: 'none',
+                    'stroke-dasharray': '3 5', opacity: .62, 'stroke-linecap': 'round' }, svg);
+        N('circle', { cx: X(nDias), cy: Y(totalProj), r: 3.5, fill: C.accent, opacity: .62 }, svg);
+        rot.push({ y: Y(totalProj), t: '≈ ' + fmt(totalProj), c: C.accent, s: 11, w: 600 });
+      }
+
+      /* rótulos da direita empilham quando as linhas chegam juntas ao dia 31 */
+      rot.sort(function (a, b) { return a.y - b.y; });
+      var GAP = 13, r1, r2;
+      for (r1 = 1; r1 < rot.length; r1++)
+        if (rot[r1].y - rot[r1 - 1].y < GAP) rot[r1].y = rot[r1 - 1].y + GAP;
+      for (r2 = rot.length - 1; r2 > 0; r2--)
+        if (rot[r2].y > py + ih) {
+          rot[r2].y = py + ih;
+          if (rot[r2].y - rot[r2 - 1].y < GAP) rot[r2 - 1].y = rot[r2].y - GAP;
+        }
+      rot.forEach(function (r) {
+        var tx = T(px + iw + 8, r.y, r.t, 'axis-t', 'start', svg);
+        tx.setAttribute('fill', r.c);
+        tx.setAttribute('font-size', r.s);
+        tx.setAttribute('font-weight', r.w);
+      });
+
+      var pc = '';
+      for (var c1 = 0; c1 < fim; c1++) pc += (c1 ? 'L' : 'M') + X(c1 + 1) + ' ' + Y(cur[c1]);
+      if (fim === 1) pc += 'L' + X(1) + ' ' + Y(cur[0]);
+      N('path', { d: pc, stroke: C.card, 'stroke-width': 6, fill: 'none',
+                  'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, svg);
+      N('path', { d: pc, stroke: C.accent, 'stroke-width': 2.75, fill: 'none',
+                  'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, svg);
+      N('circle', { cx: X(fim), cy: Y(hojeAcum), r: 5, fill: C.accent, stroke: C.card,
+                    'stroke-width': 2 }, svg);
+      var dy = (env && hojeAcum >= env.med[fim - 1]) ? -14 : 22;
+      var tv = T(X(fim) - 7, Y(hojeAcum) + dy, fmt(hojeAcum), 'val-t', 'end', svg);
+      tv.setAttribute('fill', C.accent);
+      T(X(fim) - 7, Y(hojeAcum) + dy + 13, ymLabel(ym) + ', dia ' + fim, 'axis-t', 'end', svg);
+
+      var ch = N('line', { x1: 0, y1: py, x2: 0, y2: py + ih, stroke: C.muted, opacity: 0 }, svg);
+      for (var hd = 1; hd <= DIAS; hd++) (function (d) {
+        var r = N('rect', { x: X(d) - passo / 2, y: py, width: passo, height: ih,
+                            fill: 'transparent' }, svg);
+        var linhas = [];
+        if (d <= fim) linhas.push('<b>' + fmt(cur[d - 1]) + '</b> acumulado');
+        else if (proj && d >= fim) linhas.push('<b>' + fmt(proj[d - fim]) + '</b> projetado');
+        if (env) {
+          linhas.push('mediana ' + fmt(env.med[d - 1]));
+          linhas.push('faixa ' + fmt(env.min[d - 1]) + ' – ' + fmt(env.max[d - 1]));
+          if (d <= fim) {
+            var df = cur[d - 1] - env.med[d - 1];
+            linhas.push('vs mediana ' + (df >= 0 ? '+' : '−') + fmt(Math.abs(df)));
+          }
+        }
+        var nd = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'][diaSemana(ym, d)];
+        r.dataset.tip = '<b>dia ' + d + ' · ' + nd + '</b><br><span>' + linhas.join('<br>') + '</span>';
+        r.addEventListener('mouseenter', function () {
+          ch.setAttribute('x1', X(d)); ch.setAttribute('x2', X(d)); ch.setAttribute('opacity', .45);
+        });
+        r.addEventListener('mouseleave', function () { ch.setAttribute('opacity', 0); });
+      })(hd);
+
+      alvo.innerHTML = '';
+      alvo.appendChild(svg);
+      bindTips(svg);
+
+      var leg = $('#psTermoLeg');
+      if (leg) leg.innerHTML =
+        '<span><i style="background:' + C.accent + '"></i>' + esc(ymLabel(ym)) + '</span>' +
+        (proj ? '<span><i style="background:' + C.accent + ';opacity:.6"></i>projeção</span>' : '') +
+        (env ? '<span><i style="background:' + C.gray + '"></i>mediana ' + esc(faixaLab) + '</span>' +
+               '<span><i style="background:' + C.gray + ';opacity:.3"></i>faixa mín.–máx.</span>' : '') +
+        (TERMO.meses && refs.length ? '<span><i style="background:' + C.gray +
+               ';opacity:.45"></i>meses individuais</span>' : '');
+
+      var cap = $('#psTermoCap');
+      if (cap) {
+        if (!refs.length) {
+          cap.innerHTML = 'Sem mês completo desde ' + ymLabel(TERMO_INICIO) +
+            ' para comparar — o gráfico mostra só ' + esc(ymLabel(ym)) + '.';
+        } else {
+          var noDia = refs.map(function (r) { return fmt(r.acum[fim - 1]); }).join(' · ');
+          cap.innerHTML = 'No dia ' + fim + ', ' + esc(ymLabel(ym)) + ' está em <b>' + fmt(hojeAcum) + '</b>' +
+            (env ? ', ' + (hojeAcum >= env.med[fim - 1] ? 'acima' : 'abaixo') + ' da mediana' : '') +
+            ' — ' + esc(faixaLab) + ' marcavam ' + noDia + ' neste mesmo dia.' +
+            (refs.length < 2 ? ' Com menos de dois meses de referência, faixa e mediana ficam ocultas.' : '');
+        }
+      }
+
+      var tw = $('#psTermoTab');
+      if (tw) {
+        if (!TERMO.tabela) tw.innerHTML = '';
+        else {
+          var th = '<table class="placar"><thead><tr><th>Dia</th><th class="num">' + esc(ymLabel(ym)) + '</th>' +
+            (env ? '<th class="num">Mediana</th><th class="num">Mín.</th><th class="num">Máx.</th><th class="num">Dif.</th>' : '') +
+            '</tr></thead><tbody>';
+          for (var td = 1; td <= nDias; td++) {
+            var cel = td <= fim ? fmt(cur[td - 1])
+              : (proj && td >= fim ? '<span style="color:var(--muted)">' + fmt(proj[td - fim]) + '</span>' : '—');
+            th += '<tr><td>' + td + '</td><td class="num">' + cel + '</td>';
+            if (env) {
+              var dif = td <= fim ? cur[td - 1] - env.med[td - 1] : null;
+              th += '<td class="num">' + fmt(env.med[td - 1]) + '</td>' +
+                    '<td class="num">' + fmt(env.min[td - 1]) + '</td>' +
+                    '<td class="num">' + fmt(env.max[td - 1]) + '</td>' +
+                    '<td class="num">' + (dif === null ? '—' : (dif >= 0 ? '+' : '−') + fmt(Math.abs(dif))) + '</td>';
+            }
+            th += '</tr>';
+          }
+          tw.innerHTML = th + '</tbody></table>';
+        }
+      }
+
+      /* o gráfico é largo; no celular ele desliza dentro do card */
+      if (window.__rolarLargos) window.__rolarLargos();
     }
-    for (var d4 = 1; d4 <= fim; d4++) {
-      var r2 = N('rect', { x: x(d4) - 10, y: py, width: 20, height: h - py - pb, fill: 'transparent' }, svg);
-      r2.dataset.tip = '<b>' + d4 + '/' + ymLabel(ym).split('/')[0] + ' — ' + fN(acum[d4 - 1]) + ' acumuladas</b><br><span>no dia: ' + fN(porDia[d4] || 0) + '</span>';
+
+    function marca() {
+      var a = $('#tmN'), b = $('#tmV');
+      if (a) a.setAttribute('aria-selected', TERMO.medida === 'n');
+      if (b) b.setAttribute('aria-selected', TERMO.medida === 'v');
     }
-    $('#psCurva').appendChild(svg); bindTips(svg);
+    var bN = $('#tmN'), bV = $('#tmV');
+    if (bN) bN.onclick = function () { TERMO.medida = 'n'; marca(); desenhar(); };
+    if (bV) bV.onclick = function () { TERMO.medida = 'v'; marca(); desenhar(); };
+    ['meses', 'proj', 'tabela'].forEach(function (k) {
+      var n = $('#tm_' + k);
+      if (!n) return;
+      n.checked = TERMO[k];
+      n.onchange = function () { TERMO[k] = n.checked; desenhar(); };
+    });
+    marca();
+    desenhar();
   })();
 
   /* heatmap 8 semanas × dia da semana */
@@ -1123,6 +1392,7 @@ window.__renderEU = function (dados) {
       s.style.setProperty('--wnat', w + 'px');
     });
   }
+  window.__rolarLargos = rolarLargos; /* o termômetro redesenha sozinho ao trocar controle */
   ['__renderEU', '__renderPS'].forEach(function (nome) {
     var orig = window[nome];
     if (typeof orig !== 'function') return;
