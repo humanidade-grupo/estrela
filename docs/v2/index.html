@@ -99,6 +99,29 @@
   .chk{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink2);cursor:pointer;
         background:var(--card2);border:1px solid var(--edge);border-radius:9px;padding:5px 10px}
   .chk input{accent-color:var(--accent);margin:0}
+
+  /* ---------- expandir gráfico ----------
+     Um botão por card que tenha gráfico. Abrir NAO move nada de lugar: o SVG
+     ja e width:100%, entao basta o card ocupar a tela que o desenho cresce
+     junto — e tooltip e crosshair seguem ligados, porque nenhum no saiu do
+     DOM. Clonar o SVG teria perdido os listeners; mover, teria quebrado a
+     volta. z-index 65 e deliberado: acima do selo (60) e ABAIXO do tooltip
+     (70), senao a dica sumiria atras do proprio grafico expandido. */
+  .btexp{position:absolute;top:9px;right:10px;z-index:2;display:inline-flex;align-items:center;
+        gap:5px;background:var(--card2);border:1px solid var(--edge);color:var(--ink2);
+        border-radius:8px;padding:4px 8px;font:inherit;font-size:11px;cursor:pointer;
+        opacity:.5;transition:opacity .15s}
+  .card:hover .btexp,.btexp:hover,.btexp:focus-visible{opacity:1}
+  .btexp svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round}
+  .card.expandido{position:fixed;inset:0;z-index:65;margin:0;border-radius:0;border:0;
+        overflow:auto;padding:52px 20px 28px;background:var(--bg)}
+  .card.expandido .btexp{position:fixed;top:14px;right:16px;opacity:1}
+  body.expandindo{overflow:hidden}
+  @media(max-width:640px){
+    .btexp{top:7px;right:8px;padding:4px 7px}
+    .btexp .rot{display:none}
+    .card.expandido{padding:48px 12px 24px}
+  }
   .legend i{width:9px;height:9px;border-radius:3px;display:inline-block;margin-right:5px;vertical-align:-1px}
 
   .statuschip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;border-radius:8px;padding:4px 10px}
@@ -1392,6 +1415,52 @@ window.__renderEU = function (dados) {
       s.style.setProperty('--wnat', w + 'px');
     });
   }
+  /* ---------- expandir gráfico em tela cheia ----------
+     Vale para os dois dashboards. O gatilho e um botao, e nao o clique no
+     proprio desenho: no celular o toque ja e o que abre a dica do dia, e os
+     dois gestos brigariam. Todo card com svg[viewBox] ganha o botao — dentro
+     dos grids so ha grafico com viewBox, entao nao pega icone por engano. */
+  var EXP_ABRIR = '<svg viewBox="0 0 24 24"><path d="M9 3H3v6"/><path d="M15 21h6v-6"/>' +
+        '<path d="M3 3l7 7"/><path d="M21 21l-7-7"/></svg><span class="rot">expandir</span>';
+  var EXP_FECHAR = '<svg viewBox="0 0 24 24"><path d="M4 10h6V4"/><path d="M20 14h-6v6"/>' +
+        '<path d="M10 10L3 3"/><path d="M14 14l7 7"/></svg><span class="rot">fechar</span>';
+
+  function fecharExpandido() {
+    var c = document.querySelector('.card.expandido');
+    document.body.classList.remove('expandindo');
+    if (!c) return;
+    c.classList.remove('expandido');
+    var b = c.querySelector('.btexp');
+    if (b) { b.innerHTML = EXP_ABRIR; b.setAttribute('aria-label', 'Expandir gráfico'); }
+  }
+
+  function ligarExpandir() {
+    if (!document.querySelector('.card.expandido')) document.body.classList.remove('expandindo');
+    var cards = document.querySelectorAll('#gridEU .card, #gridPS .card');
+    Array.prototype.forEach.call(cards, function (card) {
+      if (card.querySelector('.btexp')) return;
+      if (!card.querySelector('svg[viewBox]')) return;
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'btexp'; b.innerHTML = EXP_ABRIR;
+      b.setAttribute('aria-label', 'Expandir gráfico');
+      b.onclick = function (ev) {
+        ev.stopPropagation();
+        var aberto = card.classList.contains('expandido');
+        fecharExpandido();
+        if (aberto) return;
+        card.classList.add('expandido');
+        document.body.classList.add('expandindo');
+        b.innerHTML = EXP_FECHAR;
+        b.setAttribute('aria-label', 'Fechar');
+        card.scrollTop = 0;
+      };
+      card.appendChild(b);
+    });
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' || e.key === 'Esc') fecharExpandido();
+  });
+
   window.__rolarLargos = rolarLargos; /* o termômetro redesenha sozinho ao trocar controle */
   ['__renderEU', '__renderPS'].forEach(function (nome) {
     var orig = window[nome];
@@ -1399,6 +1468,7 @@ window.__renderEU = function (dados) {
     window[nome] = function () {
       var r = orig.apply(this, arguments);
       try { rolarLargos(); } catch (e) { console.error('rolarLargos:', e); }
+      try { ligarExpandir(); } catch (e) { console.error('ligarExpandir:', e); }
       return r;
     };
   });
