@@ -4,7 +4,7 @@
    moldura, servida de docs/v2/ (mesma origem, rede primeiro).
    Estratégia: rede primeiro (pega versão nova quando online), cache como
    reserva offline. A cada deploy, bumpar a versão em CACHE. */
-const CACHE = 'estrela-painel-260823-1';
+const CACHE = 'estrela-painel-260823-2';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./'])).then(() => self.skipWaiting()));

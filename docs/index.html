@@ -464,6 +464,11 @@ align-items:center;gap:3px;cursor:pointer;min-width:0}
         <tfoot id="psTfoot"></tfoot>
       </table>
     </div>
+    <!-- Explica, quando for o caso, por que a coluna Meta não fecha na conta:
+         o TOTAL é a meta OFICIAL e as linhas somam mais que ela. Sem esta nota
+         a tabela parece ter erro de soma, e número que parece errado é número
+         em que ninguém confia. Preenchida no render(). -->
+    <p class="note" id="psMetaRodape" style="display:none"></p>
   </div>
 
   <div class="card">
@@ -1395,25 +1400,48 @@ function render(){
     '<td><span class="farol f-'+r.ritmo+'"></span></td></tr>'
   ).join('') || '<tr><td colspan="11" class="muted">Sem vendas neste mês.</td></tr>';
 
-  /* O TOTAL da coluna "Meta" é a SOMA DA COLUNA. Parece óbvio e não era: até
-     23/08 estas duas células traziam o DESAFIO, e com isso a coluna significava
-     duas coisas na mesma tabela — meta de cada um nas linhas, desafio do time no
-     total. Em agosto isso punha três números diferentes ali: as linhas somavam
-     84, a meta oficial era 80 e o TOTAL mostrava o desafio.
-     O sintoma que denunciou foi outro: como `desafio` cai em 0 quando o mês não
-     tem `meta.desafio` na Config, o TOTAL simplesmente sumia de julho para trás,
-     mesmo com meta.vendedor preenchida em todos eles.
-     O oficial e o desafio continuam na tela onde sempre estiveram — o KPI
-     "% meta oficial", o traço na barra e a nota do #psMetaNota. */
+  /* O TOTAL da coluna "Meta" é a META OFICIAL do mês, da chave
+     `meta.oficial.AAAA-MM` na Config. Decidido em 23/08, e as duas alternativas
+     que ele NÃO é merecem ficar escritas, porque as duas parecem certas:
+
+     · NÃO é a soma da coluna. A soma das metas individuais passa da oficial de
+       propósito — em agosto, 6×14=84 contra 80. A folga é para o time mirar
+       acima do que precisa entregar, e é decisão de gestão, não arredondamento.
+       Somar a coluna faria a tela cobrar 84 quando o compromisso é 80.
+     · NÃO é o desafio, que era o que estava aqui até hoje. `desafio` cai em 0
+       quando o mês não tem `meta.desafio` na Config, e por isso o TOTAL sumia de
+       julho para trás mesmo com meta.vendedor preenchida em todos esses meses.
+       O desafio tem lugar próprio: o KPI de Jazigos e o #psMetaNota.
+
+     A consequência é que a coluna não fecha na conta, de propósito — e é para
+     isso que serve o #psMetaRodape logo abaixo. Tabela cuja soma não bate sem
+     explicação é tabela em que ninguém confia. */
   const somaMeta = arr.reduce((a, r) => a + (r.meta || 0), 0);
 
   $('#psTfoot').innerHTML =
     '<tr><td></td><td><b>TOTAL</b></td><td class="num"><b>'+totJaz+'</b></td>'+
     '<td class="num">'+fMi(totRec)+'</td><td class="num">'+fMi(tm)+'</td>'+
-    '<td class="num">'+(somaMeta||'—')+'</td>'+
-    '<td class="num">'+(somaMeta?Math.round(totJaz/somaMeta*100)+'%':'—')+'</td>'+
+    '<td class="num">'+(oficial||'—')+'</td>'+
+    '<td class="num">'+(oficial?Math.round(totJaz/oficial*100)+'%':'—')+'</td>'+
     '<td class="num">'+fN(mediaDia,2)+'</td><td class="num">'+tend+'</td>'+
     '<td class="num">'+fN(descMedio,1)+'%</td><td></td></tr>';
+
+  /* A nota só aparece quando há o que explicar. Nota fixa que repete o óbvio
+     todo mês deixa de ser lida — e aí, no mês em que a diferença for para o
+     outro lado, ninguém repara. */
+  const rodape = $('#psMetaRodape');
+  if (oficial && somaMeta && somaMeta !== oficial){
+    const dif = somaMeta - oficial;
+    rodape.style.display = '';
+    rodape.innerHTML = 'O <b>TOTAL</b> é a meta oficial do mês (<b>'+oficial+'</b>), '
+      + 'que é o compromisso. As metas individuais somam <b>'+somaMeta+'</b>'
+      + (dif > 0
+          ? ' — os <b>'+dif+'</b> a mais são folga proposital, para o time mirar acima do que precisa entregar. A coluna não fecha na conta de propósito.'
+          : ' — <b>'+(-dif)+'</b> abaixo da oficial, ou seja, falta meta distribuída para cobrir o mês.');
+  } else {
+    rodape.style.display = 'none';
+    rodape.innerHTML = '';
+  }
 
   /* ---- equilíbrio do time ---- */
   const js = arr.filter(r=>r.meta>0 || r.jaz>0).map(r=>r.jaz);
