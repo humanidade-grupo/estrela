@@ -1395,11 +1395,23 @@ function render(){
     '<td><span class="farol f-'+r.ritmo+'"></span></td></tr>'
   ).join('') || '<tr><td colspan="11" class="muted">Sem vendas neste mês.</td></tr>';
 
+  /* O TOTAL da coluna "Meta" é a SOMA DA COLUNA. Parece óbvio e não era: até
+     23/08 estas duas células traziam o DESAFIO, e com isso a coluna significava
+     duas coisas na mesma tabela — meta de cada um nas linhas, desafio do time no
+     total. Em agosto isso punha três números diferentes ali: as linhas somavam
+     84, a meta oficial era 80 e o TOTAL mostrava o desafio.
+     O sintoma que denunciou foi outro: como `desafio` cai em 0 quando o mês não
+     tem `meta.desafio` na Config, o TOTAL simplesmente sumia de julho para trás,
+     mesmo com meta.vendedor preenchida em todos eles.
+     O oficial e o desafio continuam na tela onde sempre estiveram — o KPI
+     "% meta oficial", o traço na barra e a nota do #psMetaNota. */
+  const somaMeta = arr.reduce((a, r) => a + (r.meta || 0), 0);
+
   $('#psTfoot').innerHTML =
     '<tr><td></td><td><b>TOTAL</b></td><td class="num"><b>'+totJaz+'</b></td>'+
     '<td class="num">'+fMi(totRec)+'</td><td class="num">'+fMi(tm)+'</td>'+
-    '<td class="num">'+(desafio||'—')+'</td>'+
-    '<td class="num">'+(desafio?Math.round(totJaz/desafio*100)+'%':'—')+'</td>'+
+    '<td class="num">'+(somaMeta||'—')+'</td>'+
+    '<td class="num">'+(somaMeta?Math.round(totJaz/somaMeta*100)+'%':'—')+'</td>'+
     '<td class="num">'+fN(mediaDia,2)+'</td><td class="num">'+tend+'</td>'+
     '<td class="num">'+fN(descMedio,1)+'%</td><td></td></tr>';
 
