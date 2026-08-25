@@ -1590,6 +1590,40 @@ window.__renderEU = function (dados) {
   }
   function tokenRuim(j) { return !j || !j.error || /token/i.test(String(j.error)); }
 
+  /* SINCRONIZAR DE VERDADE — só o Parque precisa (24/08/2026). Mesma razão e
+     mesmo desenho do painel de fora: com `painel.fonte_vendas = ambas` os
+     números do Parque vêm do CRM Facilita, e o `&sync=1` não busca lá. Quem
+     busca é esta rota, que roda as três etapas dentro do Cofre. ~1 min na
+     rodada incremental; o teto de 5 min é para o dia com atraso acumulado. */
+  function sincronizarNoCofre(token) {
+    passo('buscando as vendas no Facilita…');
+    return comPrazo(API + '?token=' + encodeURIComponent(token) + '&app=sync&fn=rodar',
+                    300000, 'A sincronização');
+  }
+
+  /* Entende as duas respostas: a nova, por empresa, e a antiga, de uma só. */
+  function recadoSync(r, emp) {
+    var nome = (emp === 'ps') ? 'Parque da Saudade' : 'Estrela Urbanidade';
+    if (!r) return null;
+    if (r.empresas) {
+      if (!r.empresas.length) {
+        return { txt: '⚠ Não rodei agora — <b>' + esc(r.motivo) +
+                      '</b>. A tela mostra a última importação boa.', bom: false };
+      }
+      var partes = r.empresas.map(function (e) {
+        return e.erro ? '<b>' + esc(e.nome) + '</b> falhou: ' + esc(e.erro)
+                      : '<b>' + esc(e.nome) + '</b> ' + esc(e.resumo || 'ok');
+      });
+      var seg = r.duracao_ms ? ' · ' + Math.round(r.duracao_ms / 1000) + 's' : '';
+      return { txt: (r.ok ? '✓ Sincronizado — ' : '⚠ Sincronizado com falha — ') +
+                    partes.join(' · ') + seg, bom: !!r.ok };
+    }
+    if (r.feito)   return { txt: '✓ <b>' + nome + '</b> importado agora — ' + esc(r.resumo || ''), bom: true };
+    if (r.recente) return { txt: '✓ <b>' + nome + '</b> já estava atualizado' + (r.motivo ? ' (' + esc(r.motivo) + ')' : ''), bom: true };
+    return { txt: '⚠ Não consegui importar o <b>' + nome + '</b>: ' + esc(String(r.motivo || '?')) +
+                  '. A tela mostra a última importação boa.', bom: false };
+  }
+
   function ligarRecarregar() {
     var bt = document.getElementById('btRec');
     if (!bt) return;
@@ -1597,22 +1631,30 @@ window.__renderEU = function (dados) {
       var token = localStorage.getItem(CHAVE_TOKEN);
       if (!token) { location.reload(); return; }
       bt.disabled = true; bt.classList.add('girando');
-      var rot = bt.querySelector('.rot'); if (rot) rot.textContent = 'buscando…';
+      var rot = bt.querySelector('.rot');
       var emp = document.body.classList.contains('emp-ps') ? 'ps' : 'eu';
-      buscar(token, emp).then(function (j) {
-        if (!j || !j.ok) throw new Error((j && j.error) || 'resposta sem dado');
-        try { localStorage.setItem(CHAVE_CACHE, JSON.stringify(j)); } catch (e) {}
-        var s = (emp === 'ps') ? (j.ps && j.ps.sync) : j.sync;
-        subir(j, false);
-        bt.disabled = false; bt.classList.remove('girando'); if (rot) rot.textContent = 'Atualizar';
-        var nome = emp === 'ps' ? 'Parque da Saudade' : 'Estrela Urbanidade';
-        if (s && (s.feito || s.recente)) {
-          selo((s.feito ? '✓ <b>' + nome + '</b> importado agora — ' + esc(s.resumo || '') : '✓ <b>' + nome + '</b> já estava atualizado' + (s.motivo ? ' (' + esc(s.motivo) + ')' : '')), false);
-          setTimeout(function () { atualizarSelo(emp); }, 8000);
-        } else if (s) {
-          selo('⚠ Não consegui importar o <b>' + nome + '</b>: ' + esc(String(s.motivo || '?')) + '. A tela mostra a última importação boa.', true);
-        }
-      }).catch(function (e) {
+      var noParque = (emp === 'ps');
+      if (rot) rot.textContent = noParque ? 'sincronizando…' : 'buscando…';
+
+      /* Um botão só, que sabe onde está: na Estrela a fonte é planilha e o
+         &sync=1 resolve em segundos; no Parque a fonte é o CRM e quem busca é
+         a rota de sincronização. Depois dela a tela relê SEM &sync=1 — a
+         importação já aconteceu. */
+      (noParque ? sincronizarNoCofre(token) : Promise.resolve(null))
+        .then(function (sync) {
+          return buscar(token, noParque ? null : emp).then(function (j) {
+            if (!j || !j.ok) throw new Error((j && j.error) || 'resposta sem dado');
+            try { localStorage.setItem(CHAVE_CACHE, JSON.stringify(j)); } catch (e) {}
+            var s = noParque ? sync : j.sync;
+            subir(j, false);
+            bt.disabled = false; bt.classList.remove('girando'); if (rot) rot.textContent = 'Atualizar';
+            var rc = recadoSync(s, emp);
+            if (rc) {
+              selo(rc.txt, !rc.bom);
+              if (rc.bom) setTimeout(function () { atualizarSelo(emp); }, 8000);
+            }
+          });
+        }).catch(function (e) {
         bt.disabled = false; bt.classList.remove('girando');
         if (rot) rot.textContent = 'falhou';
         selo('⚠ Não consegui atualizar: <b>' + esc(String(e.message || e)) + '</b>. Os números na tela são os de antes.', true);

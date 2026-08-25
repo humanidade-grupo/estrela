@@ -1624,6 +1624,11 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
     if (CARIMBO.copia) {
       selo('⚠ <b>Sem conexão com o Cofre.</b> Cópia local — ' + nome +
            ' atualizado em <b>' + quando + '</b>. Recarregue quando voltar o sinal.', true);
+    } else if (ps && CARIMBO.psErro) {
+      selo('⚠ <b>A última sincronização do Parque falhou</b>' +
+           (CARIMBO.psFalha ? ' em <b>' + CARIMBO.psFalha + '</b>' : '') + ': ' +
+           String(CARIMBO.psErro).replace(/[<>&]/g, '') +
+           ' · os números são os da importação de <b>' + quando + '</b>, que deu certo.', true);
     } else {
       var ms = ps ? CARIMBO.msPs : CARIMBO.msEu;
       selo('Cofre — ' + nome + ' · atualizado em <b>' + quando + '</b>' +
@@ -1647,6 +1652,13 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
       document.querySelectorAll('#tabsEU .tab,#bnav button').forEach(function (x) {
         x.setAttribute('aria-selected', x.dataset.p === 'pDash'); });
     }
+    /* O botão é um só e faz coisas diferentes nas duas metades — então ele
+       diz qual delas vai fazer, antes de a pessoa esperar por ela. */
+    var btr = document.getElementById('btRec');
+    if (btr) btr.title = ps
+      ? 'Busca as vendas no Facilita, atualiza o Cofre e relê a tela (~1 min)'
+      : 'Reimporta a planilha da Estrela e relê a tela';
+
     atualizarSelo(ps ? 'ps' : 'eu');
     window.scrollTo({ top: 0 });
   }
@@ -1668,25 +1680,41 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
       bt.disabled = true;
       bt.classList.add('girando');
       var rotulo = bt.querySelector('.rot');
-      if (rotulo) rotulo.textContent = 'buscando…';
 
-      /* Importa a empresa que está na tela, não as duas. O Cofre só se
-         atualiza sozinho de 4 em 4 horas: sem isto, o botão releria os mesmos
-         números de até quatro horas atrás com cara de novos. Sincronizar as
-         duas dobraria a espera para ver um número que está numa só. */
+      /* UM BOTÃO SÓ, QUE SABE ONDE ESTÁ (24/08/2026).
+
+         Continua importando a empresa que está na tela, não as duas — mas o
+         que "importar" significa depende da metade aberta, porque as fontes
+         são diferentes:
+
+           Estrela → a fonte é planilha. `&sync=1` de sempre, segundos.
+           Parque  → a fonte é o CRM Facilita. `&sync=1` ali não busca nada;
+                     quem busca é a rota ?app=sync&fn=rodar, ~1 minuto.
+
+         Fazer as duas metades esperarem pelo Facilita seria cobrar da Estrela
+         um minuto por um dado que ela nem lê. */
       var emp = document.body.classList.contains('emp-ps') ? 'ps' : 'eu';
+      var noParque = (emp === 'ps');
 
-      buscar(token, emp).then(function (j) {
-        if (!j || !j.ok) throw new Error((j && j.error) || 'resposta sem dado');
-        var s = (emp === 'ps') ? (j.ps && j.ps.sync) : j.sync;
-        try {
-          localStorage.setItem(CHAVE_CACHE, JSON.stringify(j));
-          sessionStorage.setItem(MARCA_FRESCA, '1');
-          // o recado da importação atravessa a recarga
-          sessionStorage.setItem(RECADO_SYNC, JSON.stringify({ emp: emp, s: s || null }));
-        } catch (e) {}
-        location.reload();
-      }).catch(function (e) {
+      if (rotulo) rotulo.textContent = noParque ? 'sincronizando…' : 'buscando…';
+
+      /* No Parque a ordem é importar PRIMEIRO e reler DEPOIS — e a releitura
+         vai sem `&sync=1`, porque a importação já aconteceu e repeti-la seria
+         pagar a espera duas vezes para o mesmo número. */
+      (noParque ? sincronizarNoCofre(token) : Promise.resolve(null))
+        .then(function (sync) {
+          return buscar(token, noParque ? null : emp).then(function (j) {
+            if (!j || !j.ok) throw new Error((j && j.error) || 'resposta sem dado');
+            var s = noParque ? sync : j.sync;
+            try {
+              localStorage.setItem(CHAVE_CACHE, JSON.stringify(j));
+              sessionStorage.setItem(MARCA_FRESCA, '1');
+              // o recado da importação atravessa a recarga
+              sessionStorage.setItem(RECADO_SYNC, JSON.stringify({ emp: emp, s: s || null }));
+            } catch (e) {}
+            location.reload();
+          });
+        }).catch(function (e) {
         bt.disabled = false;
         bt.classList.remove('girando');
         if (rotulo) rotulo.textContent = 'falhou';
@@ -1718,6 +1746,12 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
     // quanto o servidor levou, por rota — some da tela se a porta não mandar
     CARIMBO.msEu = dados.ms || 0;
     CARIMBO.msPs = (dados.ps && dados.ps.ms) || 0;
+    /* A OBSERVAÇÃO DO CARIMBO, e não só o valor (24/08). Em 24/08 a tela dizia
+       "atualizado às 15:12" enquanto a Config guardava a palavra FALHOU na
+       coluna Observação — que ninguém abre. Carimbo fresco de rodada morta é
+       pior que carimbo velho: o velho pelo menos chama atenção. */
+    CARIMBO.psErro  = (dados.ps && dados.ps.sync_erro) || '';
+    CARIMBO.psFalha = (dados.ps && dados.ps.sync_ultima_falha) || '';
 
     var pPS = document.getElementById('empPS'), pEU = document.getElementById('empEU');
     if (pPS) pPS.onclick = function () { trocarEmpresa('ps'); };
@@ -1743,15 +1777,9 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
       if (rec) {
         sessionStorage.removeItem(RECADO_SYNC);
         var o = JSON.parse(rec), r = o.s;
-        var nome = (o.emp === 'ps') ? 'Parque da Saudade' : 'Estrela Urbanidade';
-        var bom = !!(r && (r.feito || r.recente));
-        var txt;
-        if (!r) txt = '⚠ A porta não disse se importou. Os números podem ser os da última rodada.';
-        else if (r.feito) txt = '✓ <b>' + nome + '</b> importado agora — ' + r.resumo + ' no Cofre.';
-        else if (r.recente) txt = '✓ <b>' + nome + '</b> já estava atualizado (' + r.motivo + ').';
-        else txt = '⚠ Não consegui importar o <b>' + nome + '</b>: ' + String(r.motivo).replace(/[<>&]/g, '') +
-                   '. A tela mostra a última importação que deu certo.';
-        selo(txt, !bom);
+        var rec2 = recadoSync(r, o.emp);
+        var bom = rec2.bom;
+        selo(rec2.txt, !bom);
         setTimeout(function () {
           atualizarSelo(document.body.classList.contains('emp-ps') ? 'ps' : 'eu');
         }, 8000);
@@ -1820,6 +1848,60 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
         return eu;
       });
     });
+  }
+
+  /* SINCRONIZAR DE VERDADE — só o Parque precisa (24/08/2026).
+
+     Com `painel.fonte_vendas = ambas`, os números do Parque na tela vêm do CRM
+     Facilita. E o `&sync=1` do botão antigo NÃO buscava lá: o Parque_atualizar
+     devolvia um texto dizendo que quem importa é o gatilho. Ou seja, no Parque
+     o botão Atualizar era honesto e inútil ao mesmo tempo.
+
+     Esta rota roda as três etapas dentro do Cofre (Estrela · Parque · Facilita)
+     e responde o que aconteceu em cada uma. O prazo de 5 minutos existe porque
+     a busca no Facilita se auto-freia em ~40 requisições por minuto; na prática
+     a rodada incremental leva ~1 minuto (medido em 24/08: 20:55 → 20:56). O teto
+     é para o dia em que houver atraso acumulado. */
+  function sincronizarNoCofre(token) {
+    passo('buscando as vendas no Facilita…');
+    return comPrazo(API + '?token=' + encodeURIComponent(token) + '&app=sync&fn=rodar',
+                    300000, 'A sincronização');
+  }
+
+  function escapa(v) { return String(v == null ? '' : v).replace(/[<>&]/g, ''); }
+
+  /* O recado do botão, dito na tela. Entende as DUAS respostas possíveis:
+     a nova, da rota ?app=sync&fn=rodar, que vem por empresa; e a antiga, do
+     &sync=1 da Estrela, que fala de uma empresa só. Devolve { txt, bom }. */
+  function recadoSync(r, emp) {
+    var nome = (emp === 'ps') ? 'Parque da Saudade' : 'Estrela Urbanidade';
+
+    if (!r) {
+      return { txt: '⚠ A porta não disse se importou. Os números podem ser os da última rodada.',
+               bom: false };
+    }
+
+    // resposta nova: tem lista de etapas
+    if (r.empresas) {
+      if (!r.empresas.length) {
+        // recusa limpa: represa de 90s, ou outra rodada em andamento
+        return { txt: '⚠ Não rodei agora — <b>' + escapa(r.motivo) +
+                      '</b>. A tela mostra a última importação que deu certo.', bom: false };
+      }
+      var partes = r.empresas.map(function (e) {
+        if (e.erro) return '<b>' + escapa(e.nome) + '</b> falhou: ' + escapa(e.erro);
+        return '<b>' + escapa(e.nome) + '</b> ' + escapa(e.resumo || 'ok');
+      });
+      var seg = r.duracao_ms ? ' · ' + Math.round(r.duracao_ms / 1000) + 's' : '';
+      return { txt: (r.ok ? '✓ Sincronizado — ' : '⚠ Sincronizado com falha — ') +
+                    partes.join(' · ') + seg, bom: !!r.ok };
+    }
+
+    // resposta antiga: uma empresa
+    if (r.feito)   return { txt: '✓ <b>' + nome + '</b> importado agora — ' + escapa(r.resumo) + ' no Cofre.', bom: true };
+    if (r.recente) return { txt: '✓ <b>' + nome + '</b> já estava atualizado (' + escapa(r.motivo) + ').', bom: true };
+    return { txt: '⚠ Não consegui importar o <b>' + nome + '</b>: ' + escapa(r.motivo) +
+                  '. A tela mostra a última importação que deu certo.', bom: false };
   }
 
   /* A porta devolve {ok:false} para DUAS coisas muito diferentes: token errado
