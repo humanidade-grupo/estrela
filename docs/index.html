@@ -2025,6 +2025,18 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
     var f = document.getElementById(emp === 'ps' ? 'fExecPS' : 'fExecEU');
     if (f && !f.getAttribute('src')) f.setAttribute('src', 'v2/?embed=1&emp=' + emp);
   }
+
+  /* A MOLDURA NÃO VAI MAIS AO COFRE (24/08/2026).
+     Ela buscava por conta própria exatamente os dois números que esta página já
+     tinha em mãos: segunda ida ao servidor a cada clique na aba, segunda tela de
+     carregamento, e o texto "lendo a Estrela…" aparecendo por cima de uma
+     Estrela que já estava desenhada atrás. Agora ela avisa que nasceu
+     (`v2:pronto`) e recebe o dado daqui. O canal já existia — era por ele que
+     ela mandava a própria altura. */
+  function mandarDados(win) {
+    if (!win) return;
+    try { win.postMessage({ tipo: 'v2:dados', dados: window.__DADOS__ || null }, ORIGEM); } catch (e) {}
+  }
   document.addEventListener('click', function (ev) {
     var b = (ev.target && ev.target.closest) ? ev.target.closest('[data-p]') : null;
     if (!b) return;
@@ -2035,6 +2047,7 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
   window.addEventListener('message', function (ev) {
     if (ev.origin !== ORIGEM) return;
     var d = ev.data;
+    if (d && d.tipo === 'v2:pronto') { mandarDados(ev.source); return; }
     if (!d || d.tipo !== 'v2:altura') return;
     ['fExecEU', 'fExecPS'].forEach(function (id) {
       var x = document.getElementById(id);

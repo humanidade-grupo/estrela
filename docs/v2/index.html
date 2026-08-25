@@ -217,6 +217,15 @@
   body.embutido header.top{display:none}
   body.embutido .filters .seg{display:none}
   body.embutido .wrap{padding-top:10px}
+  /* Um botão só no painel, e ele mora FORA da moldura. O de dentro seria um
+     segundo Atualizar, com o mesmo nome e comportamento diferente. */
+  body.embutido #btRec{display:none}
+  /* O carimbo deixa de ser barra fixa e vira linha discreta no fim do conteúdo:
+     position:fixed dentro de moldura ancora na viewport da moldura, não na da
+     página — a barra ficava no lugar errado ou fora de vista. */
+  body.embutido #selo{position:static;background:none;border-top:0;backdrop-filter:none;
+        text-align:right;padding:10px 16px 2px;font-size:11px;opacity:.72}
+  body.embutido.tem-selo{padding-bottom:0}
 
   /* ---------- graficos largos no celular ----------
      Cada grafico tem a largura da prancheta cravada no codigo (720, 680,
@@ -1488,7 +1497,10 @@ window.__renderEU = function (dados) {
   }
 
   var carga = document.getElementById('carga');
-  function passo(t) { var p = document.getElementById('cargaPasso'); if (p) p.textContent = t; }
+  /* Embutida, esta página não busca nada — então não tem passo para narrar.
+     "lendo a Estrela…" por cima de uma Estrela já desenhada é pior que
+     silêncio: descreve trabalho que não está acontecendo. */
+  function passo(t) { if (EMBUTIDO) return; var p = document.getElementById('cargaPasso'); if (p) p.textContent = t; }
   function fecharCarga() { if (!carga) return; carga.style.opacity = '0'; setTimeout(function () { if (carga && carga.parentNode) carga.remove(); carga = null; }, 320); }
 
   function selo(texto, velho) {
@@ -1504,7 +1516,11 @@ window.__renderEU = function (dados) {
     var nome = ps ? 'Parque da Saudade' : 'Estrela Urbanidade';
     var quando = (ps ? CARIMBO.ps : CARIMBO.eu) || '(sem carimbo)';
     if (CARIMBO.copia) selo('⚠ <b>Sem conexão com o Cofre.</b> Cópia local — ' + nome + ' atualizado em <b>' + quando + '</b>.', true);
-    else {
+    else if (EMBUTIDO) {
+      /* Discreto de propósito: quem está aqui já leu de qual empresa é a aba e
+         já tem o selo do painel de fora. O que falta é só a hora da carga. */
+      selo('atualizado em <b>' + quando + '</b>');
+    } else {
       var ms = ps ? CARIMBO.msPs : CARIMBO.msEu;
       selo('v2 · Cofre — ' + nome + ' · atualizado em <b>' + quando + '</b>' + (ms ? ' · resposta em ' + (ms / 1000).toFixed(1) + 's' : ''));
     }
@@ -1706,6 +1722,32 @@ window.__renderEU = function (dados) {
 
   var token = null;
   try { token = localStorage.getItem(CHAVE_TOKEN); } catch (e) {}
+
+  /* EMBUTIDA: o dado vem da página de fora, não do Cofre.
+     Quem abre esta aba já está olhando uma tela montada com estes mesmos
+     números. Buscar de novo é pagar duas vezes pela mesma resposta — e fazer a
+     pessoa esperar por ela.
+     A rede continua sendo o plano B: se o pai não responder em 4s (moldura
+     aberta direto pela URL, ou painel de fora numa versão que não sabe
+     responder), esta página se vira sozinha como antes. Moldura em branco
+     seria pior que moldura lenta. */
+  if (EMBUTIDO) {
+    var atendida = false;
+    window.addEventListener('message', function (ev) {
+      if (ev.origin !== location.origin || atendida) return;
+      var d = ev.data;
+      if (!d || d.tipo !== 'v2:dados' || !d.dados) return;
+      atendida = true;
+      subir(d.dados, false);
+    });
+    try { parent.postMessage({ tipo: 'v2:pronto' }, location.origin); } catch (e) {}
+    setTimeout(function () { if (!atendida) { atendida = true; pelaRede(); } }, 4000);
+    return;
+  }
+
+  pelaRede();
+
+  function pelaRede() {
   if (!token) { portao(''); return; }
 
   buscar(token).then(function (j) {
@@ -1731,6 +1773,7 @@ window.__renderEU = function (dados) {
       'Não consegui falar com o Cofre e não há cópia neste aparelho.<br>' +
       '<span style="color:#64748b;font-size:13px">Verifique a conexão e recarregue.</span></div>';
   });
+  }
 })();
 </script>
 </body>
