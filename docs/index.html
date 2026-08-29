@@ -228,15 +228,18 @@ body.emp-ps .panel:not(.ps){display:none !important}
 body.emp-eu .panel.ps{display:none !important}
 #bnavPS{grid-template-columns:repeat(3,1fr)}
 
-/* Barra de estoque da M-19 — uma linha discreta abaixo do botão Atualizar.
+/* Barra de estoque da M-19 — discreta, na linha do seletor, à direita junto
+   do botão Atualizar (o margin-left:auto do .btnrec empurra os dois).
    Mesma rota pública que a home do Pocket (?app=estoque, sem token). Só existe
    na metade do Parque: a M-19 é jazigo, e a regra de rede de segurança acima
-   vale aqui também — na Estrela ela some, aconteça o que acontecer no JS. */
+   vale aqui também — na Estrela ela some, aconteça o que acontecer no JS.
+   A guarda [hidden] é obrigatória: display:flex de autor vence o
+   [hidden]{display:none} do navegador, e sem ela a barra nasceria à mostra. */
 body:not(.emp-ps) .barra-estoque{display:none !important}
-.barra-estoque{display:flex;align-items:center;justify-content:center;gap:14px;
-  margin:0 0 6px;padding:5px 10px;font-size:12px;line-height:1;
-  white-space:nowrap;overflow:hidden;color:var(--text-3);
-  border-bottom:1px solid var(--edge)}
+.barra-estoque[hidden]{display:none !important}
+.barra-estoque{display:inline-flex;align-items:center;gap:12px;
+  padding:0 2px;font-size:12px;line-height:1;
+  white-space:nowrap;color:var(--text-3)}
 .barra-estoque .be-quadra{font-weight:600;letter-spacing:.04em;color:var(--text-3)}
 .barra-estoque .be-item{display:inline-flex;align-items:center;gap:5px}
 .barra-estoque .be-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:0 0 auto}
@@ -245,6 +248,12 @@ body:not(.emp-ps) .barra-estoque{display:none !important}
 .barra-estoque .be-vermelho{background:var(--crit)}
 .barra-estoque b{font-weight:600;color:var(--text-2);font-variant-numeric:tabular-nums}
 .barra-estoque.be-cache{opacity:.55}   /* numero do aparelho, ainda nao confirmado pela rede */
+/* Celular: a linha do seletor não comporta os três botões e a barra — ela
+   quebra para a linha de baixo, ainda alinhada à direita, sob o Atualizar. */
+@media(max-width:640px){
+  .emps{flex-wrap:wrap}
+  .barra-estoque{flex-basis:100%;justify-content:flex-end;margin-top:2px}
+}
 
 /* barra de meta: preenchimento = realizado sobre o desafio; o traço é a meta oficial */
 .metabar{position:relative;height:16px;background:rgba(255,255,255,.06);
@@ -301,15 +310,15 @@ align-items:center;gap:3px;cursor:pointer;min-width:0}
   <button class="btnrec" id="btRec" type="button" title="Buscar os dados de novo no Cofre">
     <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>
     <span class="rot">Atualizar</span></button>
-</div>
-
-<!-- Barra de estoque M-19 (só na metade do Parque). Nasce escondida: se a
-     rota nao responder, ela simplesmente nao aparece. -->
-<div id="barraEstoque" class="barra-estoque" hidden aria-live="polite">
-  <span class="be-quadra">M-19</span>
-  <span class="be-item"><i class="be-dot be-verde"></i><b id="beDisp">–</b></span>
-  <span class="be-item"><i class="be-dot be-laranja"></i><b id="beRes">–</b></span>
-  <span class="be-item"><i class="be-dot be-vermelho"></i><b id="beVend">–</b></span>
+  <!-- Barra de estoque M-19 (só na metade do Parque), alinhada à direita
+       junto do Atualizar — o margin-left:auto do botão empurra os dois.
+       Nasce escondida: se a rota nao responder, ela simplesmente nao aparece. -->
+  <div id="barraEstoque" class="barra-estoque" hidden aria-live="polite">
+    <span class="be-quadra">M-19</span>
+    <span class="be-item"><i class="be-dot be-verde"></i><b id="beDisp">–</b></span>
+    <span class="be-item"><i class="be-dot be-laranja"></i><b id="beRes">–</b></span>
+    <span class="be-item"><i class="be-dot be-vermelho"></i><b id="beVend">–</b></span>
+  </div>
 </div>
 
 <!-- A aba Executivo é a porta de entrada das DUAS metades desde 29/08 —
