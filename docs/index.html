@@ -285,22 +285,24 @@ align-items:center;gap:3px;cursor:pointer;min-width:0}
     <span class="rot">Atualizar</span></button>
 </div>
 
+<!-- A aba Executivo é a porta de entrada das DUAS metades desde 29/08 —
+     por isso ela nasce selecionada aqui e é o destino do trocarEmpresa(). -->
 <div class="tabs" id="tabsPS" role="tablist">
-  <button class="tab" role="tab" aria-selected="true" data-p="pPS1" type="button">Mês</button>
+  <button class="tab" role="tab" aria-selected="false" data-p="pPS1" type="button">Mês</button>
   <button class="tab" role="tab" aria-selected="false" data-p="pPS2" type="button">Quebras</button>
-  <button class="tab" role="tab" aria-selected="false" data-p="pPSX" type="button">Executivo (v2)</button>
+  <button class="tab" role="tab" aria-selected="true" data-p="pPSX" type="button">Executivo</button>
 </div>
 
 <div class="tabs" id="tabsEU" role="tablist">
-  <button class="tab" role="tab" aria-selected="true" data-p="pDash" type="button">Dashboard</button>
+  <button class="tab" role="tab" aria-selected="false" data-p="pDash" type="button">Dashboard</button>
   <button class="tab" role="tab" aria-selected="false" data-p="pEst" type="button">Estoque</button>
   <button class="tab" role="tab" aria-selected="false" data-p="pVen" type="button">Vendas</button>
   <button class="tab" role="tab" aria-selected="false" data-p="pSin" type="button">Vendas × Estoque</button>
-  <button class="tab" role="tab" aria-selected="false" data-p="pEUX" type="button">Executivo (v2)</button>
+  <button class="tab" role="tab" aria-selected="true" data-p="pEUX" type="button">Executivo</button>
 </div>
 
 <!-- ================= DASHBOARD ================= -->
-<section class="panel on" id="pDash">
+<section class="panel" id="pDash">
   <p class="dashsub">Últimos 12 meses (jul/25–jun/26) × estoque à venda · foto 01/07/2026 + informados jun/26</p>
   <div class="hero">
     <div class="card">
@@ -425,8 +427,12 @@ align-items:center;gap:3px;cursor:pointer;min-width:0}
 </section>
 
 
-<!-- ================= EXECUTIVO v2 (Estrela) ================= -->
-<section class="panel" id="pEUX">
+<!-- ================= EXECUTIVO (Estrela) — aba de entrada, moldura v2 =================
+     Os chips escolhem em que mês TERMINA a janela de 12 meses da tela executiva.
+     Eles moram aqui fora (a moldura não repete controle que a página já tem) e a
+     escolha viaja por postMessage — o mesmo canal do dado e da altura. -->
+<section class="panel on" id="pEUX">
+  <div class="chips" id="euMesesX" style="margin:0 0 14px"></div>
   <iframe id="fExecEU" title="Visão executiva — Estrela Urbanidade" loading="lazy" style="width:100%;border:0;display:block;min-height:70vh"></iframe>
 </section>
 
@@ -507,27 +513,31 @@ align-items:center;gap:3px;cursor:pointer;min-width:0}
   </div>
 </section>
 
-<!-- ================= EXECUTIVO v2 (Parque) ================= -->
+<!-- ================= EXECUTIVO (Parque) — aba de entrada, moldura v2 =================
+     Os chips são o MESMO filtro de mês das abas Mês e Quebras (estado único,
+     ymAtivo): trocar o mês aqui troca lá, e vice-versa. A moldura recebe a
+     escolha por postMessage. -->
 <section class="panel ps" id="pPSX">
+  <div class="chips" id="psMesesX" style="margin:0 0 14px"></div>
   <iframe id="fExecPS" title="Visão executiva — Parque da Saudade" loading="lazy" style="width:100%;border:0;display:block;min-height:70vh"></iframe>
 </section>
 
 </div>
 
 <nav class="bnav" id="bnavPS">
-  <button type="button" data-p="pPS1" aria-selected="true">
+  <button type="button" data-p="pPS1" aria-selected="false">
     <svg viewBox="0 0 24 24"><path d="M3 20h18"/><path d="M7 20v-6"/><path d="M12 20V6"/><path d="M17 20v-9"/></svg>
     <span>Mês</span></button>
   <button type="button" data-p="pPS2" aria-selected="false">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6.4 6.4"/></svg>
     <span>Quebras</span></button>
-  <button type="button" data-p="pPSX" aria-selected="false">
+  <button type="button" data-p="pPSX" aria-selected="true">
     <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
     <span>Executivo</span></button>
 </nav>
 
 <nav class="bnav" id="bnav">
-  <button type="button" data-p="pDash" aria-selected="true">
+  <button type="button" data-p="pDash" aria-selected="false">
     <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
     <span>Dashboard</span></button>
   <button type="button" data-p="pEst" aria-selected="false">
@@ -539,7 +549,7 @@ align-items:center;gap:3px;cursor:pointer;min-width:0}
   <button type="button" data-p="pSin" aria-selected="false">
     <svg viewBox="0 0 24 24"><path d="M7 20V10"/><path d="M12 20V4"/><path d="M17 20v-7"/><path d="M3 20h18"/></svg>
     <span>V × E</span></button>
-  <button type="button" data-p="pEUX" aria-selected="false">
+  <button type="button" data-p="pEUX" aria-selected="true">
     <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
     <span>Executivo</span></button>
 </nav>
@@ -1202,6 +1212,38 @@ function renderNotas(){
     const li=document.createElement('li'); li.innerHTML=t; ul.appendChild(li); }); }
 }
 function renderAll(){renderDash();renderEst();renderVen();renderSin();}
+
+/* ---------- meses do Executivo (E/U) ----------
+   A tela executiva da Estrela é uma JANELA de 12 meses, não um mês isolado —
+   estes chips escolhem em que mês a janela termina (o padrão é o mês da última
+   venda, o mesmo que a moldura calcularia sozinha). O redesenho acontece
+   dentro da moldura v2; aqui só se guarda a escolha e se avisa por
+   postMessage, via window.__v2Mes. */
+(function(){
+  const box = $('#euMesesX'); if(!box) return;
+  const MA=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  const yms=[...new Set(V.filter(v=>v.ym).map(v=>v.ym))].sort((a,b)=>b-a).slice(0,12);
+  if(!yms.length) return;
+  window.__euYmAtivo = yms.includes(window.__euYmAtivo) ? window.__euYmAtivo : yms[0];
+  box.innerHTML='';
+  const lb=document.createElement('span');
+  lb.className='flabel'; lb.style.cssText='align-self:center;margin:0 6px 0 0';
+  lb.textContent='Janela de 12 meses até:';
+  box.appendChild(lb);
+  yms.forEach(ym=>{
+    const c=document.createElement('button');
+    c.type='button'; c.className='chip';
+    c.textContent=MA[ym%100-1]+'/'+String(Math.floor(ym/100)).slice(2);
+    c.setAttribute('aria-pressed', ym===window.__euYmAtivo);
+    c.onclick=()=>{
+      window.__euYmAtivo=ym;
+      box.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed', x===c));
+      if(window.__v2Mes) window.__v2Mes('eu', ym);
+    };
+    box.appendChild(c);
+  });
+})();
+
 renderNotas();
 renderAll();
 let _rt;window.addEventListener('resize',()=>{clearTimeout(_rt);_rt=setTimeout(renderAll,250);});
@@ -1260,6 +1302,15 @@ function diasUteis(ano, mes){
 
 /* ---------- estado ---------- */
 let ymAtivo = D.meses.length ? D.meses[0].ym : null;
+/* espelho do mês ativo para fora do módulo: a moldura do Executivo recebe o
+   mês na carga (mandarDados) e a cada troca (__v2Mes) — um estado só para as
+   três abas do Parque e para a tela executiva */
+window.__psYmAtivo = ymAtivo;
+function trocarMes(ym){
+  ymAtivo = ym; window.__psYmAtivo = ym;
+  render();
+  if (window.__v2Mes) window.__v2Mes('ps', ym);
+}
 const amDe = ym => String(ym).slice(0,4) + '-' + String(ym).slice(4);
 
 function montarChipsMes(el){
@@ -1269,7 +1320,7 @@ function montarChipsMes(el){
     const c = document.createElement('button');
     c.type='button'; c.className='chip'; c.textContent = m.rotulo;
     c.setAttribute('aria-pressed', m.ym===ymAtivo);
-    c.onclick = ()=>{ ymAtivo = m.ym; render(); };
+    c.onclick = ()=>{ trocarMes(m.ym); };
     box.appendChild(c);
   });
 }
@@ -1310,7 +1361,7 @@ function render(){
   }
   if (D.erro) return;
 
-  montarChipsMes('#psMeses'); montarChipsMes('#psMeses2');
+  montarChipsMes('#psMeses'); montarChipsMes('#psMeses2'); montarChipsMes('#psMesesX');
 
   const mes = D.meses.filter(m=>m.ym===ymAtivo)[0];
   const vendas = D.vendas.filter(v=>v.ym===ymAtivo);
@@ -1469,7 +1520,7 @@ function render(){
     '<i style="height:'+Math.max(3, Math.round((cont[h.ym]||0)/topo*ALT))+'px"></i>'+
     '<span>'+h.rotulo.split('/')[0]+'</span></div>').join('');
   document.querySelectorAll('#psHist>div').forEach(d=>{
-    d.onclick = ()=>{ ymAtivo = Number(d.dataset.ym); render(); };
+    d.onclick = ()=>{ trocarMes(Number(d.dataset.ym)); };
   });
 
   /* ---- quebras ---- */
@@ -1644,14 +1695,19 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
     if (a) a.setAttribute('aria-selected', ps);
     if (b) b.setAttribute('aria-selected', !ps);
     try { localStorage.setItem(CHAVE_EMP, ps ? 'ps' : 'eu'); } catch (e) {}
-    // cada metade volta para a própria primeira aba, senão a pessoa troca de
-    // empresa e cai numa aba que não é a de entrada daquele negócio
-    if (ps && window.__psIrPara) { window.__psIrPara('pPS1'); }
+    // cada metade volta para a própria porta de entrada — a aba Executivo
+    // (29/08; antes eram Mês e Dashboard) — senão a pessoa troca de empresa
+    // e cai numa aba que não é a de entrada daquele negócio
+    if (ps && window.__psIrPara) { window.__psIrPara('pPSX'); }
     if (!ps) {
-      document.querySelectorAll('.panel:not(.ps)').forEach(function (p) { p.classList.toggle('on', p.id === 'pDash'); });
+      document.querySelectorAll('.panel:not(.ps)').forEach(function (p) { p.classList.toggle('on', p.id === 'pEUX'); });
       document.querySelectorAll('#tabsEU .tab,#bnav button').forEach(function (x) {
-        x.setAttribute('aria-selected', x.dataset.p === 'pDash'); });
+        x.setAttribute('aria-selected', x.dataset.p === 'pEUX'); });
     }
+    // a aba de entrada é a da moldura: montar já, sem esperar clique. Guardado
+    // porque no arranque via cache (MARCA_FRESCA) este código roda antes de o
+    // script da moldura existir — lá, o próprio script monta ao nascer.
+    if (window.__v2Montar) window.__v2Montar(ps ? 'ps' : 'eu');
     /* O botão é um só e faz coisas diferentes nas duas metades — então ele
        diz qual delas vai fazer, antes de a pessoa esperar por ela. */
     var btr = document.getElementById('btRec');
@@ -2010,13 +2066,15 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
 })();
 </script>
 <script>
-/* ---------- aba Executivo (v2) ----------
+/* ---------- aba Executivo (moldura v2) ----------
    A tela executiva e' um documento inteiro, com camada de dados propria: ~15
    funcoes e 11 classes tem o mesmo nome das daqui (buscar, portao, .wrap,
    .card...). Por isso ela entra numa MOLDURA e nao colada neste corpo — cada
    uma fica no seu escopo e nenhuma pisa na outra.
-   A moldura so carrega quando alguem abre a aba: quem nunca clicar nao paga
-   uma segunda ida ao Cofre. A empresa vai daqui pra dentro, pela URL.
+   Desde 29/08 a aba e' a PORTA DE ENTRADA das duas metades, entao a moldura
+   monta ja' no arranque (via trocarEmpresa -> __v2Montar) — e isso nao custa
+   nada: desde 24/08 ela recebe o dado daqui por postMessage, sem ir ao Cofre.
+   A empresa vai daqui pra dentro, pela URL.
    Ligado por addEventListener de proposito: os .onclick das abas ja tem dono
    (irPara / irParaPS) e nao podem ser sobrescritos. */
 (function () {
@@ -2025,6 +2083,17 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
     var f = document.getElementById(emp === 'ps' ? 'fExecPS' : 'fExecEU');
     if (f && !f.getAttribute('src')) f.setAttribute('src', 'v2/?embed=1&emp=' + emp);
   }
+  window.__v2Montar = montar;
+
+  /* O mes escolhido nos chips (fora da moldura) vai para dentro pelo mesmo
+     canal do dado e da altura. Moldura ainda nao montada nao precisa do aviso:
+     o mes atual viaja junto do dado, em mandarDados. */
+  window.__v2Mes = function (emp, ym) {
+    var f = document.getElementById(emp === 'ps' ? 'fExecPS' : 'fExecEU');
+    if (f && f.getAttribute('src') && f.contentWindow) {
+      try { f.contentWindow.postMessage({ tipo: 'v2:mes', emp: emp, ym: ym }, ORIGEM); } catch (e) {}
+    }
+  };
 
   /* A MOLDURA NÃO VAI MAIS AO COFRE (24/08/2026).
      Ela buscava por conta própria exatamente os dois números que esta página já
@@ -2035,7 +2104,8 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
      ela mandava a própria altura. */
   function mandarDados(win) {
     if (!win) return;
-    try { win.postMessage({ tipo: 'v2:dados', dados: window.__DADOS__ || null }, ORIGEM); } catch (e) {}
+    try { win.postMessage({ tipo: 'v2:dados', dados: window.__DADOS__ || null,
+                            ymPS: window.__psYmAtivo || null, ymEU: window.__euYmAtivo || null }, ORIGEM); } catch (e) {}
   }
   document.addEventListener('click', function (ev) {
     var b = (ev.target && ev.target.closest) ? ev.target.closest('[data-p]') : null;
@@ -2054,6 +2124,18 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
       if (x && x.contentWindow === ev.source) x.style.height = Math.max(400, d.altura) + 'px';
     });
   });
+
+  /* Arranque via cache do botão Atualizar (MARCA_FRESCA): subir() e
+     trocarEmpresa() rodam de forma síncrona ANTES deste script — o guardado
+     __v2Montar de lá ainda não existia. Se a aba de entrada já está aberta e o
+     dado já está em mãos, monta agora. Sem dado (arranque normal, assíncrono),
+     quem monta é o trocarEmpresa de depois da carga — montar antes faria a
+     moldura esperar 4s pelo pai e ir sozinha ao Cofre. */
+  if (window.__DADOS__) {
+    var empIni = document.body.classList.contains('emp-ps') ? 'ps' : 'eu';
+    var pIni = document.getElementById(empIni === 'ps' ? 'pPSX' : 'pEUX');
+    if (pIni && pIni.classList.contains('on')) montar(empIni);
+  }
 })();
 </script>
 </body>

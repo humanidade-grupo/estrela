@@ -1,11 +1,11 @@
 /* Estrela Urbanidade — Painel Comercial
    Service worker: instalação PWA + reserva offline.
-   Atualizado em: 24/08/2026 — o botão Atualizar sincroniza de verdade na
-   metade do Parque, e a moldura do Executivo recebe o dado do painel de fora
-   em vez de buscar de novo no Cofre.
+   Atualizado em: 29/08/2026 — a aba Executivo (sem o "v2" no rótulo) virou a
+   porta de entrada das duas metades, com os filtros de mês logo abaixo das
+   abas: no Parque escolhem o mês da tela; na Estrela, o fim da janela de 12m.
    Estratégia: rede primeiro (pega versão nova quando online), cache como
    reserva offline. A cada deploy, bumpar a versão em CACHE. */
-const CACHE = 'estrela-painel-260824-2';
+const CACHE = 'estrela-painel-260829-1';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./'])).then(() => self.skipWaiting()));

@@ -212,14 +212,13 @@
 
   /* ---------- embutido como aba do painel atual ----------
      Cabecalho e seletor de empresa ja existem na pagina de fora; repetir os
-     dois aqui dentro seria moldura dentro de moldura. Os filtros proprios
-     (mes, janela, atualizar) ficam: sao desta tela, nao ha equivalente la. */
+     dois aqui dentro seria moldura dentro de moldura. Desde 29/08 o mes tambem
+     mora la fora (chips abaixo das abas, que chegam por postMessage v2:mes) e
+     o Atualizar sempre morou — a fila de filtros inteira ficou sem funcao no
+     modo embutido, e some. Fora da moldura ela continua igual. */
   body.embutido header.top{display:none}
-  body.embutido .filters .seg{display:none}
+  body.embutido .filters{display:none}
   body.embutido .wrap{padding-top:10px}
-  /* Um botão só no painel, e ele mora FORA da moldura. O de dentro seria um
-     segundo Atualizar, com o mesmo nome e comportamento diferente. */
-  body.embutido #btRec{display:none}
   /* O carimbo deixa de ser barra fixa e vira linha discreta no fim do conteúdo:
      position:fixed dentro de moldura ancora na viewport da moldura, não na da
      página — a barra ficava no lugar errado ou fora de vista. */
@@ -1015,7 +1014,7 @@ var EMP_CURTO = {
 };
 function curto(e) { return EMP_CURTO[e] || e; }
 
-window.__renderEU = function (dados) {
+window.__renderEU = function (dados, ymSel) {
   var C = CORES();
   var g = $('#gridEU'); g.innerHTML = '';
   if (!dados || !dados.vendas || !dados.vendas.length) {
@@ -1025,8 +1024,14 @@ window.__renderEU = function (dados) {
   var V = dados.vendas.filter(function (v) { return v.ym; });
   var E = dados.estoque || [];
 
-  /* janela: 12 meses fechados terminando no mês da última venda */
+  /* janela: 12 meses fechados terminando no mês da última venda — ou, quando
+     os chips de mês do painel de fora escolhem (v2:mes), no mês escolhido.
+     Tudo abaixo (V12, VSO do tri, 12m anteriores, spark) deriva do maxYm, então
+     a janela inteira recua junto: é "a tela como estava naquele mês". Mês sem
+     venda na base cai no padrão, para nunca desenhar uma janela vazia. */
   var maxYm = 0; V.forEach(function (v) { if (v.ym > maxYm) maxYm = v.ym; });
+  ymSel = Number(ymSel) || 0;
+  if (ymSel && V.some(function (v) { return v.ym === ymSel; })) maxYm = ymSel;
   var iniYm = ymShift(maxYm, -11);
   var em12 = function (v) { return v.ym >= iniYm && v.ym <= maxYm; };
   var V12 = V.filter(em12);
@@ -1526,7 +1531,7 @@ window.__renderEU = function (dados) {
     }
   }
 
-  var DADOS = null, YM_PS = null;
+  var DADOS = null, YM_PS = null, YM_EU = null; /* YM_EU = fim da janela 12m da Estrela; null = mês da última venda */
 
   function preencherMeses() {
     var sel = $('#selMes');
@@ -1547,16 +1552,21 @@ window.__renderEU = function (dados) {
     /* re-render na cor da empresa (as cores dos SVGs são resolvidas na hora) */
     if (DADOS) {
       if (ps) { try { window.__renderPS(DADOS.ps, YM_PS); } catch (e) { console.error('PS:', e); } }
-      else { try { window.__renderEU(DADOS); } catch (e) { console.error('EU:', e); } }
+      else { try { window.__renderEU(DADOS, YM_EU); } catch (e) { console.error('EU:', e); } }
     }
     atualizarSelo(ps ? 'ps' : 'eu');
     window.scrollTo({ top: 0 });
   }
 
-  function subir(dados, deCopia) {
+  function subir(dados, deCopia, ymPS, ymEU) {
     DADOS = dados;
     if (!dados.ps) dados.ps = { vendas: [], meses: [], metas: {}, erro: dados.psErro || 'não carregou' };
     YM_PS = (dados.ps.meses && dados.ps.meses.length) ? dados.ps.meses[0].ym : null;
+    /* embutida, o mês já escolhido lá fora chega junto do dado — sem isto a
+       moldura abriria sempre no mês padrão, discordando dos chips acima dela */
+    ymPS = Number(ymPS) || 0;
+    if (ymPS && (dados.ps.meses || []).some(function (m) { return m.ym === ymPS; })) YM_PS = ymPS;
+    if (Number(ymEU)) YM_EU = Number(ymEU);
     fecharCarga();
     var g2 = document.getElementById('gate'); if (g2) g2.remove();
     CARIMBO.eu = dados.atualizado_em || '';
@@ -1734,11 +1744,26 @@ window.__renderEU = function (dados) {
   if (EMBUTIDO) {
     var atendida = false;
     window.addEventListener('message', function (ev) {
-      if (ev.origin !== location.origin || atendida) return;
+      if (ev.origin !== location.origin) return;
       var d = ev.data;
-      if (!d || d.tipo !== 'v2:dados' || !d.dados) return;
+      if (!d) return;
+      /* os chips de mês vivem no painel de fora; a troca chega por aqui */
+      if (d.tipo === 'v2:mes') {
+        var ym = Number(d.ym) || 0;
+        if (!ym || !DADOS) return;
+        if (d.emp === 'ps') {
+          YM_PS = ym;
+          var sel = document.getElementById('selMes'); if (sel) sel.value = String(ym);
+          if (document.body.classList.contains('emp-ps')) { try { window.__renderPS(DADOS.ps, YM_PS); } catch (e) { console.error(e); } }
+        } else {
+          YM_EU = ym;
+          if (document.body.classList.contains('emp-eu')) { try { window.__renderEU(DADOS, YM_EU); } catch (e) { console.error(e); } }
+        }
+        return;
+      }
+      if (atendida || d.tipo !== 'v2:dados' || !d.dados) return;
       atendida = true;
-      subir(d.dados, false);
+      subir(d.dados, false, d.ymPS, d.ymEU);
     });
     try { parent.postMessage({ tipo: 'v2:pronto' }, location.origin); } catch (e) {}
     setTimeout(function () { if (!atendida) { atendida = true; pelaRede(); } }, 4000);
