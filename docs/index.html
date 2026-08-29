@@ -228,6 +228,24 @@ body.emp-ps .panel:not(.ps){display:none !important}
 body.emp-eu .panel.ps{display:none !important}
 #bnavPS{grid-template-columns:repeat(3,1fr)}
 
+/* Barra de estoque da M-19 — uma linha discreta abaixo do botão Atualizar.
+   Mesma rota pública que a home do Pocket (?app=estoque, sem token). Só existe
+   na metade do Parque: a M-19 é jazigo, e a regra de rede de segurança acima
+   vale aqui também — na Estrela ela some, aconteça o que acontecer no JS. */
+body:not(.emp-ps) .barra-estoque{display:none !important}
+.barra-estoque{display:flex;align-items:center;justify-content:center;gap:14px;
+  margin:0 0 6px;padding:5px 10px;font-size:12px;line-height:1;
+  white-space:nowrap;overflow:hidden;color:var(--text-3);
+  border-bottom:1px solid var(--edge)}
+.barra-estoque .be-quadra{font-weight:600;letter-spacing:.04em;color:var(--text-3)}
+.barra-estoque .be-item{display:inline-flex;align-items:center;gap:5px}
+.barra-estoque .be-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:0 0 auto}
+.barra-estoque .be-verde{background:var(--ok)}
+.barra-estoque .be-laranja{background:var(--warn)}
+.barra-estoque .be-vermelho{background:var(--crit)}
+.barra-estoque b{font-weight:600;color:var(--text-2);font-variant-numeric:tabular-nums}
+.barra-estoque.be-cache{opacity:.55}   /* numero do aparelho, ainda nao confirmado pela rede */
+
 /* barra de meta: preenchimento = realizado sobre o desafio; o traço é a meta oficial */
 .metabar{position:relative;height:16px;background:rgba(255,255,255,.06);
 border-radius:9px;margin:16px 0 8px}
@@ -283,6 +301,15 @@ align-items:center;gap:3px;cursor:pointer;min-width:0}
   <button class="btnrec" id="btRec" type="button" title="Buscar os dados de novo no Cofre">
     <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>
     <span class="rot">Atualizar</span></button>
+</div>
+
+<!-- Barra de estoque M-19 (só na metade do Parque). Nasce escondida: se a
+     rota nao responder, ela simplesmente nao aparece. -->
+<div id="barraEstoque" class="barra-estoque" hidden aria-live="polite">
+  <span class="be-quadra">M-19</span>
+  <span class="be-item"><i class="be-dot be-verde"></i><b id="beDisp">–</b></span>
+  <span class="be-item"><i class="be-dot be-laranja"></i><b id="beRes">–</b></span>
+  <span class="be-item"><i class="be-dot be-vermelho"></i><b id="beVend">–</b></span>
 </div>
 
 <!-- A aba Executivo é a porta de entrada das DUAS metades desde 29/08 —
@@ -2136,6 +2163,44 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
     var pIni = document.getElementById(empIni === 'ps' ? 'pPSX' : 'pEUX');
     if (pIni && pIni.classList.contains('on')) montar(empIni);
   }
+})();
+</script>
+
+<script>
+/* Barra de estoque da M-19, abaixo do botão Atualizar. Mesma rota pública que
+   a home do Pocket usa (?app=estoque, sem token, só contagem). Script isolado
+   de propósito: um defeito aqui não pode derrubar o painel — mesma regra do
+   chat. O CSS só a exibe na metade do Parque (body.emp-ps); aqui não há nada
+   sobre empresa. Pinta primeiro o que estiver guardado no aparelho e depois
+   substitui pelo número da rede. */
+(function(){
+  var URL_COFRE = 'https://script.google.com/macros/s/AKfycbydLmUEX3g6FeojFGAcVHfNKoPsr4d9oTBUdi7GtcfsirQL6xHJM0BELVGcCrcqrICY/exec';
+  var CHAVE = 'painel_estoque_m19';
+  var el = document.getElementById('barraEstoque');
+  if (!el) return;
+
+  function pintar(d, deCache){
+    if (!d || typeof d.disponivel !== 'number') return;
+    document.getElementById('beDisp').textContent = d.disponivel;
+    document.getElementById('beRes').textContent  = d.reservado;
+    document.getElementById('beVend').textContent = d.vendido;
+    el.title = 'Quadra M-19 · ' + d.disponivel + ' disponíveis · ' + d.reservado +
+               ' reservados · ' + d.vendido + ' vendidos' +
+               (d.atualizado_em ? ' · atualizado em ' + d.atualizado_em : '');
+    el.classList.toggle('be-cache', !!deCache);
+    el.hidden = false;
+  }
+
+  try { var g = JSON.parse(localStorage.getItem(CHAVE) || 'null'); if (g) pintar(g, true); } catch(e){}
+
+  fetch(URL_COFRE + '?app=estoque&fn=quadra&q=M-19', { cache: 'no-store' })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (!d || d.ok !== true) return;          // rota velha ou erro: fica o que ja estava
+      pintar(d, false);
+      try { localStorage.setItem(CHAVE, JSON.stringify(d)); } catch(e){}
+    })
+    .catch(function(){});                        // sem rede: fica o cache, ou fica escondida
 })();
 </script>
 </body>
