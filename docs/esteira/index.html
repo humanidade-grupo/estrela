@@ -7,199 +7,290 @@
 <title>Esteira do Funil — Parque da Saudade</title>
 <link rel="icon" href="../favicon-32.png" sizes="32x32">
 <!--
-  ESTEIRA DO FUNIL — Parque da Saudade. Nasceu em 30/08/2026.
+  ESTEIRA DO FUNIL — Parque da Saudade.
 
-  DE ONDE VEIO: era um artefato do Cowork — foto, com os números embutidos no
-  arquivo, e só o Ricardo enxergava. Aqui ela lê o Cofre ao vivo e tem endereço
-  para passar à liderança.
+  ORIGEM DO LAYOUT: o artefato aprovado em 29/08 (claude.ai, "Esteira do Parque
+  da Saudade"). A ESTRUTURA é dele — ordem das seções, a esteira em barras com
+  as tarjas de parado, a matriz vendedor × etapa, as fichas em cartão com a
+  mini-tabela e os motivos, a fila lead a lead e ordenável, o filtro de
+  vendedores em caixas de seleção com "equipe atual" / "todos". Não foi
+  redesenhado.
+  O QUE MUDOU: cor e tipografia, que passam a ser as do Painel Comercial —
+  mesma casa, mesma cara. E o dado, que era foto embutida e agora é leitura ao
+  vivo de ?app=leads&fn=list.
 
-  O QUE ESTA PÁGINA NÃO TEM, E POR QUÊ:
-    - nenhum segredo. O token é digitado uma vez por aparelho e mora no
-      localStorage (`hub_token_gestao`, o MESMO do Painel — quem já usa o
-      Painel não digita nada aqui);
-    - nenhum dado. Tudo vem de ?app=leads&fn=list na abertura, e toda conta
-      roda no navegador sobre as linhas cruas. É isso que faz o filtro de
-      vendedor funcionar por inteiro, em vez de filtrar um número já somado;
-    - nenhum nome de cliente na tela. A rota devolve `Cliente`; esta página
-      nunca o desenha. Dado de família enlutada não vira gráfico.
+  A DIFERENÇA QUE MUDA TUDO: no artefato os números estavam DENTRO do arquivo,
+  então o filtro de vendedor só podia recombinar agregados já calculados. Aqui
+  toda conta — contagem por etapa, mediana, pior caso, +7d, +30d, motivos,
+  fila — roda no navegador sobre as LINHAS CRUAS. Por isso o filtro recalcula
+  de verdade, e por isso a mediana de um subconjunto é a mediana dele, não uma
+  média de medianas.
 
-  O QUE FICA DE FORA, DE PROPÓSITO (o §4 do documento de 29/08):
-    - `Origem do Lead`: vazia nos 1.147 registros. Coluna vazia desenhada vira
-      "sem origem" com cara de achado;
-    - `Valor`: é o `cost` cru do CRM, não o valor à vista. Ticket e VGV sairiam
-      errados por um fator de ~3 — e errados com aparência de certos;
-    - a etapa 1: é do funil da Estrela, não do Parque.
+  SEGURANÇA: nenhum segredo no arquivo. Token digitado uma vez por aparelho no
+  localStorage (`hub_token_gestao`, o mesmo do Painel). Sem token, nenhum
+  número aparece.
 
-  OS DOIS RELÓGIOS — e a razão de esta página falar em SILÊNCIO:
-    o que ela mede é `Atualizado em`, ou seja, quanto tempo faz que ninguém
-    toca no negócio. Qualquer anotação zera esse relógio. NÃO é tempo na etapa.
-    O tempo na etapa vive no log HistoricoEtapas e entra aqui em etapa própria,
-    quando o log tiver o que dizer. Somar os dois seria inventar um terceiro
-    número que não mede nada.
+  FORA, DE PROPÓSITO: `Origem do Lead` (o Facilita não devolve pela API — vem
+  vazia em todos os registros) · `Valor` (é o custo cru; ticket e VGV só se
+  calculam por Valor Face × (1 − Desconto %) na Vendas_Facilita) · a etapa 1
+  (é do funil da Estrela).
+
+  ⚠️ VENDA GANHA E VENDA PERDIDA NÃO ENTRAM NA ESTEIRA. São resultado
+  acumulado desde abril; a esteira é estoque de hoje. Somar as duas coisas no
+  mesmo funil faz a etapa final parecer maior que a de entrada. Elas aparecem
+  só na matriz e nas fichas, como histórico, à direita e separadas por linha.
+
+  OS DOIS RELÓGIOS: "dias parado" é tempo desde `Atualizado em` — silêncio no
+  CRM. Qualquer anotação o zera. NÃO é tempo na etapa: isso é assunto do
+  HistoricoEtapas, e entra aqui em coluna própria, nomeada, nunca somada a
+  esta.
 -->
 <style>
-/* A linguagem visual é a do Painel Comercial, e é de propósito: dois idiomas
-   de navegação dentro do mesmo hub é o defeito a evitar. Tokens, abas, barra
-   inferior e pílulas saem de ../index.html sem reinvenção. */
-:root{--bg:#0b1220;--card:rgba(255,255,255,.045);--card2:rgba(255,255,255,.03);
---edge:rgba(255,255,255,.09);--edge2:rgba(255,255,255,.14);
---text-1:#eef4fa;--text-2:#9fb2c8;--text-3:#64778f;
---s1:#0e9fc4;--s1b:#67cfe8;
---chip-bg:rgba(255,255,255,.05);
---ok:#4ade80;--warn:#fbbf24;--crit:#f87171;
---ouro:#f2c744;--ouro-b:#f7d977}
+/* Paleta e tipografia do Painel Comercial. A estrutura é a do artefato; a
+   cara é a da casa. */
+:root{
+  --bg:#0b1220; --surface:rgba(255,255,255,.045); --surface-2:rgba(255,255,255,.028);
+  --line:rgba(255,255,255,.09); --line-2:rgba(255,255,255,.055);
+  --ink:#eef4fa; --ink-2:#9fb2c8; --ink-3:#64778f;
+  --accent:#0e9fc4; --accent-ink:#67cfe8; --accent-soft:rgba(14,159,196,.18);
+  --ok:#4ade80;
+  --warn:#fbbf24; --warn-soft:rgba(217,119,6,.16);
+  --crit:#f87171; --crit-soft:rgba(220,38,38,.15);
+  --ouro:#f2c744;
+  --shadow:0 1px 2px rgba(0,0,0,.25), 0 4px 16px rgba(0,0,0,.18);
+}
 *{box-sizing:border-box}
 html{color-scheme:dark}
-body{margin:0;color:var(--text-1);min-height:100vh;
-background:radial-gradient(1200px 600px at 80% -10%,#12253c 0%,var(--bg) 55%) fixed;
-font:14px/1.5 -apple-system,"Segoe UI",Roboto,Arial,sans-serif}
-.wrap{max-width:1180px;margin:0 auto;padding:22px 16px 60px}
-header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px}
-h1{font-size:20px;margin:0;letter-spacing:.01em}
-h1 small{display:block;font-size:11.5px;font-weight:400;color:var(--text-3);letter-spacing:.04em;
-text-transform:uppercase;margin-top:2px}
-.voltar{border:1px solid var(--edge);background:var(--card2);color:var(--text-2);
-border-radius:999px;padding:6px 13px;font:600 12.5px/1.2 inherit;cursor:pointer;
-display:inline-flex;gap:6px;align-items:center;white-space:nowrap;text-decoration:none}
-.voltar:hover{color:var(--text-1);border-color:var(--edge2)}
+body{margin:0; background:radial-gradient(1200px 600px at 80% -10%,#12253c 0%,var(--bg) 55%) fixed;
+  color:var(--ink); font:15px/1.5 -apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased; min-height:100vh}
+.wrap{max-width:1120px; margin:0 auto; padding:0 24px 88px}
+h1,h2,h3{font-weight:700; text-wrap:balance; margin:0; letter-spacing:-.01em}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---------- cabeçalho ---------- */
+header{padding:34px 0 26px; border-bottom:1px solid var(--line);
+  display:flex; align-items:flex-start; justify-content:space-between; gap:20px; flex-wrap:wrap}
+.hd{flex:1; min-width:260px}
+.eyebrow{font-size:11.5px; font-weight:700; letter-spacing:.13em; text-transform:uppercase;
+  color:var(--accent-ink); margin-bottom:12px}
+h1{font-size:clamp(26px,4vw,38px); line-height:1.12}
+.lede{margin:12px 0 0; max-width:62ch; color:var(--ink-2); font-size:15px}
+.stamp{margin-top:18px; display:flex; flex-wrap:wrap; gap:8px 18px; font-size:12.5px; color:var(--ink-3)}
+.stamp b{color:var(--ink); font-weight:700}
+.stamp .foto{font-size:14.5px}
+.voltar{border:1px solid var(--line); background:var(--surface-2); color:var(--ink-2);
+  border-radius:999px; padding:6px 13px; font:700 12.5px/1.2 inherit; cursor:pointer;
+  display:inline-flex; gap:6px; align-items:center; white-space:nowrap; text-decoration:none}
+.voltar:hover{color:var(--ink); border-color:rgba(255,255,255,.16)}
 .voltar svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;
-stroke-linecap:round;stroke-linejoin:round}
+  stroke-linecap:round;stroke-linejoin:round}
 
-/* ---- O CARIMBO. Fica no topo, em destaque, sempre visível, e é o carimbo da
-   FOTO — nunca a hora do fetch. Uma página que busca ao vivo parece viva; se
-   ela não disser de quando é o dado, parecer vivo é a mentira. ---- */
-.carimbo{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;
-background:var(--card);border:1px solid var(--edge);border-radius:14px;
-padding:11px 14px;margin:10px 0 4px}
-.carimbo .cl{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;
-color:var(--text-3);font-weight:700}
-.carimbo .cv{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}
-.carimbo .idade{font-size:12px;color:var(--text-2)}
-.carimbo.velha{border-color:rgba(251,191,36,.45);background:rgba(217,119,6,.12)}
-.carimbo.velha .cv{color:var(--warn)}
-
-/* ---- Tarja. Vermelha, no topo, e quando ela aparece a página NÃO desenha
-   bloco nenhum. Número cortado em silêncio já publicou número errado nesta
-   casa uma vez. ---- */
-.tarja{background:rgba(220,38,38,.14);border:1px solid rgba(248,113,113,.5);
-color:#ffd9d9;border-radius:14px;padding:14px 16px;margin:12px 0}
+/* ---------- tarjas ---------- */
+.tarja{background:var(--crit-soft); border:1px solid rgba(248,113,113,.5); color:#ffd9d9;
+  border-radius:10px; padding:14px 16px; margin:20px 0}
 .tarja p{margin:6px 0}
-.tarja code{background:rgba(0,0,0,.3);padding:1px 5px;border-radius:5px;font-size:12px}
-.tarja .t{font-size:15px;font-weight:800;margin-bottom:4px;color:#ffb4b4}
-.tarja.amarela{background:rgba(217,119,6,.13);border-color:rgba(251,191,36,.5);color:#ffeccd}
+.tarja .t{font-size:15px; font-weight:800; margin-bottom:4px; color:#ffb4b4}
+.tarja code{background:rgba(0,0,0,.3); padding:1px 5px; border-radius:5px; font-size:12px}
+.tarja.amarela{background:var(--warn-soft); border-color:rgba(251,191,36,.5); color:#ffeccd}
 .tarja.amarela .t{color:var(--warn)}
 
-.tabs{display:flex;gap:4px;border-bottom:1px solid var(--edge);margin:14px 0 16px}
-.tab{border:none;background:none;color:var(--text-3);padding:9px 14px;font-size:14px;
-cursor:pointer;border-bottom:2px solid transparent;font-weight:600}
-.tab[aria-selected="true"]{color:var(--s1b);border-bottom-color:var(--s1)}
-.panel{display:none}.panel.on{display:block}
+/* ---------- seções ---------- */
+section{margin-top:44px}
+.sec-head{display:flex; align-items:baseline; justify-content:space-between; gap:16px;
+  flex-wrap:wrap; margin-bottom:6px}
+h2{font-size:21px}
+.sec-note{margin:0 0 20px; color:var(--ink-3); font-size:13.5px; max-width:74ch}
+.sec-note strong,.sec-note b{color:var(--ink-2)}
 
-.filters{display:flex;flex-wrap:wrap;gap:13px 22px;align-items:flex-start;
-background:var(--card);border:1px solid var(--edge);border-radius:16px;
-backdrop-filter:blur(8px);padding:12px 14px;margin-bottom:14px}
-.flabel{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);
-margin-bottom:6px;font-weight:700}
-.chips{display:flex;flex-wrap:wrap;gap:6px}
-.chip{border:1px solid var(--edge);background:var(--chip-bg);color:var(--text-2);
-border-radius:999px;padding:5px 11px;font:600 12.5px/1.2 inherit;cursor:pointer}
-.chip[aria-pressed="true"]{background:rgba(242,199,68,.18);color:var(--ouro-b);
-border-color:rgba(242,199,68,.45)}
+/* ---------- tiles ---------- */
+.tiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-top:26px}
+.tile{background:var(--surface); border:1px solid var(--line); border-radius:10px;
+  padding:18px 20px 16px; box-shadow:var(--shadow)}
+.tile .k{font-size:11.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3); font-weight:700}
+.tile .v{font-size:38px; line-height:1.05; margin-top:10px; letter-spacing:-.02em; font-weight:700}
+.tile .s{font-size:12.5px; color:var(--ink-2); margin-top:7px}
+.tile.is-crit .v{color:var(--crit)}
 
-.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
-.kpi{background:var(--card);border:1px solid var(--edge);border-radius:14px;padding:11px 13px}
-.kpi .lb{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3);
-font-weight:700}
-.kpi .vl{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:3px}
-.kpi .sub{font-size:11.5px;color:var(--text-2)}
-.kpi.alerta .vl{color:var(--warn)}
+/* ---------- esteira ---------- */
+.esteira{background:var(--surface); border:1px solid var(--line); border-radius:10px;
+  padding:6px 20px 10px; box-shadow:var(--shadow)}
+.st-row{display:grid; grid-template-columns:minmax(150px,1.1fr) 62px 1fr 170px; gap:14px;
+  align-items:center; padding:13px 0; border-bottom:1px solid var(--line-2)}
+.st-row:last-child{border-bottom:0}
+.st-name{font-weight:600; font-size:14px; display:flex; align-items:center; gap:8px}
+.et-id{font-size:10.5px; font-weight:700; color:var(--ink-3); background:var(--surface-2);
+  border:1px solid var(--line); border-radius:4px; padding:1px 5px}
+.st-n{text-align:right; font-size:19px; font-weight:700}
+.bar-track{height:11px; background:rgba(255,255,255,.05); border-radius:3px; overflow:hidden;
+  border:1px solid var(--line-2)}
+.bar-fill{height:100%; background:var(--accent); border-radius:0 3px 3px 0}
+.st-row.nova .bar-fill{background:repeating-linear-gradient(45deg,
+  var(--crit) 0 6px, rgba(248,113,113,.4) 6px 12px)}
+.st-flags{display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap}
 
-.card{background:var(--card);border:1px solid var(--edge);border-radius:16px;
-padding:14px 16px;margin-bottom:14px}
-.card h2{font-size:14px;margin:0 0 3px;letter-spacing:.01em}
-.card .sub{font-size:11.5px;color:var(--text-3);margin-bottom:12px}
+.chip{font-size:11.5px; font-weight:700; padding:2px 7px; border-radius:20px;
+  border:1px solid transparent; white-space:nowrap}
+.chip-ok{color:var(--ink-3); background:var(--surface-2); border-color:var(--line)}
+.chip-warn{color:var(--warn); background:var(--warn-soft); border-color:rgba(251,191,36,.35)}
+.chip-crit{color:var(--crit); background:var(--crit-soft); border-color:rgba(248,113,113,.35)}
 
-.fun{display:grid;grid-template-columns:minmax(120px,1.3fr) 1fr 62px;gap:10px;
-align-items:center;padding:7px 0;border-top:1px solid var(--edge)}
-.fun:first-child{border-top:none}
-.fun .nm{font-weight:700;font-size:13px}
-.fun .nm small{display:block;color:var(--text-3);font-weight:400;font-size:10.5px}
-.fbar{height:16px;background:rgba(255,255,255,.05);border-radius:8px;overflow:hidden;position:relative}
-.fbar i{position:absolute;left:0;top:0;bottom:0;border-radius:8px;background:var(--s1)}
-.fun.ganha .fbar i{background:var(--ok)}
-.fun.perdida .fbar i{background:var(--crit)}
-.fun.fila .fbar i{background:var(--ouro)}
-/* Etapa que o CRM tem e esta tela não conhecia. Listrada de propósito: ela
-   precisa saltar aos olhos, porque é a única pista de que o funil mudou. */
-.fun.nova .fbar i{background:repeating-linear-gradient(45deg,
-  var(--crit) 0 6px,rgba(248,113,113,.45) 6px 12px)}
-.fun.nova .nm small{color:var(--crit)}
-.fun .qt{text-align:right;font-weight:800;font-variant-numeric:tabular-nums;font-size:14px}
+.legend{display:flex; gap:16px; flex-wrap:wrap; margin-top:16px; font-size:12.5px; color:var(--ink-2)}
+.legend span{display:flex; align-items:center; gap:7px}
+.sw{width:11px; height:11px; border-radius:3px; flex:none}
 
-table{width:100%;border-collapse:collapse;font-size:13px}
-th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;
-color:var(--text-3);font-weight:700;padding:6px 8px;border-bottom:1px solid var(--edge);
-white-space:nowrap}
-td{padding:8px;border-bottom:1px solid var(--edge);vertical-align:top}
-td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
-tbody tr:hover{background:rgba(255,255,255,.02)}
-.tw{overflow-x:auto}
-.vd{font-weight:700;white-space:nowrap}
-.motivos{color:var(--text-2);font-size:11.5px}
-.nada{color:var(--text-3);padding:14px 4px;font-size:13px}
+/* ---------- tabelas ---------- */
+.scroll{overflow-x:auto; border:1px solid var(--line); border-radius:10px;
+  background:var(--surface); box-shadow:var(--shadow)}
+table{border-collapse:collapse; width:100%; font-size:13.5px}
+th,td{padding:10px 13px; text-align:right; white-space:nowrap}
+th{font-size:11px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-3);
+  font-weight:700; border-bottom:1px solid var(--line); vertical-align:bottom}
+th.l, td.l{text-align:left}
+tbody tr{border-bottom:1px solid var(--line-2)}
+tbody tr:last-child{border-bottom:0}
+tbody tr:hover{background:var(--surface-2)}
+tfoot td{border-top:1px solid var(--line); font-weight:700; color:var(--ink-2)}
+td.name{font-weight:600}
+.dim{color:var(--ink-3)}
+.sep{border-left:1px solid var(--line)}
 
-.gate{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
-background:rgba(8,14,24,.94);backdrop-filter:blur(6px);padding:20px}
-.gatebox{background:#101a2a;border:1px solid var(--edge2);border-radius:18px;
-padding:22px;max-width:400px;width:100%}
-.gatebox h2{margin:0 0 6px;font-size:17px}
-.gatebox p{color:var(--text-2);font-size:13px;margin:0 0 14px}
-.gatebox input{width:100%;padding:11px 13px;border-radius:11px;border:1px solid var(--edge2);
-background:#0b1424;color:var(--text-1);font:15px/1.2 inherit;letter-spacing:.04em}
-.gatebox button{width:100%;margin-top:10px;padding:11px;border-radius:11px;border:none;
-background:var(--s1);color:#04222c;font:700 14px/1.2 inherit;cursor:pointer}
-.gatebox .erro{color:var(--crit);font-size:12.5px;margin-top:9px;min-height:16px}
-.trocar{background:none;border:none;color:var(--text-3);font:inherit;font-size:11.5px;
-cursor:pointer;text-decoration:underline;padding:0}
-.trocar:hover{color:var(--text-2)}
-.rodape{color:var(--text-3);font-size:11.5px;margin-top:20px;display:flex;
-flex-wrap:wrap;gap:6px 12px;align-items:center}
+/* ---------- cartões por vendedor ---------- */
+.cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(390px,1fr)); gap:16px}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:10px;
+  box-shadow:var(--shadow); overflow:hidden; display:flex; flex-direction:column}
+.card-top{padding:17px 20px 15px; border-bottom:1px solid var(--line-2)}
+.card-name{font-size:19px; font-weight:700; letter-spacing:-.01em}
+.card-sub{font-size:11.5px; color:var(--ink-3); margin-top:2px}
+.card-kpis{display:flex; gap:18px; margin-top:12px; flex-wrap:wrap}
+.kpi .kv{font-size:19px; font-weight:700; line-height:1.1}
+.kpi .kk{font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3);
+  font-weight:700; margin-top:3px}
+.card-body{padding:4px 20px 18px; overflow-x:auto}
+.mini{width:100%; border-collapse:collapse; font-size:12.5px; table-layout:fixed}
+.mini th:first-child,.mini td:first-child{width:38%}
+.mini th:not(:first-child),.mini td:not(:first-child){width:12.4%}
+.mini th{font-size:10px; padding:9px 3px 6px; border-bottom:1px solid var(--line-2); letter-spacing:.04em}
+.mini td{padding:7px 3px; border-bottom:1px solid var(--line-2)}
+.mini td.l{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding-right:6px}
+.mini tr:last-child td{border-bottom:0}
+.motivos{margin-top:auto; padding:14px 20px 16px; background:var(--surface-2);
+  border-top:1px solid var(--line-2)}
+.motivos .mt{font-size:11px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-3);
+  font-weight:700; margin-bottom:9px}
+.mrow{display:flex; align-items:center; gap:10px; font-size:12.5px; margin-bottom:6px}
+.mrow:last-child{margin-bottom:0}
+.mrow .mb{height:7px; background:var(--accent); border-radius:2px; flex:none; opacity:.6}
+.mrow .mn{color:var(--ink-3); font-variant-numeric:tabular-nums; margin-left:auto}
 
-/* ---- barra inferior do celular, o mesmo idioma do Painel ---- */
-.bnav{position:fixed;left:0;right:0;bottom:0;z-index:40;
-background:rgba(13,22,38,.92);backdrop-filter:blur(12px);border-top:1px solid var(--edge2);
-padding:4px 4px calc(4px + env(safe-area-inset-bottom));
-display:none;grid-template-columns:repeat(4,1fr)}
-.bnav button,.bnav a{border:none;background:none;color:var(--text-3);font:inherit;cursor:pointer;
-display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;border-radius:10px;
-text-decoration:none}
-.bnav svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;
-stroke-linecap:round;stroke-linejoin:round}
-.bnav span{font-size:10px;font-weight:600}
-.bnav [aria-selected="true"]{color:var(--s1b)}
-/* A guarda do [hidden] — terceira vez que esta casa paga por ela (Pocket
-   b23f507 e Painel 47500f2, ambas em 29/08). `display` declarado em classe de
-   autor VENCE o `[hidden]{display:none}` da folha do navegador, então a barra
-   inferior nasceria à mostra no celular por cima do portão de token. O
-   `hidden` do HTML só volta a valer se a folha de estilo o disser. */
+/* ---------- controles ---------- */
+.ctrl{display:flex; gap:6px; align-items:center; flex-wrap:wrap}
+.ctrl-lab{font-size:11.5px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-3);
+  font-weight:700; margin-right:2px}
+button.seg{font:inherit; font-size:12.5px; font-weight:600; color:var(--ink-2);
+  background:var(--surface); border:1px solid var(--line); border-radius:7px;
+  padding:5px 11px; cursor:pointer}
+button.seg:hover{background:var(--surface-2); color:var(--ink)}
+button.seg[aria-pressed="true"]{background:var(--accent-soft); color:var(--accent-ink);
+  border-color:rgba(14,159,196,.45)}
+button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
+  outline:2px solid var(--accent); outline-offset:2px}
+
+/* ---------- filtro de vendedor ---------- */
+.filtro{margin-top:26px; background:var(--surface); border:1px solid var(--line);
+  border-radius:10px; padding:15px 20px 16px; box-shadow:var(--shadow)}
+.filtro-top{display:flex; align-items:baseline; justify-content:space-between; gap:14px;
+  flex-wrap:wrap; margin-bottom:12px}
+.filtro-lab{font-size:11.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3); font-weight:700}
+.filtro-acoes{display:flex; gap:6px}
+.filtro-acoes button{font:inherit; font-size:12px; color:var(--ink-3); background:none;
+  border:0; padding:2px 4px; cursor:pointer; text-decoration:underline; text-underline-offset:3px}
+.filtro-acoes button:hover{color:var(--ink)}
+.vends{display:flex; gap:8px; flex-wrap:wrap}
+.vsel{display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-size:13.5px;
+  font-weight:600; color:var(--ink-2); background:var(--surface-2); border:1px solid var(--line);
+  border-radius:8px; padding:6px 12px 6px 10px; user-select:none}
+.vsel:hover{border-color:var(--ink-3)}
+.vsel input{position:absolute; opacity:0; width:0; height:0}
+.vsel .box{width:15px; height:15px; border-radius:4px; flex:none; border:1.5px solid var(--ink-3);
+  background:rgba(0,0,0,.2); display:grid; place-items:center}
+.vsel .box::after{content:""; width:7px; height:7px; border-radius:2px; background:transparent}
+.vsel[data-on="1"]{background:var(--accent-soft); border-color:rgba(14,159,196,.45); color:var(--accent-ink)}
+.vsel[data-on="1"] .box{border-color:var(--accent); background:var(--accent)}
+.vsel[data-on="1"] .box::after{background:#04222c}
+.vsel .vn{font-variant-numeric:tabular-nums; font-size:12px; color:var(--ink-3); font-weight:700}
+.vsel[data-on="1"] .vn{color:var(--accent-ink); opacity:.8}
+.filtro-nota{margin:12px 0 0; font-size:12.5px; color:var(--ink-3)}
+.vazio{padding:34px 20px; text-align:center; color:var(--ink-3); font-size:14px}
+
+/* ---------- leituras / nota ---------- */
+.reads{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px}
+.read{background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--accent);
+  border-radius:8px; padding:16px 18px; box-shadow:var(--shadow)}
+.read h3{font-size:15.5px; margin-bottom:7px; line-height:1.3}
+.read p{margin:0; font-size:13.5px; color:var(--ink-2)}
+.read.warn{border-left-color:var(--warn)}
+.read.crit{border-left-color:var(--crit)}
+
+.nota{margin-top:44px; padding:22px 24px; background:var(--surface-2);
+  border:1px solid var(--line); border-radius:10px}
+.nota h2{font-size:16px; margin-bottom:12px}
+.nota ul{margin:0; padding-left:20px; color:var(--ink-2); font-size:13.5px}
+.nota li{margin-bottom:8px}
+.nota li:last-child{margin-bottom:0}
+.nota code{font-family:ui-monospace,"SF Mono",Menlo,monospace; font-size:12.5px;
+  background:rgba(0,0,0,.28); border:1px solid var(--line); border-radius:4px; padding:1px 5px}
+.rodape{color:var(--ink-3); font-size:11.5px; margin-top:22px; display:flex;
+  flex-wrap:wrap; gap:6px 12px; align-items:center}
+.trocar{background:none; border:none; color:var(--ink-3); font:inherit; font-size:11.5px;
+  cursor:pointer; text-decoration:underline; padding:0}
+.trocar:hover{color:var(--ink-2)}
+
+/* ---------- portão do token ---------- */
+.gate{position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center;
+  background:rgba(8,14,24,.94); backdrop-filter:blur(6px); padding:20px}
+.gatebox{background:#101a2a; border:1px solid rgba(255,255,255,.14); border-radius:18px;
+  padding:22px; max-width:400px; width:100%}
+.gatebox h2{margin:0 0 6px; font-size:17px}
+.gatebox p{color:var(--ink-2); font-size:13px; margin:0 0 14px}
+.gatebox input{width:100%; padding:11px 13px; border-radius:11px; border:1px solid rgba(255,255,255,.14);
+  background:#0b1424; color:var(--ink); font:15px/1.2 inherit; letter-spacing:.04em}
+.gatebox button{width:100%; margin-top:10px; padding:11px; border-radius:11px; border:none;
+  background:var(--accent); color:#04222c; font:700 14px/1.2 inherit; cursor:pointer}
+.gatebox .erro{color:var(--crit); font-size:12.5px; margin-top:9px; min-height:16px}
+
+/* ---------- barra inferior do celular (idioma do Painel) ---------- */
+.bnav{position:fixed; left:0; right:0; bottom:0; z-index:40;
+  background:rgba(13,22,38,.92); backdrop-filter:blur(12px); border-top:1px solid rgba(255,255,255,.14);
+  padding:4px 4px calc(4px + env(safe-area-inset-bottom));
+  display:none; grid-template-columns:repeat(5,1fr)}
+.bnav a{border:none; background:none; color:var(--ink-3); font:inherit; cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 2px;
+  border-radius:10px; text-decoration:none}
+.bnav svg{width:21px; height:21px; stroke:currentColor; fill:none; stroke-width:1.8;
+  stroke-linecap:round; stroke-linejoin:round}
+.bnav span{font-size:9.5px; font-weight:700}
+/* A guarda do [hidden] — terceira vez que esta casa paga por ela (pocket-nps
+   b23f507, painel-comercial 47500f2). `display` de autor vence o
+   [hidden]{display:none} do navegador, e a barra nasceria sobre o portão. */
 .bnav[hidden]{display:none}
+
 @media (max-width:640px){
-.wrap{padding:12px 10px 40px}
-h1{font-size:17px}
-.tabs{display:none}
-.bnav{display:grid}
-body{padding-bottom:64px}
-.kpis{grid-template-columns:repeat(2,1fr);gap:8px}
-.kpi .vl{font-size:18px}
-.fun{grid-template-columns:minmax(96px,1.2fr) 1fr 46px;gap:8px}
-.carimbo{padding:10px 12px}
+  .wrap{padding:0 16px 60px}
+  body{padding-bottom:60px}
+  header{padding:24px 0 20px}
+  .bnav{display:grid}
+  .st-row{grid-template-columns:1fr 52px; gap:8px 12px}
+  .st-row .bar-track{grid-column:1/-1}
+  .st-flags{grid-column:1/-1; justify-content:flex-start}
+  .cards{grid-template-columns:1fr}
+  .tile .v{font-size:30px}
 }
+@media (prefers-reduced-motion: reduce){*{transition:none !important}}
 </style>
 </head>
 <body>
 
-<!-- O portão nasce montado e só sai quando há token. Sem token a página não
-     mostra número nenhum — não é tela vazia, é tela que ainda não abriu. -->
 <div class="gate" id="gate">
   <div class="gatebox">
     <h2>Esteira do Funil</h2>
@@ -214,66 +305,135 @@ body{padding-bottom:64px}
 
 <div class="wrap" id="app" hidden>
 
-  <header class="top">
-    <h1>Esteira do Funil<small>Parque da Saudade</small></h1>
+  <header>
+    <div class="hd">
+      <div class="eyebrow">Parque da Saudade · Funil de vendas</div>
+      <h1>Esteira do funil, vendedor por vendedor</h1>
+      <p class="lede">Onde cada lead está parado hoje, há quantos dias, e o que cada vendedor
+        fecha e perde. Feito para a conversa de cobrança — não para o fechamento contábil.</p>
+      <div class="stamp" id="stamp"></div>
+    </div>
     <a class="voltar" href="../" title="Voltar ao Painel Comercial">
       <svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
       Painel</a>
   </header>
 
-  <div class="carimbo" id="carimbo" hidden>
-    <div><div class="cl">Foto do funil</div><div class="cv" id="cCarimbo">—</div></div>
-    <div class="idade" id="cIdade"></div>
-    <div class="idade" id="cTotal"></div>
-  </div>
-
   <div id="avisos"></div>
 
   <div id="conteudo" hidden>
 
-    <div class="tabs" role="tablist">
-      <button class="tab" role="tab" aria-selected="true"  data-p="pFunil" type="button">Funil</button>
-      <button class="tab" role="tab" aria-selected="false" data-p="pFila"  type="button">Fila de cobrança</button>
-      <button class="tab" role="tab" aria-selected="false" data-p="pVend"  type="button">Vendedores</button>
-    </div>
-
-    <div class="filters">
-      <div>
-        <div class="flabel">Vendedor</div>
-        <div class="chips" id="chipsVend"></div>
+    <div class="filtro" id="secFiltro">
+      <div class="filtro-top">
+        <span class="filtro-lab">Vendedores no painel</span>
+        <div class="filtro-acoes">
+          <button type="button" id="f-equipe">equipe atual</button>
+          <button type="button" id="f-todos">todos</button>
+        </div>
       </div>
+      <div class="vends" id="vends"></div>
+      <p class="filtro-nota">Tudo abaixo — totais, esteira, matriz, fichas e fila de cobrança —
+        recalcula com a seleção, <b>sobre as linhas cruas</b>. O número ao lado de cada nome é o
+        total de negócios daquela pessoa no funil.</p>
     </div>
 
-    <div class="kpis" id="kpis"></div>
+    <section><div class="tiles" id="tiles"></div></section>
 
-    <section class="panel on" id="pFunil">
-      <div class="card">
-        <h2>Onde os negócios estão</h2>
-        <div class="sub">Cada etapa do funil, na ordem em que se anda nele.
-          Venda Ganha e Venda Perdida são o fim da linha e aparecem separadas.</div>
-        <div id="funil"></div>
+    <section id="secEsteira">
+      <div class="sec-head"><h2>Esteira ativa hoje</h2></div>
+      <p class="sec-note">Quantos negócios estão parados em cada etapa <em>neste momento</em>.
+        Venda Ganha e Venda Perdida ficam fora daqui de propósito: são resultado acumulado desde
+        abril, não estoque de hoje — somar as duas coisas no mesmo funil é o erro que faz a etapa
+        final parecer maior que a de entrada.</p>
+      <div class="esteira" id="esteira"></div>
+      <div class="legend">
+        <span><i class="sw" style="background:var(--accent)"></i> negócios na etapa</span>
+        <span><i class="sw" style="background:var(--warn)"></i> parado 8 a 30 dias</span>
+        <span><i class="sw" style="background:var(--crit)"></i> parado há mais de 30 dias</span>
       </div>
     </section>
 
-    <section class="panel" id="pFila">
-      <div class="card">
+    <section id="secMatriz">
+      <div class="sec-head"><h2>Matriz por vendedor</h2></div>
+      <p class="sec-note">A esteira ativa de cada um, etapa por etapa, com o histórico de decididos
+        à direita. <strong>Fechamento</strong> = ganhas ÷ (ganhas + perdidas) — a taxa entre os
+        negócios que já terminaram, ignorando quem ainda está em jogo.</p>
+      <div class="scroll"><table id="matriz"></table></div>
+    </section>
+
+    <section id="secFichas">
+      <div class="sec-head">
+        <h2>Ficha de cada vendedor</h2>
+        <div class="ctrl">
+          <span class="ctrl-lab">Ordenar por</span>
+          <button class="seg" data-sort="ativa" aria-pressed="true">Esteira ativa</button>
+          <button class="seg" data-sort="parados" aria-pressed="false">Parados</button>
+          <button class="seg" data-sort="fech" aria-pressed="false">Fechamento</button>
+        </div>
+      </div>
+      <p class="sec-note">Por etapa: quantos, a <strong>mediana</strong> de dias sem atualização, o
+        pior caso, e quantos passaram de 7 e de 30 dias. Mediana e não média — é a regra do projeto,
+        e numa fila com um lead de 80 dias a média mente.</p>
+      <div class="cards" id="cards"></div>
+    </section>
+
+    <section id="secFila">
+      <div class="sec-head">
         <h2>Fila de cobrança</h2>
-        <div class="sub">Negócios <b>vivos</b> — Lead Quente, Agendado, Visita Realizada,
-          Aprovação e Contrato — <b>parados há 7 dias ou mais</b>. Parado quer dizer que
-          ninguém tocou no negócio; qualquer anotação no CRM zera este relógio.</div>
-        <div id="fila"></div>
+        <div class="ctrl">
+          <span class="ctrl-lab">Ordenar por</span>
+          <button class="seg" data-psort="dias" aria-pressed="true">Dias parado</button>
+          <button class="seg" data-psort="vend" aria-pressed="false">Vendedor</button>
+          <button class="seg" data-psort="etapa" aria-pressed="false">Etapa</button>
+        </div>
       </div>
+      <p class="sec-note" id="nota-cob"></p>
+      <div class="scroll"><table id="cobranca"></table></div>
     </section>
 
-    <section class="panel" id="pVend">
-      <div class="card">
-        <h2>Ficha por vendedor</h2>
-        <div class="sub">Fechamento = ganhas ÷ (ganhas + perdidas). O silêncio é
-          <b>mediana</b>, nunca média: uma carteira esquecida há um ano puxaria a média
-          e faria o time inteiro parecer atrasado.</div>
-        <div class="tw"><table id="tVend"></table></div>
-      </div>
+    <section>
+      <div class="sec-head"><h2>O que salta aos olhos</h2></div>
+      <p class="sec-note">Leituras calculadas do próprio dado, para checar com o time antes de virar
+        conclusão. Cada uma aparece só quando o que ela afirma continua verdadeiro na seleção.</p>
+      <div class="reads" id="reads"></div>
     </section>
+
+    <div class="nota">
+      <h2>Como ler — e o que não está aqui</h2>
+      <ul>
+        <li><strong>Fila de cobrança</strong> são os negócios parados há mais de 7 dias nas cinco
+          etapas em que parar custa dinheiro: Lead Quente, Lead Agendado, Visita Realizada, Aprovação
+          e Contrato. O lead já se qualificou, já custou mídia e já sabe o preço — cada dia parado aí
+          é margem que evapora. Lead Frio e Lead Morno ficam fora porque a conversa lá é de
+          reciclagem, não de cobrança.</li>
+        <li><strong>Fechamento = ganhas ÷ (ganhas + perdidas)</strong>, contando só o que já terminou.
+          Quem ainda está na esteira não entra em nenhum dos lados — senão quem tem muito lead novo
+          pareceria pior que quem tem pouco. É a taxa histórica desde abril/2026, não do mês.</li>
+        <li><strong>Dias parado = tempo desde a última atualização do negócio</strong> (o campo
+          <code>updated_at</code> do Facilita), não o tempo dentro da etapa. Qualquer mexida no
+          registro — uma anotação, uma troca de campo — zera o contador sem que o lead tenha andado.
+          Então ele mede <em>silêncio no CRM</em>, que é um bom retrato de abandono e um retrato ruim
+          de ciclo de venda. Ciclo por etapa é assunto do <code>HistoricoEtapas</code>, e vai entrar
+          aqui em coluna própria — nunca somada a esta.</li>
+        <li><strong>Mediana, não média.</strong> Numa fila com um lead de 80 dias a média se desloca e
+          some com o caso do meio. A mediana diz onde está o lead típico; a coluna “máx” diz qual é o
+          pior.</li>
+        <li><strong>Não é mais uma foto embutida.</strong> Diferente da versão de 29/08, esta página
+          lê o Cofre ao vivo a cada abertura. O que ela mostra é a última <em>importação</em> do funil
+          — o carimbo no topo diz de quando é, e acima de 48 horas ele fica em amarelo com aviso.</li>
+        <li><strong>Origem do lead não existe nesta base.</strong> Os registros vêm com o campo vazio
+          — o Facilita guarda a origem só na interface e não devolve pela API. Não é lead sem origem:
+          é limitação da fonte.</li>
+        <li><strong>Não há valor, ticket nem VGV.</strong> O campo de valor que vem por aqui é o custo
+          cru do negócio. A regra do projeto diz que ticket e VGV só se calculam por
+          <code>Valor Face × (1 − Desconto %)</code> na <code>Vendas_Facilita</code>, com mediana e
+          sem cortesias.</li>
+        <li><strong>A etapa 1 é descartada</strong> — é do funil da Estrela, não do Parque.</li>
+        <li><strong>A lista de “equipe atual” é manual por enquanto.</strong> Quando a aba de usuários
+          do Cofre existir, o filtro passa a ler dela quem está ativo, em vez de vir marcado na mão.
+          Por isso o botão <em>todos</em> existe: é ele que mostra quem a lista manual está deixando
+          de fora.</li>
+      </ul>
+    </div>
 
     <div class="rodape">
       <span id="rodapeMs"></span>
@@ -284,18 +444,11 @@ body{padding-bottom:64px}
 </div><!-- /wrap -->
 
 <nav class="bnav" id="bnav" hidden>
-  <button type="button" data-p="pFunil" aria-selected="true">
-    <svg viewBox="0 0 24 24"><path d="M3 4h18"/><path d="M6 10h12"/><path d="M9 16h6"/><path d="M11 20h2"/></svg>
-    <span>Funil</span></button>
-  <button type="button" data-p="pFila" aria-selected="false">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 3.5"/></svg>
-    <span>Cobrança</span></button>
-  <button type="button" data-p="pVend" aria-selected="false">
-    <svg viewBox="0 0 24 24"><path d="M16 20v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="3.5"/><path d="M21 20v-2a4 4 0 0 0-3-3.8"/></svg>
-    <span>Vendedores</span></button>
-  <a href="../">
-    <svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-    <span>Painel</span></a>
+  <a href="#secEsteira"><svg viewBox="0 0 24 24"><path d="M3 4h18"/><path d="M6 10h12"/><path d="M9 16h6"/><path d="M11 20h2"/></svg><span>Esteira</span></a>
+  <a href="#secMatriz"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg><span>Matriz</span></a>
+  <a href="#secFichas"><svg viewBox="0 0 24 24"><path d="M16 20v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="3.5"/><path d="M21 20v-2a4 4 0 0 0-3-3.8"/></svg><span>Fichas</span></a>
+  <a href="#secFila"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 3.5"/></svg><span>Cobrança</span></a>
+  <a href="../"><svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg><span>Painel</span></a>
 </nav>
 
 <script>
@@ -303,70 +456,65 @@ body{padding-bottom:64px}
   'use strict';
 
   var API = 'https://script.google.com/macros/s/AKfycbydLmUEX3g6FeojFGAcVHfNKoPsr4d9oTBUdi7GtcfsirQL6xHJM0BELVGcCrcqrICY/exec';
-  var CHAVE_TOKEN = 'hub_token_gestao';   // o mesmo do Painel — não duplicar
+  var CHAVE_TOKEN = 'hub_token_gestao';       // o mesmo do Painel — não duplicar
+  var CHAVE_SEL   = 'esteira-ps-vendedores';  // a mesma chave do artefato
 
-  /* ================= o funil, em ordem =================
-     A ordem não sai do número da etapa: sai de como se anda no funil. Os ids
-     são do CRM e não são sequenciais (28 vem depois de 18, 29 entre 24 e 25).
-     A etapa 1 NÃO está aqui de propósito: é do funil da Estrela.
+  /* ================= as etapas =================
+     ORDEM é a ordem em que se ANDA no funil, não a ordem dos ids: eles são do
+     CRM e não são sequenciais (28 depois de 18, 29 entre 24 e 25, 19 entre 25
+     e 20).
 
-     ⚠️ ESTA LISTA É ORDEM, NÃO É FILTRO. Etapa que não estiver aqui aparece
-     assim mesmo, no fim, com o rótulo que o próprio CRM deu e um aviso — ver
-     `montarFunil()`. O motivo tem data: a primeira versão desta tela foi
-     escrita em 30/08 contra a foto de 27/08, quando a etapa 19 (Proposta)
-     tinha ZERO negócios e por isso não apareceu no reconhecimento. Horas
-     depois a foto nova trouxe 4 — e eles entravam no total "em aberto" sem
-     barra nenhuma no funil. As barras somavam 553 e o KPI dizia 557.
-     Uma tela que conhece uma lista fechada de etapas esconde, em silêncio,
-     toda etapa que o CRM criar depois dela. */
-  var ETAPAS = [
-    { id: 18, nome: 'Lead Frio' },
-    { id: 28, nome: 'Lead Morno' },
-    { id: 24, nome: 'Lead Quente (Qualificado)' },
-    { id: 29, nome: 'Lead Agendado' },
-    { id: 25, nome: 'Visita Realizada' },
-    { id: 19, nome: 'Proposta' },
-    { id: 20, nome: 'Aprovação' },
-    { id: 21, nome: 'Contrato' }
-  ];
+     ⚠️ ESTA LISTA É ORDEM, NÃO É FILTRO. Etapa que existir no dado e não
+     estiver aqui aparece assim mesmo, no fim da esteira, com o rótulo que o
+     PRÓPRIO CRM deu e a barra listrada. O motivo tem data: a etapa 19
+     (Proposta) tinha ZERO negócios na foto de 27/08 e por isso não entrou na
+     primeira versão desta lista; horas depois havia 4, contados no total e sem
+     barra nenhuma. Lista fechada de etapas esconde, calada, toda etapa que o
+     CRM criar depois dela. */
+  var ET = {
+    18:{n:'Lead Frio'}, 28:{n:'Lead Morno'},
+    24:{n:'Lead Quente', cob:1}, 29:{n:'Lead Agendado', cob:1},
+    25:{n:'Visita Realizada', cob:1}, 19:{n:'Proposta'},
+    20:{n:'Aprovação', cob:1}, 21:{n:'Contrato', cob:1},
+    22:{n:'Venda Ganha'}, 23:{n:'Venda Perdida'}
+  };
+  var ORDEM = [18, 28, 24, 29, 25, 19, 20, 21];
+  var COB   = [24, 29, 25, 20, 21];   // lista fechada, do documento de 29/08
   var ETAPA_GANHA = 22, ETAPA_PERDIDA = 23, ETAPA_ESTRELA = 1;
+  var DIAS_COB = 7, DIAS_VELHO = 30;
 
-  /* A fila de cobrança é uma LISTA FECHADA, escrita aqui e em lugar nenhum
-     mais: são as etapas em que o negócio está vivo e a bola é do vendedor.
-     Lead Frio e Morno ficam de fora porque parado ali é o estado normal, não
-     dívida — incluí-los faria a fila nascer com 378 nomes e ninguém a olharia
-     duas vezes. */
-  var FILA_ETAPAS = [24, 29, 25, 20, 21];
-  var FILA_DIAS = 7;
+  /* A "equipe atual" é manual, como era no artefato — a rota não sabe quem
+     está ativo. Casada por prefixo do nome completo, para não quebrar quando o
+     CRM grafar o sobrenome de outro jeito. O botão "todos" existe justamente
+     para mostrar quem esta lista deixa de fora. */
+  var EQUIPE = ['ana luiza', 'wanderson', 'guilherme', 'jaime', 'felipe'];
 
   var $ = function (s) { return document.querySelector(s); };
   var nf = new Intl.NumberFormat('pt-BR');
   var num = function (n) { return nf.format(n); };
-  var pct = function (n) {
-    return (isFinite(n) ? (n * 100).toFixed(1).replace('.', ',') : '—') + '%';
+  var pct = function (x) { return (x * 100).toFixed(1).replace('.', ',') + '%'; };
+  var esc = function (s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c];
+    });
+  };
+  var norm = function (s) {
+    return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
   };
 
-  /* ---------- datas ----------
-     `Criado em` e `Atualizado em` chegam UTC cru do CRM, com SEIS casas de
-     microssegundo ("2026-04-22T19:57:00.000000Z"). Nem todo navegador engole
-     isso; cortar para milissegundos é o conserto de uma linha. */
+  /* `Criado em` e `Atualizado em` chegam UTC cru do CRM, com SEIS casas de
+     microssegundo. Nem todo navegador engole isso — cortar para milissegundos
+     é o conserto de uma linha. */
   function data(v) {
     if (!v) return null;
-    var s = String(v).trim();
-    if (!s) return null;
+    var s = String(v).trim(); if (!s) return null;
     var d = new Date(s.replace(/\.(\d{3})\d+Z$/, '.$1Z'));
     return isNaN(d.getTime()) ? null : d;
   }
-  function diasAte(d, agora) {
-    if (!d) return null;
-    return Math.floor((agora - d.getTime()) / 86400000);
-  }
+  function dias(d, agora) { return d === null ? null : Math.floor((agora - d.getTime()) / 86400000); }
 
-  /* ---------- MEDIANA, nunca média ----------
-     Regra do documento de 29/08, e ela tem motivo: a distribuição de silêncio
-     é de cauda longa. Uma carteira esquecida há 400 dias desloca a média o
-     bastante para fazer um time em dia parecer atrasado. A mediana não se move
-     com o extremo — é ela que responde "o caso típico". */
+  /* MEDIANA, nunca média — regra do projeto. A distribuição de silêncio é de
+     cauda longa: um lead de 80 dias desloca a média e some com o caso do meio. */
   function mediana(v) {
     var a = v.filter(function (x) { return typeof x === 'number' && isFinite(x); })
              .sort(function (x, y) { return x - y; });
@@ -375,21 +523,11 @@ body{padding-bottom:64px}
     return a.length % 2 ? a[m] : Math.round((a[m - 1] + a[m]) / 2);
   }
 
-  function esc(s) {
-    return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  }
-
-  /* ---------- rede ----------
-     fetch não tem prazo. Sem isto, uma resposta que nunca chega deixa a tela
-     em silêncio para sempre — o mesmo comPrazo() do Painel, mesma razão. */
   function comPrazo(url, ms) {
     return new Promise(function (resolve, reject) {
       var venceu = false;
       var t = setTimeout(function () {
-        venceu = true;
-        reject(new Error('o Cofre não respondeu em ' + (ms / 1000) + 's'));
+        venceu = true; reject(new Error('o Cofre não respondeu em ' + (ms / 1000) + 's'));
       }, ms);
       fetch(url, { cache: 'no-store' })
         .then(function (r) { return r.json(); })
@@ -399,59 +537,47 @@ body{padding-bottom:64px}
   }
 
   // ================================================================ estado
-  var LINHAS = [];       // linhas cruas, já sem a etapa da Estrela
-  var VEND = '';         // '' = todos
-  var AGORA = 0;
+  var VENDS = [];          // [{curto, nome, equipe, total, ativa, et, par, mot, ...}]
+  var FILA = [];           // [{cliente, etapa, vendedor, dias}]
+  var EXTRAS = [];         // etapas fora da ORDEM que apareceram no dado
+  var sel = new Set();
+  var ordemCards = 'ativa', ordemCob = 'dias';
 
   // ================================================================ portão
   function abrirPortao(msg) {
     $('#gate').style.display = 'flex';
     $('#gateErro').textContent = msg || '';
-    $('#app').hidden = true;
-    $('#bnav').hidden = true;
+    $('#app').hidden = true; $('#bnav').hidden = true;
     setTimeout(function () { $('#tk').focus(); }, 60);
   }
   function fecharPortao() {
     $('#gate').style.display = 'none';
-    $('#app').hidden = false;
-    $('#bnav').hidden = false;
+    $('#app').hidden = false; $('#bnav').hidden = false;
   }
-
   $('#btEntrar').onclick = function () {
     var v = $('#tk').value.trim();
     if (!v) { $('#gateErro').textContent = 'Digite o token.'; return; }
     try { localStorage.setItem(CHAVE_TOKEN, v); } catch (e) {}
-    $('#tk').value = '';
-    fecharPortao();
-    carregar();
+    $('#tk').value = ''; fecharPortao(); carregar();
   };
-  $('#tk').addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') $('#btEntrar').click();
-  });
+  $('#tk').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('#btEntrar').click(); });
   $('#btTrocar').onclick = function () {
     try { localStorage.removeItem(CHAVE_TOKEN); } catch (e) {}
     abrirPortao('');
   };
 
-  // ================================================================ tarjas
-  function tarja(titulo, corpo, amarela) {
-    $('#avisos').innerHTML =
-      '<div class="tarja' + (amarela ? ' amarela' : '') + '"><div class="t">' +
-      esc(titulo) + '</div>' + corpo + '</div>';
+  function tarja(t, corpo, amarela) {
+    $('#avisos').innerHTML = '<div class="tarja' + (amarela ? ' amarela' : '') +
+      '"><div class="t">' + esc(t) + '</div>' + corpo + '</div>';
   }
-  function tarjaEBloqueia(titulo, corpo) {
-    tarja(titulo, corpo);
-    $('#conteudo').hidden = true;
-  }
+  function bloqueia(t, corpo) { tarja(t, corpo); $('#conteudo').hidden = true; }
 
   // ================================================================ carga
   function carregar() {
     var token = '';
     try { token = localStorage.getItem(CHAVE_TOKEN) || ''; } catch (e) {}
     if (!token) { abrirPortao(''); return; }
-
-    $('#avisos').innerHTML =
-      '<div class="card"><div class="sub" style="margin:0">Lendo o Cofre…</div></div>';
+    $('#avisos').innerHTML = '<p class="sec-note" style="margin-top:20px">Lendo o Cofre…</p>';
 
     comPrazo(API + '?app=leads&fn=list&token=' + encodeURIComponent(token), 45000)
       .then(function (r) {
@@ -463,322 +589,471 @@ body{padding-bottom:64px}
             abrirPortao('Token recusado pelo Cofre. Confira e digite de novo.');
             return;
           }
-          tarjaEBloqueia('O Cofre respondeu, mas sem dado.', '<p>' + esc(err) + '</p>');
+          bloqueia('O Cofre respondeu, mas sem dado.', '<p>' + esc(err) + '</p>');
           return;
         }
-        desenhar(r);
+        montar(r);
       })
       .catch(function (e) {
-        tarjaEBloqueia('Não consegui falar com o Cofre.',
-          '<p>' + esc(e.message || e) + '</p>' +
-          '<p>Nenhum número aparece enquanto isso: tela vazia é melhor que tela ' +
-          'desatualizada com cara de atual.</p>');
+        bloqueia('Não consegui falar com o Cofre.',
+          '<p>' + esc(e.message || e) + '</p><p>Nenhum número aparece enquanto isso: tela vazia é ' +
+          'melhor que tela desatualizada com cara de atual.</p>');
       });
   }
 
-  // ================================================================ desenho
-  function desenhar(r) {
+  // ================================================================ montagem
+  function montar(r) {
     $('#avisos').innerHTML = '';
-    AGORA = Date.now();
+    var AGORA = Date.now();
 
-    /* ---- GUARDA DE TRUNCAMENTO ----
-       `truncado === true` é resposta cortada. `truncado` AUSENTE é pior: quer
-       dizer que o Cofre serve uma versão anterior a 30/08, que devolve linhas
-       sem dizer se são TODAS as linhas — e rota que não sabe dizer é
-       indistinguível de rota que cortou. Nos dois casos a página não desenha. */
+    /* GUARDA DE TRUNCAMENTO. `truncado` ausente é pior que true: quer dizer
+       que o Cofre serve implantação anterior a 30/08, que entrega linhas sem
+       dizer se são todas — e rota que não sabe dizer é indistinguível de rota
+       que cortou. Nos dois casos a página não desenha. */
     if (typeof r.truncado === 'undefined') {
-      tarjaEBloqueia('Esta página não vai desenhar: a rota não diz se cortou a resposta.',
-        '<p>O <code>?app=leads&amp;fn=list</code> respondeu <b>sem o campo ' +
-        '<code>truncado</code></b>. O Cofre está servindo uma implantação anterior a ' +
-        '30/08: ela entrega as linhas sem dizer se são todas.</p>' +
-        '<p><b>O conserto é republicar o Cofre</b> — Implantar ▸ Gerenciar implantações ▸ ' +
-        '✏️ ▸ Nova versão, mantendo a URL. Até lá, qualquer número aqui seria um palpite ' +
-        'com aparência de medida.</p>');
+      bloqueia('Esta página não vai desenhar: a rota não diz se cortou a resposta.',
+        '<p>O <code>?app=leads&amp;fn=list</code> respondeu <b>sem o campo <code>truncado</code></b>. ' +
+        'O Cofre está servindo uma implantação anterior a 30/08.</p>' +
+        '<p><b>O conserto é republicar o Cofre</b> — Implantar ▸ Gerenciar implantações ▸ ✏️ ▸ ' +
+        'Nova versão, mantendo a URL.</p>');
       return;
     }
     if (r.truncado === true) {
-      tarjaEBloqueia('Esta página não vai desenhar: a resposta veio cortada.',
+      bloqueia('Esta página não vai desenhar: a resposta veio cortada.',
         '<p>O Cofre devolveu <b>' + num(r.n) + '</b> linhas de <b>' + num(r.total_aba) +
-        '</b> que existem na aba. Toda conta abaixo — contagem, mediana, fila — sairia ' +
-        'sobre um pedaço do funil, e sairia <b>com cara de completa</b>.</p>' +
-        '<p>Aumente o teto em <code>Coletor.gs</code> (<code>LEADS_LIST_MAX</code>) e ' +
-        'republique.</p>');
+        '</b> na aba. Toda conta abaixo sairia sobre um pedaço do funil, <b>com cara de completa</b>.</p>' +
+        '<p>Aumente o teto em <code>Coletor.gs</code> (<code>LEADS_LIST_MAX</code>) e republique.</p>');
       return;
     }
 
-    /* ---- o carimbo da FOTO ---- */
+    /* ---- carimbo da FOTO, nunca a hora do fetch ---- */
     var carimbo = String(r.carimbo || '').trim();
-    var elC = $('#carimbo');
-    elC.hidden = false;
-    $('#cCarimbo').textContent = carimbo || 'sem carimbo';
-    $('#cTotal').textContent = num(r.total_aba) + ' negócios na foto';
-
     var horas = null;
     if (carimbo) {
-      // "AAAA-MM-DD HH:MM" na hora local do Cofre — mesmo fuso de quem lê
       var d = new Date(carimbo.replace(' ', 'T') + ':00');
       if (!isNaN(d.getTime())) horas = Math.floor((AGORA - d.getTime()) / 3600000);
     }
-    $('#cIdade').textContent =
-      horas === null ? '' :
-      horas < 1 ? 'tirada há menos de 1 hora' :
-      horas < 48 ? 'tirada há ' + horas + 'h' :
-      'tirada há ' + Math.floor(horas / 24) + ' dias';
+    var idade = horas === null ? '' :
+      horas < 1 ? 'há menos de 1 hora' :
+      horas < 48 ? 'há ' + horas + 'h' : 'há ' + Math.floor(horas / 24) + ' dias';
+
+    $('#stamp').innerHTML =
+      '<span class="foto">Foto de <b' + (horas !== null && horas >= 48 ? ' style="color:var(--warn)"' : '') +
+        '>' + esc(carimbo || 'sem carimbo') + '</b>' + (idade ? ' · ' + idade : '') + '</span>' +
+      '<span>Fonte: <b>Cofre do Parque · aba Leads</b> (funil 2, via <code>/exec</code>)</span>' +
+      '<span><b>' + num(r.total_aba) + '</b> negócios · <span id="n-sel"></span></span>';
 
     if (!carimbo) {
-      elC.classList.add('velha');
       tarja('A foto chegou sem carimbo.',
         '<p>A rota respondeu, mas <code>leads.ultima_importacao</code> está vazia na ' +
-        '<code>Config</code> do Cofre — não dá para saber de quando é este funil. ' +
-        'Os números aparecem abaixo, e <b>não se sabe a que dia eles se referem</b>.</p>', true);
+        '<code>Config</code> do Cofre — não dá para saber de quando é este funil.</p>', true);
     } else if (horas !== null && horas >= 48) {
-      elC.classList.add('velha');
       tarja('A foto do funil tem mais de 48 horas.',
-        '<p>Ela é de <b>' + esc(carimbo) + '</b>, ou seja <b>' + Math.floor(horas / 24) +
-        ' dias</b> atrás. Os números abaixo estão <b>certos para aquele instante</b> e ' +
-        'provavelmente errados para hoje.</p>' +
-        '<p>Quem tira a foto é o <code>importarLeads()</code>, no gatilho diário das 5h. ' +
-        'Foto parada com gatilho instalado quer dizer que a rodada não fechou — confira ' +
-        '<code>leads.ultimo_erro</code> na aba <code>Config</code> do Cofre.</p>', true);
-    } else {
-      elC.classList.remove('velha');
+        '<p>Ela é de <b>' + esc(carimbo) + '</b>, ' + Math.floor(horas / 24) + ' dias atrás. Os números ' +
+        'estão <b>certos para aquele instante</b> e provavelmente errados para hoje.</p>' +
+        '<p>Quem tira a foto é o <code>importarLeads()</code>, no gatilho diário das 5h. Foto parada ' +
+        'quer dizer que a rodada não fechou — confira <code>leads.ultimo_erro</code> na ' +
+        '<code>Config</code>.</p>', true);
     }
 
-    /* ---- as linhas ---- */
-    LINHAS = (r.leads || []).map(function (o) {
+    /* ---- linhas cruas -> vendedores ---- */
+    var linhas = (r.leads || []).map(function (o) {
       return {
         etapa: Number(o['Etapa ID']),
         estagio: String(o['Estágio'] || '').trim(),
         status: String(o['Status'] || '').trim(),
+        cliente: String(o['Cliente'] || '').trim(),
         vendedor: String(o['Vendedor'] || '').trim() || 'Sem vendedor',
-        silencio: diasAte(data(o['Atualizado em']), AGORA),
-        idade: diasAte(data(o['Criado em']), AGORA)
+        parado: dias(data(o['Atualizado em']), AGORA)
       };
-    }).filter(function (l) {
-      return l.etapa && l.etapa !== ETAPA_ESTRELA;   // a etapa 1 é da Estrela
+    }).filter(function (l) { return l.etapa && l.etapa !== ETAPA_ESTRELA; });
+
+    // etapas abertas que a ORDEM não conhece — nunca somem em silêncio
+    var conhecidas = {}; ORDEM.forEach(function (id) { conhecidas[id] = true; });
+    var extras = {};
+    linhas.forEach(function (l) {
+      if (conhecidas[l.etapa] || l.etapa === ETAPA_GANHA || l.etapa === ETAPA_PERDIDA) return;
+      var e = extras[l.etapa] || (extras[l.etapa] = { rot: {} });
+      if (l.estagio) e.rot[l.estagio] = (e.rot[l.estagio] || 0) + 1;
     });
+    EXTRAS = Object.keys(extras).map(Number).map(function (id) {
+      var rot = Object.keys(extras[id].rot).sort(function (a, b) {
+        return extras[id].rot[b] - extras[id].rot[a];
+      })[0];
+      return { id: id, nome: (rot || 'Etapa sem rótulo') };
+    });
+    var TODAS_ABERTAS = ORDEM.concat(EXTRAS.map(function (e) { return e.id; }));
+
+    // nomes curtos: primeiro nome, e dois nomes quando o primeiro repete
+    var porNome = {};
+    linhas.forEach(function (l) { (porNome[l.vendedor] || (porNome[l.vendedor] = [])).push(l); });
+    var nomes = Object.keys(porNome);
+    var primeiro = {};
+    nomes.forEach(function (n) {
+      var p = norm(n).split(/\s+/)[0];
+      primeiro[p] = (primeiro[p] || 0) + 1;
+    });
+
+    VENDS = nomes.map(function (n) {
+      var ls = porNome[n];
+      var partes = n.split(/\s+/);
+      var p1 = norm(n).split(/\s+/)[0];
+      var curto = (primeiro[p1] > 1 && partes.length > 1) ? partes[0] + ' ' + partes[1] : partes[0];
+      var v = { nome: n, curto: curto, et: {}, par: {}, mot: [], motTotal: 0 };
+
+      v.equipe = EQUIPE.some(function (e) { return norm(n).indexOf(e) === 0; }) ? 1 : 0;
+
+      ls.forEach(function (l) { v.et[l.etapa] = (v.et[l.etapa] || 0) + 1; });
+
+      TODAS_ABERTAS.forEach(function (id) {
+        var da = ls.filter(function (l) { return l.etapa === id; })
+                   .map(function (l) { return l.parado; })
+                   .filter(function (x) { return x !== null; });
+        var n0 = ls.filter(function (l) { return l.etapa === id; }).length;
+        if (!n0) return;
+        v.par[id] = [
+          n0,
+          mediana(da),
+          da.length ? Math.max.apply(null, da) : null,
+          da.filter(function (x) { return x > DIAS_COB; }).length,
+          da.filter(function (x) { return x > DIAS_VELHO; }).length
+        ];
+      });
+
+      var mot = {};
+      ls.forEach(function (l) {
+        if (l.etapa === ETAPA_PERDIDA && l.status) mot[l.status] = (mot[l.status] || 0) + 1;
+      });
+      v.mot = Object.keys(mot).sort(function (a, b) { return mot[b] - mot[a]; })
+                .slice(0, 3).map(function (k) { return [k, mot[k]]; });
+
+      v.total = ls.length;
+      v.ativa = TODAS_ABERTAS.reduce(function (a, id) { return a + (v.et[id] || 0); }, 0);
+      v.ganha = v.et[ETAPA_GANHA] || 0;
+      v.perdida = v.et[ETAPA_PERDIDA] || 0;
+      v.dec = v.ganha + v.perdida;
+      v.fech = v.dec ? v.ganha / v.dec : null;
+      v.p7 = TODAS_ABERTAS.reduce(function (a, id) { return a + ((v.par[id] || [])[3] || 0); }, 0);
+      v.p30 = TODAS_ABERTAS.reduce(function (a, id) { return a + ((v.par[id] || [])[4] || 0); }, 0);
+      return v;
+    }).sort(function (a, b) { return b.total - a.total; });
+
+    /* ---- a fila de cobrança, lead a lead ---- */
+    FILA = linhas.filter(function (l) {
+      return COB.indexOf(l.etapa) >= 0 && l.parado !== null && l.parado > DIAS_COB;
+    }).map(function (l) {
+      var v = VENDS.filter(function (x) { return x.nome === l.vendedor; })[0];
+      return { cliente: l.cliente, etapa: l.etapa, curto: v ? v.curto : l.vendedor, dias: l.parado };
+    });
+
+    /* ---- seleção inicial: equipe atual, ou o que ficou guardado ---- */
+    var conhecidosCurto = {}; VENDS.forEach(function (v) { conhecidosCurto[v.curto] = true; });
+    sel = new Set(VENDS.filter(function (v) { return v.equipe; }).map(function (v) { return v.curto; }));
+    try {
+      var g = localStorage.getItem(CHAVE_SEL);
+      if (g) {
+        var a = JSON.parse(g).filter(function (c) { return conhecidosCurto[c]; });
+        if (a.length) sel = new Set(a);
+      }
+    } catch (e) {}
+    if (!sel.size) sel = new Set(VENDS.map(function (v) { return v.curto; }));
 
     $('#rodapeMs').textContent = 'Cofre respondeu em ' + num(r.ms || 0) + ' ms · ' +
-      'todas as contas rodam neste aparelho, sobre as linhas cruas.';
+      num(linhas.length) + ' linhas cruas · todas as contas rodam neste aparelho.';
 
-    montarChips();
     $('#conteudo').hidden = false;
-    render();
+    renderFiltro();
+    renderTudo();
   }
 
-  function montarChips() {
-    var vs = {};
-    LINHAS.forEach(function (l) { vs[l.vendedor] = (vs[l.vendedor] || 0) + 1; });
-    var nomes = Object.keys(vs).sort(function (a, b) { return vs[b] - vs[a]; });
-    var h = '<button class="chip" data-v="" aria-pressed="true">Todos</button>';
-    nomes.forEach(function (n) {
-      h += '<button class="chip" data-v="' + esc(n) + '" aria-pressed="false">' +
-           esc(curto(n)) + '</button>';
-    });
-    $('#chipsVend').innerHTML = h;
-    Array.prototype.forEach.call($('#chipsVend').children, function (b) {
-      b.onclick = function () {
-        VEND = b.getAttribute('data-v');
-        Array.prototype.forEach.call($('#chipsVend').children, function (x) {
-          x.setAttribute('aria-pressed', x === b ? 'true' : 'false');
-        });
-        render();
-      };
+  var salvar = function () {
+    try { localStorage.setItem(CHAVE_SEL, JSON.stringify([].slice.call(sel))); } catch (e) {}
+  };
+  var ativos = function () { return VENDS.filter(function (v) { return sel.has(v.curto); }); };
+
+  function renderFiltro() {
+    $('#vends').innerHTML = VENDS.map(function (v) {
+      var on = sel.has(v.curto);
+      return '<label class="vsel" data-on="' + (on ? 1 : 0) + '">' +
+        '<input type="checkbox" value="' + esc(v.curto) + '"' + (on ? ' checked' : '') + '>' +
+        '<span class="box" aria-hidden="true"></span><span>' + esc(v.curto) + '</span>' +
+        '<span class="vn">' + v.total + '</span></label>';
+    }).join('');
+    Array.prototype.forEach.call($('#vends').querySelectorAll('input'), function (i) {
+      i.addEventListener('change', function () {
+        i.checked ? sel.add(i.value) : sel.delete(i.value);
+        salvar(); renderTudo();
+      });
     });
   }
 
-  /* Nome completo cabe na tabela, não cabe na pílula. Primeiro nome + inicial
-     do sobrenome resolve sem apagar xarás: dois "Ana" continuam distinguíveis. */
-  function curto(n) {
-    var p = n.split(/\s+/);
-    return p.length > 1 ? p[0] + ' ' + p[1].charAt(0) + '.' : n;
+  function chipDias(d) {
+    if (d === null) return '<span class="chip chip-ok">—</span>';
+    if (d > DIAS_VELHO) return '<span class="chip chip-crit num">' + d + '</span>';
+    if (d > DIAS_COB) return '<span class="chip chip-warn num">' + d + '</span>';
+    return '<span class="chip chip-ok num">' + d + '</span>';
   }
 
   // ================================================================ render
-  function render() {
-    var L = VEND ? LINHAS.filter(function (l) { return l.vendedor === VEND; }) : LINHAS;
-
-    var ganhas = L.filter(function (l) { return l.etapa === ETAPA_GANHA; }).length;
-    var perdidas = L.filter(function (l) { return l.etapa === ETAPA_PERDIDA; }).length;
-    var decididas = ganhas + perdidas;
-    var abertos = L.filter(function (l) {
-      return l.etapa !== ETAPA_GANHA && l.etapa !== ETAPA_PERDIDA;
-    });
-    var fila = abertos.filter(function (l) {
-      return FILA_ETAPAS.indexOf(l.etapa) >= 0 && l.silencio !== null && l.silencio >= FILA_DIAS;
+  function renderTudo() {
+    var V = ativos();
+    Array.prototype.forEach.call($('#vends').querySelectorAll('.vsel'), function (l) {
+      l.setAttribute('data-on', l.querySelector('input').checked ? 1 : 0);
     });
 
-    // ---- KPIs
-    $('#kpis').innerHTML =
-      kpi('Em aberto', num(abertos.length), 'negócios ainda vivos no funil') +
-      kpi('Fila de cobrança', num(fila.length),
-          'parados ' + FILA_DIAS + 'd+ nas etapas vivas', fila.length > 0) +
-      kpi('Fechamento', decididas ? pct(ganhas / decididas) : '—',
-          num(ganhas) + ' ganhas de ' + num(decididas) + ' decididas') +
-      kpi('Silêncio (mediana)', medTxt(abertos.map(function (l) { return l.silencio; })),
-          'no que está em aberto');
+    var ORD = ORDEM.concat(EXTRAS.map(function (e) { return e.id; }));
+    var somaEt = function (id) {
+      return V.reduce(function (a, v) { return a + (v.et[id] || 0); }, 0);
+    };
+    var somaPar = function (id, i) {
+      return V.reduce(function (a, v) { return a + ((v.par[id] || [])[i] || 0); }, 0);
+    };
 
-    // ---- funil
-    var linhasFunil = montarFunil(abertos);
-    var maior = Math.max(ganhas, perdidas, 1);
-    linhasFunil.forEach(function (x) { if (x.q > maior) maior = x.q; });
+    var T = {
+      total: V.reduce(function (a, v) { return a + v.total; }, 0),
+      ativa: V.reduce(function (a, v) { return a + v.ativa; }, 0),
+      ganha: V.reduce(function (a, v) { return a + v.ganha; }, 0),
+      perdida: V.reduce(function (a, v) { return a + v.perdida; }, 0),
+      p30: V.reduce(function (a, v) { return a + v.p30; }, 0),
+      quentes: [24, 29, 25].reduce(function (a, id) { return a + somaEt(id); }, 0)
+    };
+    T.dec = T.ganha + T.perdida;
 
-    var h = '';
-    linhasFunil.forEach(function (x) {
-      var naFila = FILA_ETAPAS.indexOf(x.id) >= 0;
-      var med = mediana(abertos.filter(function (l) { return l.etapa === x.id; })
-                               .map(function (l) { return l.silencio; }));
-      var sub = 'silêncio mediano ' + (med === null ? '—' : med + 'd') +
-                (naFila ? ' · entra na fila de cobrança' : '');
-      if (x.desconhecida) {
-        sub = 'ETAPA NOVA no CRM, fora da ordem conhecida desta tela · ' + sub;
-      }
-      h += barra(x.nome, sub, x.q, maior, x.desconhecida ? 'nova' : (naFila ? 'fila' : ''));
-    });
-    h += barra('Venda Ganha', 'fim da linha', ganhas, maior, 'ganha');
-    h += barra('Venda Perdida', 'fim da linha', perdidas, maior, 'perdida');
-    $('#funil').innerHTML = h;
+    var curtos = {}; V.forEach(function (v) { curtos[v.curto] = true; });
+    var cob = FILA.filter(function (p) { return curtos[p.curto]; });
+    var fm7  = [18, 28].reduce(function (a, id) { return a + somaPar(id, 3); }, 0);
+    var fm30 = [18, 28].reduce(function (a, id) { return a + somaPar(id, 4); }, 0);
 
-    /* A prova de que nada se escondeu: as barras do que está em aberto têm de
-       somar exatamente o KPI "Em aberto". Se um dia não somarem, a tela diz —
-       em vez de deixar a diferença calada, que foi como a Proposta sumiu. */
-    var somaAbertas = linhasFunil.reduce(function (a, x) { return a + x.q; }, 0);
-    if (somaAbertas !== abertos.length) {
-      $('#funil').insertAdjacentHTML('beforeend',
-        '<div class="nada" style="color:var(--crit)">⚠️ As barras somam ' +
-        num(somaAbertas) + ' e há ' + num(abertos.length) +
-        ' em aberto. Há negócio fora de toda etapa listada — não confie neste funil.</div>');
+    var nsel = document.getElementById('n-sel');
+    if (nsel) nsel.textContent = V.length === VENDS.length ? 'todos os vendedores'
+      : num(T.total) + ' no filtro · ' + V.length + (V.length === 1 ? ' vendedor' : ' vendedores');
+
+    if (!V.length) {
+      ['tiles', 'esteira', 'cards', 'reads'].forEach(function (id) {
+        $('#' + id).innerHTML = '<div class="vazio">Nenhum vendedor selecionado.</div>';
+      });
+      $('#matriz').innerHTML = ''; $('#cobranca').innerHTML = ''; $('#nota-cob').textContent = '';
+      return;
     }
 
-    // ---- fila de cobrança: por vendedor, NUNCA por cliente
-    if (!fila.length) {
-      $('#fila').innerHTML = '<div class="nada">Ninguém parado há ' + FILA_DIAS +
-        ' dias ou mais nas etapas vivas' + (VEND ? ' para este vendedor' : '') + '.</div>';
-    } else {
+    /* ---- tiles ---- */
+    $('#tiles').innerHTML = [
+      { k:'Esteira ativa', v:num(T.ativa), s:'negócios em jogo agora, de ' + num(T.total) + ' no filtro' },
+      { k:'Filas quentes', v:num(T.quentes), s:'Quente + Agendado + Visita Realizada' },
+      { k:'Na fila de cobrança', v:num(cob.length),
+        s:'parados +' + DIAS_COB + ' dias nas etapas que custam dinheiro', cls:'is-crit' },
+      { k:'Fechamento histórico', v:T.dec ? pct(T.ganha / T.dec) : '—',
+        s:num(T.ganha) + ' ganhas de ' + num(T.dec) + ' decididas desde abril' }
+    ].map(function (t) {
+      return '<div class="tile ' + (t.cls || '') + '"><div class="k">' + t.k +
+        '</div><div class="v num">' + t.v + '</div><div class="s">' + t.s + '</div></div>';
+    }).join('');
+
+    /* ---- esteira ativa (SEM ganha/perdida — são histórico, não estoque) ---- */
+    var maxEt = Math.max.apply(null, [1].concat(ORD.map(somaEt)));
+    var somaBarras = 0;
+    $('#esteira').innerHTML = ORD.map(function (id) {
+      var n = somaEt(id); if (!n) return '';
+      somaBarras += n;
+      var p7 = somaPar(id, 3), p30 = somaPar(id, 4), p8 = p7 - p30, flags = [];
+      var nova = !ET[id];
+      if (p8)  flags.push('<span class="chip chip-warn">' + p8 + ' · 8–' + DIAS_VELHO + 'd</span>');
+      if (p30) flags.push('<span class="chip chip-crit">' + p30 + ' · +' + DIAS_VELHO + 'd</span>');
+      if (!p7) flags.push('<span class="chip chip-ok">nenhum parado</span>');
+      if (nova) flags.unshift('<span class="chip chip-crit">etapa nova no CRM</span>');
+      var nome = ET[id] ? ET[id].n
+        : (EXTRAS.filter(function (e) { return e.id === id; })[0] || {}).nome || 'Etapa ' + id;
+      return '<div class="st-row' + (nova ? ' nova' : '') + '">' +
+        '<div class="st-name">' + esc(nome) + '<span class="et-id">' + id + '</span></div>' +
+        '<div class="st-n num">' + num(n) + '</div>' +
+        '<div class="bar-track"><div class="bar-fill" style="width:' +
+          Math.max(1.5, n / maxEt * 100) + '%" title="' + esc(nome) + ': ' + n + ' negócios"></div></div>' +
+        '<div class="st-flags">' + flags.join('') + '</div></div>';
+    }).join('');
+
+    /* A prova de que nada se escondeu: as barras têm de somar a esteira ativa.
+       Se não somarem, a tela DIZ — foi a diferença calada que escondeu a
+       Proposta na primeira versão. */
+    if (somaBarras !== T.ativa) {
+      $('#esteira').insertAdjacentHTML('beforeend',
+        '<div class="vazio" style="color:var(--crit)">⚠️ As barras somam ' + num(somaBarras) +
+        ' e a esteira ativa é ' + num(T.ativa) + '. Há negócio fora de toda etapa listada — ' +
+        'não confie nesta esteira.</div>');
+    }
+
+    /* ---- matriz ---- */
+    $('#matriz').innerHTML =
+      '<thead><tr><th class="l">Vendedor</th>' +
+      ORD.map(function (id) {
+        var nome = ET[id] ? ET[id].n : 'Etapa ' + id;
+        return '<th>' + esc(nome.replace('Visita Realizada', 'Visita').replace('Lead ', '')) + '</th>';
+      }).join('') +
+      '<th class="sep">Ativa</th><th class="sep">Ganhas</th><th>Perdidas</th><th>Fechamento</th>' +
+      '</tr></thead><tbody>' +
+      V.map(function (v) {
+        return '<tr><td class="l name">' + esc(v.curto) + '</td>' +
+          ORD.map(function (id) {
+            var n = v.et[id] || 0;
+            return '<td class="num ' + (n ? '' : 'dim') + '">' + (n || '—') + '</td>';
+          }).join('') +
+          '<td class="num sep"><strong>' + v.ativa + '</strong></td>' +
+          '<td class="num sep">' + (v.ganha || '—') + '</td>' +
+          '<td class="num">' + (v.perdida || '—') + '</td>' +
+          '<td class="num">' + (v.fech === null ? '—' : pct(v.fech)) + '</td></tr>';
+      }).join('') +
+      '</tbody><tfoot><tr><td class="l">Total</td>' +
+      ORD.map(function (id) { return '<td class="num">' + somaEt(id) + '</td>'; }).join('') +
+      '<td class="num sep">' + T.ativa + '</td><td class="num sep">' + T.ganha + '</td>' +
+      '<td class="num">' + T.perdida + '</td>' +
+      '<td class="num">' + (T.dec ? pct(T.ganha / T.dec) : '—') + '</td></tr></tfoot>';
+
+    /* ---- fichas ---- */
+    var arr = V.slice().sort(function (a, b) {
+      return ordemCards === 'parados' ? b.p7 - a.p7
+        : ordemCards === 'fech' ? ((b.fech === null ? -1 : b.fech) - (a.fech === null ? -1 : a.fech))
+        : b.ativa - a.ativa;
+    });
+    $('#cards').innerHTML = arr.map(function (v) {
+      var ls = ORD.filter(function (id) { return v.par[id]; }).map(function (id) {
+        var p = v.par[id], nome = ET[id] ? ET[id].n : 'Etapa ' + id;
+        return '<tr><td class="l">' + esc(nome) + '</td><td class="num">' + p[0] + '</td>' +
+          '<td>' + chipDias(p[1]) + '</td><td class="num dim">' + (p[2] === null ? '—' : p[2]) + '</td>' +
+          '<td class="num ' + (p[3] ? '' : 'dim') + '">' + (p[3] || '—') + '</td>' +
+          '<td class="num ' + (p[4] ? '' : 'dim') + '"' +
+            (p[4] ? ' style="color:var(--crit);font-weight:700"' : '') + '>' + (p[4] || '—') + '</td></tr>';
+      }).join('');
+      var mx = Math.max.apply(null, [1].concat(v.mot.map(function (m) { return m[1]; })));
+      var mot = v.mot.map(function (m) {
+        return '<div class="mrow"><span class="mb" style="width:' +
+          Math.max(6, m[1] / mx * 72) + 'px"></span><span>' + esc(m[0]) +
+          '</span><span class="mn">' + m[1] + '</span></div>';
+      }).join('');
+      return '<div class="card"><div class="card-top">' +
+        '<div class="card-name">' + esc(v.curto) + '</div>' +
+        '<div class="card-sub">' + esc(v.nome) + '</div>' +
+        '<div class="card-kpis">' +
+          '<div class="kpi"><div class="kv num">' + v.ativa + '</div><div class="kk">Esteira ativa</div></div>' +
+          '<div class="kpi"><div class="kv num"' + (v.p7 ? ' style="color:var(--warn)"' : '') + '>' +
+            v.p7 + '</div><div class="kk">Parados +' + DIAS_COB + 'd</div></div>' +
+          '<div class="kpi"><div class="kv num"' + (v.p30 ? ' style="color:var(--crit)"' : '') + '>' +
+            v.p30 + '</div><div class="kk">Parados +' + DIAS_VELHO + 'd</div></div>' +
+          '<div class="kpi"><div class="kv num">' + (v.fech === null ? '—' : pct(v.fech)) +
+            '</div><div class="kk">Fechamento</div></div>' +
+        '</div></div>' +
+        '<div class="card-body"><table class="mini"><thead><tr><th class="l">Etapa</th><th>N</th>' +
+        '<th>Mediana</th><th>Máx</th><th>+' + DIAS_COB + 'd</th><th>+' + DIAS_VELHO + 'd</th></tr></thead>' +
+        '<tbody>' + (ls || '<tr><td class="l dim" colspan="6">nada na esteira ativa</td></tr>') +
+        '</tbody></table></div>' +
+        '<div class="motivos"><div class="mt">Por que perdeu · ' + v.perdida + ' perdidas</div>' +
+        (mot || '<div class="mrow dim">sem motivo registrado</div>') + '</div></div>';
+    }).join('');
+
+    /* ---- fila de cobrança ---- */
+    $('#nota-cob').innerHTML =
+      'Os <strong>' + num(cob.length) + '</strong> negócios parados há mais de ' + DIAS_COB +
+      ' dias nas etapas que custam dinheiro — Lead Quente, Agendado, Visita Realizada, Aprovação e ' +
+      'Contrato. Lead Frio e Lead Morno ficam fora: são <strong>' + num(fm7) + '</strong> parados e ' +
+      'viram outra conversa, não esta.';
+
+    var ord = cob.slice().sort(function (a, b) {
+      return ordemCob === 'vend' ? (a.curto.localeCompare(b.curto, 'pt') || b.dias - a.dias)
+        : ordemCob === 'etapa' ? (COB.indexOf(a.etapa) - COB.indexOf(b.etapa) || b.dias - a.dias)
+        : b.dias - a.dias;
+    });
+    $('#cobranca').innerHTML = ord.length
+      ? '<thead><tr><th class="l">Cliente</th><th class="l">Etapa</th><th class="l">Vendedor</th>' +
+        '<th>Dias parado</th></tr></thead><tbody>' +
+        ord.map(function (p) {
+          return '<tr><td class="l name">' + esc(p.cliente || '(sem nome no CRM)') + '</td>' +
+            '<td class="l">' + esc(ET[p.etapa] ? ET[p.etapa].n : 'Etapa ' + p.etapa) +
+            '<span class="et-id">' + p.etapa + '</span></td>' +
+            '<td class="l">' + esc(p.curto) + '</td><td>' + chipDias(p.dias) + '</td></tr>';
+        }).join('') + '</tbody>'
+      : '<tbody><tr><td class="vazio" colspan="4">Ninguém parado há mais de ' + DIAS_COB +
+        ' dias nessas etapas. Raro — confira o carimbo.</td></tr></tbody>';
+
+    renderReads(V, T, cob, fm7, fm30, somaEt);
+  }
+
+  /* ---------- leituras ----------
+     SÓ AS QUE SÃO REGRA, e a diferença importa. O artefato de 29/08 trazia
+     também cinco leituras escritas à mão sobre pessoas ("fulano fecha muito
+     porque escolhe muito"). Aquilo era interpretação de um dia, com números
+     daquele dia: repetida ao vivo, viraria frase fixa contando o que já não é
+     verdade. O que sobrevive à mudança do dado é o que tem regra — e é isso
+     que fica aqui. Leitura de gente continua sendo trabalho de gente. */
+  function renderReads(V, T, cob, fm7, fm30, somaEt) {
+    var R = [];
+
+    if (cob.length) {
       var porV = {};
-      fila.forEach(function (l) {
-        var v = porV[l.vendedor] || (porV[l.vendedor] = { n: 0, dias: [], etapas: {} });
-        var rot = l.estagio || ('etapa ' + l.etapa);
-        v.n++; v.dias.push(l.silencio);
-        v.etapas[rot] = (v.etapas[rot] || 0) + 1;
-      });
-      var ns = Object.keys(porV).sort(function (a, b) { return porV[b].n - porV[a].n; });
-      var t = '<table><thead><tr><th>Vendedor</th><th class="n">Parados</th>' +
-              '<th class="n">Silêncio mediano</th><th class="n">Pior caso</th>' +
-              '<th>Em que etapa</th></tr></thead><tbody>';
-      ns.forEach(function (n) {
-        var v = porV[n];
-        t += '<tr><td class="vd">' + esc(n) + '</td>' +
-             '<td class="n">' + num(v.n) + '</td>' +
-             '<td class="n">' + mediana(v.dias) + 'd</td>' +
-             '<td class="n">' + Math.max.apply(null, v.dias) + 'd</td>' +
-             '<td class="motivos">' + esc(listar(v.etapas)) + '</td></tr>';
-      });
-      $('#fila').innerHTML = '<div class="tw">' + t + '</tbody></table></div>';
+      cob.forEach(function (p) { porV[p.curto] = (porV[p.curto] || 0) + 1; });
+      var top = Object.keys(porV).sort(function (a, b) { return porV[b] - porV[a]; })[0];
+      if (V.length >= 2 && porV[top] / cob.length >= 0.4) {
+        R.push({ c:'crit', h:'A fila de cobrança está concentrada em uma pessoa',
+          p: '<strong>' + porV[top] + '</strong> dos ' + cob.length + ' negócios parados são de <strong>' +
+             esc(top) + '</strong>. Concentração não quer dizer descuido — pode ser carteira maior ou ' +
+             'etapa mais lenta. Quer dizer que a conversa de cobrança tem um destinatário claro.' });
+      }
     }
 
-    // ---- ficha por vendedor (sempre sobre a base inteira; o chip só realça)
-    var porVend = {};
-    LINHAS.forEach(function (l) {
-      var v = porVend[l.vendedor] ||
-        (porVend[l.vendedor] = { g: 0, p: 0, ab: 0, fila: 0, sil: [], motivos: {} });
-      if (l.etapa === ETAPA_GANHA) { v.g++; }
-      else if (l.etapa === ETAPA_PERDIDA) {
-        v.p++;
-        if (l.status) v.motivos[l.status] = (v.motivos[l.status] || 0) + 1;
-      } else {
-        v.ab++;
-        if (l.silencio !== null) v.sil.push(l.silencio);
-        if (FILA_ETAPAS.indexOf(l.etapa) >= 0 && l.silencio !== null && l.silencio >= FILA_DIAS) v.fila++;
-      }
-    });
-    var nv = Object.keys(porVend).sort(function (a, b) {
-      var A = porVend[a], B = porVend[b];
-      return (B.g + B.p + B.ab) - (A.g + A.p + A.ab);
-    });
-    var tv = '<thead><tr><th>Vendedor</th><th class="n">Aberto</th><th class="n">Fila</th>' +
-             '<th class="n">Ganhas</th><th class="n">Perdidas</th><th class="n">Fechamento</th>' +
-             '<th class="n">Silêncio</th><th>Motivos de perda</th></tr></thead><tbody>';
-    nv.forEach(function (n) {
-      var v = porVend[n], dec = v.g + v.p, med = mediana(v.sil);
-      tv += '<tr' + (VEND && n !== VEND ? ' style="opacity:.3"' : '') + '>' +
-            '<td class="vd">' + esc(n) + '</td>' +
-            '<td class="n">' + num(v.ab) + '</td>' +
-            '<td class="n">' + (v.fila || '—') + '</td>' +
-            '<td class="n">' + num(v.g) + '</td>' +
-            '<td class="n">' + num(v.p) + '</td>' +
-            '<td class="n">' + (dec ? pct(v.g / dec) : '—') + '</td>' +
-            '<td class="n">' + (med === null ? '—' : med + 'd') + '</td>' +
-            '<td class="motivos">' + esc(listar(v.motivos, 3) || '—') + '</td></tr>';
-    });
-    $('#tVend').innerHTML = tv + '</tbody>';
+    var nAg = somaEt(29), nQ = somaEt(24);
+    if (V.length >= 3 && nQ >= 4 * Math.max(nAg, 1)) {
+      R.push({ c:'', h:'Lead Agendado quase não existe',
+        p: 'São ' + nAg + ' negócios na etapa, contra ' + nQ + ' em Lead Quente. Ou a equipe pula a ' +
+           'etapa no board e agenda direto para Visita, ou a qualificação está represando antes do ' +
+           'agendamento. As duas hipóteses mudam o que se cobra — e nenhuma se resolve por este painel.' });
+    }
+
+    if (fm7) {
+      var frios = somaEt(18) + somaEt(28);
+      R.push({ c:'warn', h:'A maior pilha está fora da fila de cobrança',
+        p: 'Lead Frio e Lead Morno somam ' + num(frios) + ' negócios, dos quais <strong>' + fm7 +
+           '</strong> estão sem toque há mais de ' + DIAS_COB + ' dias e <strong>' + fm30 +
+           '</strong> há mais de ' + DIAS_VELHO + '. Não entram na cobrança porque não são a mesma ' +
+           'conversa — mas ' + fm30 + ' leads esquecidos há mais de um mês são uma decisão pendente ' +
+           'sobre reciclagem, não um acaso.' });
+    }
+
+    if (T.p30) {
+      R.push({ c:'warn', h:'O que passou de ' + DIAS_VELHO + ' dias já não é atraso, é abandono',
+        p: '<strong>' + T.p30 + '</strong> negócios da esteira ativa estão sem qualquer toque no CRM há ' +
+           'mais de um mês. Vale lembrar o que o número é: silêncio no registro, não tempo de etapa. ' +
+           'Um telefonema que não virou anotação não aparece aqui.' });
+    }
+
+    $('#reads').innerHTML = R.length
+      ? R.map(function (r) {
+          return '<div class="read ' + r.c + '"><h3>' + r.h + '</h3><p>' + r.p + '</p></div>';
+        }).join('')
+      : '<div class="vazio">Nada fora do padrão nesta seleção.</div>';
   }
 
-  /* As linhas do funil: primeiro as etapas conhecidas, NA ORDEM em que se anda
-     no funil; depois qualquer etapa que exista no dado e não esteja na lista.
-     A segunda metade é a que importa — ela é o que impede a tela de esconder
-     uma etapa que o CRM criou depois de este arquivo ser escrito. O rótulo da
-     etapa desconhecida sai do próprio `Estágio` do CRM, não de um chute. */
-  function montarFunil(abertos) {
-    var linhas = ETAPAS.map(function (e) {
-      return { id: e.id, nome: e.nome, desconhecida: false,
-               q: abertos.filter(function (l) { return l.etapa === e.id; }).length };
+  // ================================================================ controles
+  Array.prototype.forEach.call(document.querySelectorAll('[data-sort]'), function (b) {
+    b.addEventListener('click', function () {
+      Array.prototype.forEach.call(document.querySelectorAll('[data-sort]'), function (o) {
+        o.setAttribute('aria-pressed', o === b);
+      });
+      ordemCards = b.getAttribute('data-sort'); renderTudo();
     });
-
-    var conhecidas = {};
-    ETAPAS.forEach(function (e) { conhecidas[e.id] = true; });
-
-    var estranhas = {};
-    abertos.forEach(function (l) {
-      if (conhecidas[l.etapa]) return;
-      var e = estranhas[l.etapa] || (estranhas[l.etapa] = { q: 0, rotulos: {} });
-      e.q++;
-      if (l.estagio) e.rotulos[l.estagio] = (e.rotulos[l.estagio] || 0) + 1;
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-psort]'), function (b) {
+    b.addEventListener('click', function () {
+      Array.prototype.forEach.call(document.querySelectorAll('[data-psort]'), function (o) {
+        o.setAttribute('aria-pressed', o === b);
+      });
+      ordemCob = b.getAttribute('data-psort'); renderTudo();
     });
-
-    Object.keys(estranhas).map(Number).sort(function (a, b) {
-      return estranhas[b].q - estranhas[a].q;
-    }).forEach(function (id) {
-      var e = estranhas[id];
-      var rot = Object.keys(e.rotulos).sort(function (a, b) {
-        return e.rotulos[b] - e.rotulos[a];
-      })[0];
-      linhas.push({ id: id, q: e.q, desconhecida: true,
-                    nome: (rot || 'Etapa sem rótulo') + ' (etapa ' + id + ')' });
-    });
-
-    return linhas;
-  }
-
-  function kpi(lb, vl, sub, alerta) {
-    return '<div class="kpi' + (alerta ? ' alerta' : '') + '"><div class="lb">' + esc(lb) +
-           '</div><div class="vl">' + vl + '</div><div class="sub">' + esc(sub) + '</div></div>';
-  }
-  function barra(nome, sub, q, maior, cls) {
-    var w = maior ? Math.max(q ? 2 : 0, Math.round(q / maior * 100)) : 0;
-    return '<div class="fun ' + cls + '"><div class="nm">' + esc(nome) +
-           '<small>' + esc(sub) + '</small></div>' +
-           '<div class="fbar"><i style="width:' + w + '%"></i></div>' +
-           '<div class="qt">' + num(q) + '</div></div>';
-  }
-  function medTxt(v) { var m = mediana(v); return m === null ? '—' : m + 'd'; }
-  function listar(obj, teto) {
-    var ks = Object.keys(obj).sort(function (a, b) { return obj[b] - obj[a]; });
-    if (teto) ks = ks.slice(0, teto);
-    return ks.map(function (k) { return k + ' (' + obj[k] + ')'; }).join(' · ');
-  }
-
-  // ================================================================ abas
-  function irPara(pid) {
-    Array.prototype.forEach.call(document.querySelectorAll('.panel'), function (p) {
-      p.classList.toggle('on', p.id === pid);
-    });
-    Array.prototype.forEach.call(document.querySelectorAll('.tab, #bnav [data-p]'), function (b) {
-      b.setAttribute('aria-selected', b.getAttribute('data-p') === pid ? 'true' : 'false');
-    });
-  }
-  Array.prototype.forEach.call(document.querySelectorAll('.tab, #bnav [data-p]'), function (b) {
-    b.onclick = function () { irPara(b.getAttribute('data-p')); };
+  });
+  $('#f-equipe').addEventListener('click', function () {
+    sel = new Set(VENDS.filter(function (v) { return v.equipe; }).map(function (v) { return v.curto; }));
+    if (!sel.size) sel = new Set(VENDS.map(function (v) { return v.curto; }));
+    salvar(); renderFiltro(); renderTudo();
+  });
+  $('#f-todos').addEventListener('click', function () {
+    sel = new Set(VENDS.map(function (v) { return v.curto; }));
+    salvar(); renderFiltro(); renderTudo();
   });
 
   // ================================================================ arranque
