@@ -1,6 +1,12 @@
 /* Painel Comercial — Parque da Saudade + Estrela Urbanidade
    Service worker: instalação PWA + reserva offline.
-   Atualizado em: 30/08/2026 (2ª do dia) — o repo passou de `estrela` para
+   Atualizado em: 30/08/2026 (3ª do dia) — nasce a ESTEIRA DO FUNIL em
+   /esteira/, tela de gestão do Parque que lê ?app=leads&fn=list ao vivo. Ela
+   fica DENTRO do escopo deste PWA de propósito: o público é o mesmo do Painel
+   (a lição de 11/08 era o app do TIME engolindo página da gestão, e não é o
+   caso aqui). A estratégia rede-primeiro serve bem a ela — versão nova quando
+   online, última boa quando não.
+   Antes, 30/08 (2ª do dia) — o repo passou de `estrela` para
    `painel-comercial` e o endereço mudou junto: o Pages agora serve em
    /painel-comercial/, e o GitHub NÃO redireciona Pages de projeto renomeado.
    O nome do cache carregava o nome velho e mudou com ele — cache que sobrevive
@@ -22,7 +28,7 @@
    abas: no Parque escolhem o mês da tela; na Estrela, o fim da janela de 12m.
    Estratégia: rede primeiro (pega versão nova quando online), cache como
    reserva offline. A cada deploy, bumpar a versão em CACHE. */
-const CACHE = 'painel-comercial-260830-2';
+const CACHE = 'painel-comercial-260830-3';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./'])).then(() => self.skipWaiting()));

@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Esteira do Funil — Parque da Saudade</title>
+<link rel="icon" href="../favicon-32.png" sizes="32x32">
+<!--
+  ESTEIRA DO FUNIL — Parque da Saudade. Nasceu em 30/08/2026.
+
+  DE ONDE VEIO: era um artefato do Cowork — foto, com os números embutidos no
+  arquivo, e só o Ricardo enxergava. Aqui ela lê o Cofre ao vivo e tem endereço
+  para passar à liderança.
+
+  O QUE ESTA PÁGINA NÃO TEM, E POR QUÊ:
+    - nenhum segredo. O token é digitado uma vez por aparelho e mora no
+      localStorage (`hub_token_gestao`, o MESMO do Painel — quem já usa o
+      Painel não digita nada aqui);
+    - nenhum dado. Tudo vem de ?app=leads&fn=list na abertura, e toda conta
+      roda no navegador sobre as linhas cruas. É isso que faz o filtro de
+      vendedor funcionar por inteiro, em vez de filtrar um número já somado;
+    - nenhum nome de cliente na tela. A rota devolve `Cliente`; esta página
+      nunca o desenha. Dado de família enlutada não vira gráfico.
+
+  O QUE FICA DE FORA, DE PROPÓSITO (o §4 do documento de 29/08):
+    - `Origem do Lead`: vazia nos 1.147 registros. Coluna vazia desenhada vira
+      "sem origem" com cara de achado;
+    - `Valor`: é o `cost` cru do CRM, não o valor à vista. Ticket e VGV sairiam
+      errados por um fator de ~3 — e errados com aparência de certos;
+    - a etapa 1: é do funil da Estrela, não do Parque.
+
+  OS DOIS RELÓGIOS — e a razão de esta página falar em SILÊNCIO:
+    o que ela mede é `Atualizado em`, ou seja, quanto tempo faz que ninguém
+    toca no negócio. Qualquer anotação zera esse relógio. NÃO é tempo na etapa.
+    O tempo na etapa vive no log HistoricoEtapas e entra aqui em etapa própria,
+    quando o log tiver o que dizer. Somar os dois seria inventar um terceiro
+    número que não mede nada.
+-->
+<style>
+/* A linguagem visual é a do Painel Comercial, e é de propósito: dois idiomas
+   de navegação dentro do mesmo hub é o defeito a evitar. Tokens, abas, barra
+   inferior e pílulas saem de ../index.html sem reinvenção. */
+:root{--bg:#0b1220;--card:rgba(255,255,255,.045);--card2:rgba(255,255,255,.03);
+--edge:rgba(255,255,255,.09);--edge2:rgba(255,255,255,.14);
+--text-1:#eef4fa;--text-2:#9fb2c8;--text-3:#64778f;
+--s1:#0e9fc4;--s1b:#67cfe8;
+--chip-bg:rgba(255,255,255,.05);
+--ok:#4ade80;--warn:#fbbf24;--crit:#f87171;
+--ouro:#f2c744;--ouro-b:#f7d977}
+*{box-sizing:border-box}
+html{color-scheme:dark}
+body{margin:0;color:var(--text-1);min-height:100vh;
+background:radial-gradient(1200px 600px at 80% -10%,#12253c 0%,var(--bg) 55%) fixed;
+font:14px/1.5 -apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:22px 16px 60px}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px}
+h1{font-size:20px;margin:0;letter-spacing:.01em}
+h1 small{display:block;font-size:11.5px;font-weight:400;color:var(--text-3);letter-spacing:.04em;
+text-transform:uppercase;margin-top:2px}
+.voltar{border:1px solid var(--edge);background:var(--card2);color:var(--text-2);
+border-radius:999px;padding:6px 13px;font:600 12.5px/1.2 inherit;cursor:pointer;
+display:inline-flex;gap:6px;align-items:center;white-space:nowrap;text-decoration:none}
+.voltar:hover{color:var(--text-1);border-color:var(--edge2)}
+.voltar svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;
+stroke-linecap:round;stroke-linejoin:round}
+
+/* ---- O CARIMBO. Fica no topo, em destaque, sempre visível, e é o carimbo da
+   FOTO — nunca a hora do fetch. Uma página que busca ao vivo parece viva; se
+   ela não disser de quando é o dado, parecer vivo é a mentira. ---- */
+.carimbo{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;
+background:var(--card);border:1px solid var(--edge);border-radius:14px;
+padding:11px 14px;margin:10px 0 4px}
+.carimbo .cl{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;
+color:var(--text-3);font-weight:700}
+.carimbo .cv{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}
+.carimbo .idade{font-size:12px;color:var(--text-2)}
+.carimbo.velha{border-color:rgba(251,191,36,.45);background:rgba(217,119,6,.12)}
+.carimbo.velha .cv{color:var(--warn)}
+
+/* ---- Tarja. Vermelha, no topo, e quando ela aparece a página NÃO desenha
+   bloco nenhum. Número cortado em silêncio já publicou número errado nesta
+   casa uma vez. ---- */
+.tarja{background:rgba(220,38,38,.14);border:1px solid rgba(248,113,113,.5);
+color:#ffd9d9;border-radius:14px;padding:14px 16px;margin:12px 0}
+.tarja p{margin:6px 0}
+.tarja code{background:rgba(0,0,0,.3);padding:1px 5px;border-radius:5px;font-size:12px}
+.tarja .t{font-size:15px;font-weight:800;margin-bottom:4px;color:#ffb4b4}
+.tarja.amarela{background:rgba(217,119,6,.13);border-color:rgba(251,191,36,.5);color:#ffeccd}
+.tarja.amarela .t{color:var(--warn)}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--edge);margin:14px 0 16px}
+.tab{border:none;background:none;color:var(--text-3);padding:9px 14px;font-size:14px;
+cursor:pointer;border-bottom:2px solid transparent;font-weight:600}
+.tab[aria-selected="true"]{color:var(--s1b);border-bottom-color:var(--s1)}
+.panel{display:none}.panel.on{display:block}
+
+.filters{display:flex;flex-wrap:wrap;gap:13px 22px;align-items:flex-start;
+background:var(--card);border:1px solid var(--edge);border-radius:16px;
+backdrop-filter:blur(8px);padding:12px 14px;margin-bottom:14px}
+.flabel{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);
+margin-bottom:6px;font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--edge);background:var(--chip-bg);color:var(--text-2);
+border-radius:999px;padding:5px 11px;font:600 12.5px/1.2 inherit;cursor:pointer}
+.chip[aria-pressed="true"]{background:rgba(242,199,68,.18);color:var(--ouro-b);
+border-color:rgba(242,199,68,.45)}
+
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.kpi{background:var(--card);border:1px solid var(--edge);border-radius:14px;padding:11px 13px}
+.kpi .lb{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3);
+font-weight:700}
+.kpi .vl{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:3px}
+.kpi .sub{font-size:11.5px;color:var(--text-2)}
+.kpi.alerta .vl{color:var(--warn)}
+
+.card{background:var(--card);border:1px solid var(--edge);border-radius:16px;
+padding:14px 16px;margin-bottom:14px}
+.card h2{font-size:14px;margin:0 0 3px;letter-spacing:.01em}
+.card .sub{font-size:11.5px;color:var(--text-3);margin-bottom:12px}
+
+.fun{display:grid;grid-template-columns:minmax(120px,1.3fr) 1fr 62px;gap:10px;
+align-items:center;padding:7px 0;border-top:1px solid var(--edge)}
+.fun:first-child{border-top:none}
+.fun .nm{font-weight:700;font-size:13px}
+.fun .nm small{display:block;color:var(--text-3);font-weight:400;font-size:10.5px}
+.fbar{height:16px;background:rgba(255,255,255,.05);border-radius:8px;overflow:hidden;position:relative}
+.fbar i{position:absolute;left:0;top:0;bottom:0;border-radius:8px;background:var(--s1)}
+.fun.ganha .fbar i{background:var(--ok)}
+.fun.perdida .fbar i{background:var(--crit)}
+.fun.fila .fbar i{background:var(--ouro)}
+.fun .qt{text-align:right;font-weight:800;font-variant-numeric:tabular-nums;font-size:14px}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;
+color:var(--text-3);font-weight:700;padding:6px 8px;border-bottom:1px solid var(--edge);
+white-space:nowrap}
+td{padding:8px;border-bottom:1px solid var(--edge);vertical-align:top}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover{background:rgba(255,255,255,.02)}
+.tw{overflow-x:auto}
+.vd{font-weight:700;white-space:nowrap}
+.motivos{color:var(--text-2);font-size:11.5px}
+.nada{color:var(--text-3);padding:14px 4px;font-size:13px}
+
+.gate{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
+background:rgba(8,14,24,.94);backdrop-filter:blur(6px);padding:20px}
+.gatebox{background:#101a2a;border:1px solid var(--edge2);border-radius:18px;
+padding:22px;max-width:400px;width:100%}
+.gatebox h2{margin:0 0 6px;font-size:17px}
+.gatebox p{color:var(--text-2);font-size:13px;margin:0 0 14px}
+.gatebox input{width:100%;padding:11px 13px;border-radius:11px;border:1px solid var(--edge2);
+background:#0b1424;color:var(--text-1);font:15px/1.2 inherit;letter-spacing:.04em}
+.gatebox button{width:100%;margin-top:10px;padding:11px;border-radius:11px;border:none;
+background:var(--s1);color:#04222c;font:700 14px/1.2 inherit;cursor:pointer}
+.gatebox .erro{color:var(--crit);font-size:12.5px;margin-top:9px;min-height:16px}
+.trocar{background:none;border:none;color:var(--text-3);font:inherit;font-size:11.5px;
+cursor:pointer;text-decoration:underline;padding:0}
+.trocar:hover{color:var(--text-2)}
+.rodape{color:var(--text-3);font-size:11.5px;margin-top:20px;display:flex;
+flex-wrap:wrap;gap:6px 12px;align-items:center}
+
+/* ---- barra inferior do celular, o mesmo idioma do Painel ---- */
+.bnav{position:fixed;left:0;right:0;bottom:0;z-index:40;
+background:rgba(13,22,38,.92);backdrop-filter:blur(12px);border-top:1px solid var(--edge2);
+padding:4px 4px calc(4px + env(safe-area-inset-bottom));
+display:none;grid-template-columns:repeat(4,1fr)}
+.bnav button,.bnav a{border:none;background:none;color:var(--text-3);font:inherit;cursor:pointer;
+display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;border-radius:10px;
+text-decoration:none}
+.bnav svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;
+stroke-linecap:round;stroke-linejoin:round}
+.bnav span{font-size:10px;font-weight:600}
+.bnav [aria-selected="true"]{color:var(--s1b)}
+@media (max-width:640px){
+.wrap{padding:12px 10px 40px}
+h1{font-size:17px}
+.tabs{display:none}
+.bnav{display:grid}
+body{padding-bottom:64px}
+.kpis{grid-template-columns:repeat(2,1fr);gap:8px}
+.kpi .vl{font-size:18px}
+.fun{grid-template-columns:minmax(96px,1.2fr) 1fr 46px;gap:8px}
+.carimbo{padding:10px 12px}
+}
+</style>
+</head>
+<body>
+
+<!-- O portão nasce montado e só sai quando há token. Sem token a página não
+     mostra número nenhum — não é tela vazia, é tela que ainda não abriu. -->
+<div class="gate" id="gate">
+  <div class="gatebox">
+    <h2>Esteira do Funil</h2>
+    <p>Parque da Saudade · digite o token de acesso. Ele fica guardado neste
+       aparelho e é o mesmo token do Painel Comercial.</p>
+    <input id="tk" type="password" autocomplete="off" spellcheck="false"
+           placeholder="token" aria-label="Token de acesso">
+    <button id="btEntrar" type="button">Entrar</button>
+    <div class="erro" id="gateErro"></div>
+  </div>
+</div>
+
+<div class="wrap" id="app" hidden>
+
+  <header class="top">
+    <h1>Esteira do Funil<small>Parque da Saudade</small></h1>
+    <a class="voltar" href="../" title="Voltar ao Painel Comercial">
+      <svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      Painel</a>
+  </header>
+
+  <div class="carimbo" id="carimbo" hidden>
+    <div><div class="cl">Foto do funil</div><div class="cv" id="cCarimbo">—</div></div>
+    <div class="idade" id="cIdade"></div>
+    <div class="idade" id="cTotal"></div>
+  </div>
+
+  <div id="avisos"></div>
+
+  <div id="conteudo" hidden>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true"  data-p="pFunil" type="button">Funil</button>
+      <button class="tab" role="tab" aria-selected="false" data-p="pFila"  type="button">Fila de cobrança</button>
+      <button class="tab" role="tab" aria-selected="false" data-p="pVend"  type="button">Vendedores</button>
+    </div>
+
+    <div class="filters">
+      <div>
+        <div class="flabel">Vendedor</div>
+        <div class="chips" id="chipsVend"></div>
+      </div>
+    </div>
+
+    <div class="kpis" id="kpis"></div>
+
+    <section class="panel on" id="pFunil">
+      <div class="card">
+        <h2>Onde os negócios estão</h2>
+        <div class="sub">Cada etapa do funil, na ordem em que se anda nele.
+          Venda Ganha e Venda Perdida são o fim da linha e aparecem separadas.</div>
+        <div id="funil"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="pFila">
+      <div class="card">
+        <h2>Fila de cobrança</h2>
+        <div class="sub">Negócios <b>vivos</b> — Lead Quente, Agendado, Visita Realizada,
+          Aprovação e Contrato — <b>parados há 7 dias ou mais</b>. Parado quer dizer que
+          ninguém tocou no negócio; qualquer anotação no CRM zera este relógio.</div>
+        <div id="fila"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="pVend">
+      <div class="card">
+        <h2>Ficha por vendedor</h2>
+        <div class="sub">Fechamento = ganhas ÷ (ganhas + perdidas). O silêncio é
+          <b>mediana</b>, nunca média: uma carteira esquecida há um ano puxaria a média
+          e faria o time inteiro parecer atrasado.</div>
+        <div class="tw"><table id="tVend"></table></div>
+      </div>
+    </section>
+
+    <div class="rodape">
+      <span id="rodapeMs"></span>
+      <button class="trocar" id="btTrocar" type="button">trocar token</button>
+    </div>
+
+  </div><!-- /conteudo -->
+</div><!-- /wrap -->
+
+<nav class="bnav" id="bnav" hidden>
+  <button type="button" data-p="pFunil" aria-selected="true">
+    <svg viewBox="0 0 24 24"><path d="M3 4h18"/><path d="M6 10h12"/><path d="M9 16h6"/><path d="M11 20h2"/></svg>
+    <span>Funil</span></button>
+  <button type="button" data-p="pFila" aria-selected="false">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 3.5"/></svg>
+    <span>Cobrança</span></button>
+  <button type="button" data-p="pVend" aria-selected="false">
+    <svg viewBox="0 0 24 24"><path d="M16 20v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="3.5"/><path d="M21 20v-2a4 4 0 0 0-3-3.8"/></svg>
+    <span>Vendedores</span></button>
+  <a href="../">
+    <svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+    <span>Painel</span></a>
+</nav>
+
+<script>
+(function () {
+  'use strict';
+
+  var API = 'https://script.google.com/macros/s/AKfycbydLmUEX3g6FeojFGAcVHfNKoPsr4d9oTBUdi7GtcfsirQL6xHJM0BELVGcCrcqrICY/exec';
+  var CHAVE_TOKEN = 'hub_token_gestao';   // o mesmo do Painel — não duplicar
+
+  /* ================= o funil, em ordem =================
+     A ordem não sai do número da etapa: sai de como se anda no funil. Os ids
+     são do CRM e não são sequenciais (28 vem depois de 18, 29 entre 24 e 25).
+     A etapa 1 NÃO está aqui de propósito: é do funil da Estrela. */
+  var ETAPAS = [
+    { id: 18, nome: 'Lead Frio' },
+    { id: 28, nome: 'Lead Morno' },
+    { id: 24, nome: 'Lead Quente (Qualificado)' },
+    { id: 29, nome: 'Lead Agendado' },
+    { id: 25, nome: 'Visita Realizada' },
+    { id: 20, nome: 'Aprovação' },
+    { id: 21, nome: 'Contrato' }
+  ];
+  var ETAPA_GANHA = 22, ETAPA_PERDIDA = 23, ETAPA_ESTRELA = 1;
+
+  /* A fila de cobrança é uma LISTA FECHADA, escrita aqui e em lugar nenhum
+     mais: são as etapas em que o negócio está vivo e a bola é do vendedor.
+     Lead Frio e Morno ficam de fora porque parado ali é o estado normal, não
+     dívida — incluí-los faria a fila nascer com 378 nomes e ninguém a olharia
+     duas vezes. */
+  var FILA_ETAPAS = [24, 29, 25, 20, 21];
+  var FILA_DIAS = 7;
+
+  var $ = function (s) { return document.querySelector(s); };
+  var nf = new Intl.NumberFormat('pt-BR');
+  var num = function (n) { return nf.format(n); };
+  var pct = function (n) {
+    return (isFinite(n) ? (n * 100).toFixed(1).replace('.', ',') : '—') + '%';
+  };
+
+  /* ---------- datas ----------
+     `Criado em` e `Atualizado em` chegam UTC cru do CRM, com SEIS casas de
+     microssegundo ("2026-04-22T19:57:00.000000Z"). Nem todo navegador engole
+     isso; cortar para milissegundos é o conserto de uma linha. */
+  function data(v) {
+    if (!v) return null;
+    var s = String(v).trim();
+    if (!s) return null;
+    var d = new Date(s.replace(/\.(\d{3})\d+Z$/, '.$1Z'));
+    return isNaN(d.getTime()) ? null : d;
+  }
+  function diasAte(d, agora) {
+    if (!d) return null;
+    return Math.floor((agora - d.getTime()) / 86400000);
+  }
+
+  /* ---------- MEDIANA, nunca média ----------
+     Regra do documento de 29/08, e ela tem motivo: a distribuição de silêncio
+     é de cauda longa. Uma carteira esquecida há 400 dias desloca a média o
+     bastante para fazer um time em dia parecer atrasado. A mediana não se move
+     com o extremo — é ela que responde "o caso típico". */
+  function mediana(v) {
+    var a = v.filter(function (x) { return typeof x === 'number' && isFinite(x); })
+             .sort(function (x, y) { return x - y; });
+    if (!a.length) return null;
+    var m = Math.floor(a.length / 2);
+    return a.length % 2 ? a[m] : Math.round((a[m - 1] + a[m]) / 2);
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  /* ---------- rede ----------
+     fetch não tem prazo. Sem isto, uma resposta que nunca chega deixa a tela
+     em silêncio para sempre — o mesmo comPrazo() do Painel, mesma razão. */
+  function comPrazo(url, ms) {
+    return new Promise(function (resolve, reject) {
+      var venceu = false;
+      var t = setTimeout(function () {
+        venceu = true;
+        reject(new Error('o Cofre não respondeu em ' + (ms / 1000) + 's'));
+      }, ms);
+      fetch(url, { cache: 'no-store' })
+        .then(function (r) { return r.json(); })
+        .then(function (j) { if (!venceu) { clearTimeout(t); resolve(j); } })
+        .catch(function (e) { if (!venceu) { clearTimeout(t); reject(e); } });
+    });
+  }
+
+  // ================================================================ estado
+  var LINHAS = [];       // linhas cruas, já sem a etapa da Estrela
+  var VEND = '';         // '' = todos
+  var AGORA = 0;
+
+  // ================================================================ portão
+  function abrirPortao(msg) {
+    $('#gate').style.display = 'flex';
+    $('#gateErro').textContent = msg || '';
+    $('#app').hidden = true;
+    $('#bnav').hidden = true;
+    setTimeout(function () { $('#tk').focus(); }, 60);
+  }
+  function fecharPortao() {
+    $('#gate').style.display = 'none';
+    $('#app').hidden = false;
+    $('#bnav').hidden = false;
+  }
+
+  $('#btEntrar').onclick = function () {
+    var v = $('#tk').value.trim();
+    if (!v) { $('#gateErro').textContent = 'Digite o token.'; return; }
+    try { localStorage.setItem(CHAVE_TOKEN, v); } catch (e) {}
+    $('#tk').value = '';
+    fecharPortao();
+    carregar();
+  };
+  $('#tk').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') $('#btEntrar').click();
+  });
+  $('#btTrocar').onclick = function () {
+    try { localStorage.removeItem(CHAVE_TOKEN); } catch (e) {}
+    abrirPortao('');
+  };
+
+  // ================================================================ tarjas
+  function tarja(titulo, corpo, amarela) {
+    $('#avisos').innerHTML =
+      '<div class="tarja' + (amarela ? ' amarela' : '') + '"><div class="t">' +
+      esc(titulo) + '</div>' + corpo + '</div>';
+  }
+  function tarjaEBloqueia(titulo, corpo) {
+    tarja(titulo, corpo);
+    $('#conteudo').hidden = true;
+  }
+
+  // ================================================================ carga
+  function carregar() {
+    var token = '';
+    try { token = localStorage.getItem(CHAVE_TOKEN) || ''; } catch (e) {}
+    if (!token) { abrirPortao(''); return; }
+
+    $('#avisos').innerHTML =
+      '<div class="card"><div class="sub" style="margin:0">Lendo o Cofre…</div></div>';
+
+    comPrazo(API + '?app=leads&fn=list&token=' + encodeURIComponent(token), 45000)
+      .then(function (r) {
+        if (!r || r.ok !== true) {
+          var err = (r && r.error) || 'resposta sem dado';
+          if (/token/i.test(err)) {
+            try { localStorage.removeItem(CHAVE_TOKEN); } catch (e) {}
+            $('#avisos').innerHTML = '';
+            abrirPortao('Token recusado pelo Cofre. Confira e digite de novo.');
+            return;
+          }
+          tarjaEBloqueia('O Cofre respondeu, mas sem dado.', '<p>' + esc(err) + '</p>');
+          return;
+        }
+        desenhar(r);
+      })
+      .catch(function (e) {
+        tarjaEBloqueia('Não consegui falar com o Cofre.',
+          '<p>' + esc(e.message || e) + '</p>' +
+          '<p>Nenhum número aparece enquanto isso: tela vazia é melhor que tela ' +
+          'desatualizada com cara de atual.</p>');
+      });
+  }
+
+  // ================================================================ desenho
+  function desenhar(r) {
+    $('#avisos').innerHTML = '';
+    AGORA = Date.now();
+
+    /* ---- GUARDA DE TRUNCAMENTO ----
+       `truncado === true` é resposta cortada. `truncado` AUSENTE é pior: quer
+       dizer que o Cofre serve uma versão anterior a 30/08, que devolve linhas
+       sem dizer se são TODAS as linhas — e rota que não sabe dizer é
+       indistinguível de rota que cortou. Nos dois casos a página não desenha. */
+    if (typeof r.truncado === 'undefined') {
+      tarjaEBloqueia('Esta página não vai desenhar: a rota não diz se cortou a resposta.',
+        '<p>O <code>?app=leads&amp;fn=list</code> respondeu <b>sem o campo ' +
+        '<code>truncado</code></b>. O Cofre está servindo uma implantação anterior a ' +
+        '30/08: ela entrega as linhas sem dizer se são todas.</p>' +
+        '<p><b>O conserto é republicar o Cofre</b> — Implantar ▸ Gerenciar implantações ▸ ' +
+        '✏️ ▸ Nova versão, mantendo a URL. Até lá, qualquer número aqui seria um palpite ' +
+        'com aparência de medida.</p>');
+      return;
+    }
+    if (r.truncado === true) {
+      tarjaEBloqueia('Esta página não vai desenhar: a resposta veio cortada.',
+        '<p>O Cofre devolveu <b>' + num(r.n) + '</b> linhas de <b>' + num(r.total_aba) +
+        '</b> que existem na aba. Toda conta abaixo — contagem, mediana, fila — sairia ' +
+        'sobre um pedaço do funil, e sairia <b>com cara de completa</b>.</p>' +
+        '<p>Aumente o teto em <code>Coletor.gs</code> (<code>LEADS_LIST_MAX</code>) e ' +
+        'republique.</p>');
+      return;
+    }
+
+    /* ---- o carimbo da FOTO ---- */
+    var carimbo = String(r.carimbo || '').trim();
+    var elC = $('#carimbo');
+    elC.hidden = false;
+    $('#cCarimbo').textContent = carimbo || 'sem carimbo';
+    $('#cTotal').textContent = num(r.total_aba) + ' negócios na foto';
+
+    var horas = null;
+    if (carimbo) {
+      // "AAAA-MM-DD HH:MM" na hora local do Cofre — mesmo fuso de quem lê
+      var d = new Date(carimbo.replace(' ', 'T') + ':00');
+      if (!isNaN(d.getTime())) horas = Math.floor((AGORA - d.getTime()) / 3600000);
+    }
+    $('#cIdade').textContent =
+      horas === null ? '' :
+      horas < 1 ? 'tirada há menos de 1 hora' :
+      horas < 48 ? 'tirada há ' + horas + 'h' :
+      'tirada há ' + Math.floor(horas / 24) + ' dias';
+
+    if (!carimbo) {
+      elC.classList.add('velha');
+      tarja('A foto chegou sem carimbo.',
+        '<p>A rota respondeu, mas <code>leads.ultima_importacao</code> está vazia na ' +
+        '<code>Config</code> do Cofre — não dá para saber de quando é este funil. ' +
+        'Os números aparecem abaixo, e <b>não se sabe a que dia eles se referem</b>.</p>', true);
+    } else if (horas !== null && horas >= 48) {
+      elC.classList.add('velha');
+      tarja('A foto do funil tem mais de 48 horas.',
+        '<p>Ela é de <b>' + esc(carimbo) + '</b>, ou seja <b>' + Math.floor(horas / 24) +
+        ' dias</b> atrás. Os números abaixo estão <b>certos para aquele instante</b> e ' +
+        'provavelmente errados para hoje.</p>' +
+        '<p>Quem tira a foto é o <code>importarLeads()</code>, no gatilho diário das 5h. ' +
+        'Foto parada com gatilho instalado quer dizer que a rodada não fechou — confira ' +
+        '<code>leads.ultimo_erro</code> na aba <code>Config</code> do Cofre.</p>', true);
+    } else {
+      elC.classList.remove('velha');
+    }
+
+    /* ---- as linhas ---- */
+    LINHAS = (r.leads || []).map(function (o) {
+      return {
+        etapa: Number(o['Etapa ID']),
+        estagio: String(o['Estágio'] || '').trim(),
+        status: String(o['Status'] || '').trim(),
+        vendedor: String(o['Vendedor'] || '').trim() || 'Sem vendedor',
+        silencio: diasAte(data(o['Atualizado em']), AGORA),
+        idade: diasAte(data(o['Criado em']), AGORA)
+      };
+    }).filter(function (l) {
+      return l.etapa && l.etapa !== ETAPA_ESTRELA;   // a etapa 1 é da Estrela
+    });
+
+    $('#rodapeMs').textContent = 'Cofre respondeu em ' + num(r.ms || 0) + ' ms · ' +
+      'todas as contas rodam neste aparelho, sobre as linhas cruas.';
+
+    montarChips();
+    $('#conteudo').hidden = false;
+    render();
+  }
+
+  function montarChips() {
+    var vs = {};
+    LINHAS.forEach(function (l) { vs[l.vendedor] = (vs[l.vendedor] || 0) + 1; });
+    var nomes = Object.keys(vs).sort(function (a, b) { return vs[b] - vs[a]; });
+    var h = '<button class="chip" data-v="" aria-pressed="true">Todos</button>';
+    nomes.forEach(function (n) {
+      h += '<button class="chip" data-v="' + esc(n) + '" aria-pressed="false">' +
+           esc(curto(n)) + '</button>';
+    });
+    $('#chipsVend').innerHTML = h;
+    Array.prototype.forEach.call($('#chipsVend').children, function (b) {
+      b.onclick = function () {
+        VEND = b.getAttribute('data-v');
+        Array.prototype.forEach.call($('#chipsVend').children, function (x) {
+          x.setAttribute('aria-pressed', x === b ? 'true' : 'false');
+        });
+        render();
+      };
+    });
+  }
+
+  /* Nome completo cabe na tabela, não cabe na pílula. Primeiro nome + inicial
+     do sobrenome resolve sem apagar xarás: dois "Ana" continuam distinguíveis. */
+  function curto(n) {
+    var p = n.split(/\s+/);
+    return p.length > 1 ? p[0] + ' ' + p[1].charAt(0) + '.' : n;
+  }
+
+  // ================================================================ render
+  function render() {
+    var L = VEND ? LINHAS.filter(function (l) { return l.vendedor === VEND; }) : LINHAS;
+
+    var ganhas = L.filter(function (l) { return l.etapa === ETAPA_GANHA; }).length;
+    var perdidas = L.filter(function (l) { return l.etapa === ETAPA_PERDIDA; }).length;
+    var decididas = ganhas + perdidas;
+    var abertos = L.filter(function (l) {
+      return l.etapa !== ETAPA_GANHA && l.etapa !== ETAPA_PERDIDA;
+    });
+    var fila = abertos.filter(function (l) {
+      return FILA_ETAPAS.indexOf(l.etapa) >= 0 && l.silencio !== null && l.silencio >= FILA_DIAS;
+    });
+
+    // ---- KPIs
+    $('#kpis').innerHTML =
+      kpi('Em aberto', num(abertos.length), 'negócios ainda vivos no funil') +
+      kpi('Fila de cobrança', num(fila.length),
+          'parados ' + FILA_DIAS + 'd+ nas etapas vivas', fila.length > 0) +
+      kpi('Fechamento', decididas ? pct(ganhas / decididas) : '—',
+          num(ganhas) + ' ganhas de ' + num(decididas) + ' decididas') +
+      kpi('Silêncio (mediana)', medTxt(abertos.map(function (l) { return l.silencio; })),
+          'no que está em aberto');
+
+    // ---- funil
+    var maior = Math.max(ganhas, perdidas, 1);
+    var linhasFunil = ETAPAS.map(function (e) {
+      var q = L.filter(function (l) { return l.etapa === e.id; }).length;
+      if (q > maior) maior = q;
+      return { e: e, q: q };
+    });
+
+    var h = '';
+    linhasFunil.forEach(function (x) {
+      var naFila = FILA_ETAPAS.indexOf(x.e.id) >= 0;
+      var med = mediana(L.filter(function (l) { return l.etapa === x.e.id; })
+                         .map(function (l) { return l.silencio; }));
+      h += barra(x.e.nome,
+                 'silêncio mediano ' + (med === null ? '—' : med + 'd') +
+                 (naFila ? ' · entra na fila de cobrança' : ''),
+                 x.q, maior, naFila ? 'fila' : '');
+    });
+    h += barra('Venda Ganha', 'fim da linha', ganhas, maior, 'ganha');
+    h += barra('Venda Perdida', 'fim da linha', perdidas, maior, 'perdida');
+    $('#funil').innerHTML = h;
+
+    // ---- fila de cobrança: por vendedor, NUNCA por cliente
+    if (!fila.length) {
+      $('#fila').innerHTML = '<div class="nada">Ninguém parado há ' + FILA_DIAS +
+        ' dias ou mais nas etapas vivas' + (VEND ? ' para este vendedor' : '') + '.</div>';
+    } else {
+      var porV = {};
+      fila.forEach(function (l) {
+        var v = porV[l.vendedor] || (porV[l.vendedor] = { n: 0, dias: [], etapas: {} });
+        var rot = l.estagio || ('etapa ' + l.etapa);
+        v.n++; v.dias.push(l.silencio);
+        v.etapas[rot] = (v.etapas[rot] || 0) + 1;
+      });
+      var ns = Object.keys(porV).sort(function (a, b) { return porV[b].n - porV[a].n; });
+      var t = '<table><thead><tr><th>Vendedor</th><th class="n">Parados</th>' +
+              '<th class="n">Silêncio mediano</th><th class="n">Pior caso</th>' +
+              '<th>Em que etapa</th></tr></thead><tbody>';
+      ns.forEach(function (n) {
+        var v = porV[n];
+        t += '<tr><td class="vd">' + esc(n) + '</td>' +
+             '<td class="n">' + num(v.n) + '</td>' +
+             '<td class="n">' + mediana(v.dias) + 'd</td>' +
+             '<td class="n">' + Math.max.apply(null, v.dias) + 'd</td>' +
+             '<td class="motivos">' + esc(listar(v.etapas)) + '</td></tr>';
+      });
+      $('#fila').innerHTML = '<div class="tw">' + t + '</tbody></table></div>';
+    }
+
+    // ---- ficha por vendedor (sempre sobre a base inteira; o chip só realça)
+    var porVend = {};
+    LINHAS.forEach(function (l) {
+      var v = porVend[l.vendedor] ||
+        (porVend[l.vendedor] = { g: 0, p: 0, ab: 0, fila: 0, sil: [], motivos: {} });
+      if (l.etapa === ETAPA_GANHA) { v.g++; }
+      else if (l.etapa === ETAPA_PERDIDA) {
+        v.p++;
+        if (l.status) v.motivos[l.status] = (v.motivos[l.status] || 0) + 1;
+      } else {
+        v.ab++;
+        if (l.silencio !== null) v.sil.push(l.silencio);
+        if (FILA_ETAPAS.indexOf(l.etapa) >= 0 && l.silencio !== null && l.silencio >= FILA_DIAS) v.fila++;
+      }
+    });
+    var nv = Object.keys(porVend).sort(function (a, b) {
+      var A = porVend[a], B = porVend[b];
+      return (B.g + B.p + B.ab) - (A.g + A.p + A.ab);
+    });
+    var tv = '<thead><tr><th>Vendedor</th><th class="n">Aberto</th><th class="n">Fila</th>' +
+             '<th class="n">Ganhas</th><th class="n">Perdidas</th><th class="n">Fechamento</th>' +
+             '<th class="n">Silêncio</th><th>Motivos de perda</th></tr></thead><tbody>';
+    nv.forEach(function (n) {
+      var v = porVend[n], dec = v.g + v.p, med = mediana(v.sil);
+      tv += '<tr' + (VEND && n !== VEND ? ' style="opacity:.3"' : '') + '>' +
+            '<td class="vd">' + esc(n) + '</td>' +
+            '<td class="n">' + num(v.ab) + '</td>' +
+            '<td class="n">' + (v.fila || '—') + '</td>' +
+            '<td class="n">' + num(v.g) + '</td>' +
+            '<td class="n">' + num(v.p) + '</td>' +
+            '<td class="n">' + (dec ? pct(v.g / dec) : '—') + '</td>' +
+            '<td class="n">' + (med === null ? '—' : med + 'd') + '</td>' +
+            '<td class="motivos">' + esc(listar(v.motivos, 3) || '—') + '</td></tr>';
+    });
+    $('#tVend').innerHTML = tv + '</tbody>';
+  }
+
+  function kpi(lb, vl, sub, alerta) {
+    return '<div class="kpi' + (alerta ? ' alerta' : '') + '"><div class="lb">' + esc(lb) +
+           '</div><div class="vl">' + vl + '</div><div class="sub">' + esc(sub) + '</div></div>';
+  }
+  function barra(nome, sub, q, maior, cls) {
+    var w = maior ? Math.max(q ? 2 : 0, Math.round(q / maior * 100)) : 0;
+    return '<div class="fun ' + cls + '"><div class="nm">' + esc(nome) +
+           '<small>' + esc(sub) + '</small></div>' +
+           '<div class="fbar"><i style="width:' + w + '%"></i></div>' +
+           '<div class="qt">' + num(q) + '</div></div>';
+  }
+  function medTxt(v) { var m = mediana(v); return m === null ? '—' : m + 'd'; }
+  function listar(obj, teto) {
+    var ks = Object.keys(obj).sort(function (a, b) { return obj[b] - obj[a]; });
+    if (teto) ks = ks.slice(0, teto);
+    return ks.map(function (k) { return k + ' (' + obj[k] + ')'; }).join(' · ');
+  }
+
+  // ================================================================ abas
+  function irPara(pid) {
+    Array.prototype.forEach.call(document.querySelectorAll('.panel'), function (p) {
+      p.classList.toggle('on', p.id === pid);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.tab, #bnav [data-p]'), function (b) {
+      b.setAttribute('aria-selected', b.getAttribute('data-p') === pid ? 'true' : 'false');
+    });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.tab, #bnav [data-p]'), function (b) {
+    b.onclick = function () { irPara(b.getAttribute('data-p')); };
+  });
+
+  // ================================================================ arranque
+  var tem = '';
+  try { tem = localStorage.getItem(CHAVE_TOKEN) || ''; } catch (e) {}
+  if (tem) { fecharPortao(); carregar(); } else { abrirPortao(''); }
+})();
+</script>
+</body>
+</html>
