@@ -129,6 +129,11 @@ align-items:center;padding:7px 0;border-top:1px solid var(--edge)}
 .fun.ganha .fbar i{background:var(--ok)}
 .fun.perdida .fbar i{background:var(--crit)}
 .fun.fila .fbar i{background:var(--ouro)}
+/* Etapa que o CRM tem e esta tela não conhecia. Listrada de propósito: ela
+   precisa saltar aos olhos, porque é a única pista de que o funil mudou. */
+.fun.nova .fbar i{background:repeating-linear-gradient(45deg,
+  var(--crit) 0 6px,rgba(248,113,113,.45) 6px 12px)}
+.fun.nova .nm small{color:var(--crit)}
 .fun .qt{text-align:right;font-weight:800;font-variant-numeric:tabular-nums;font-size:14px}
 
 table{width:100%;border-collapse:collapse;font-size:13px}
@@ -297,13 +302,24 @@ body{padding-bottom:64px}
   /* ================= o funil, em ordem =================
      A ordem não sai do número da etapa: sai de como se anda no funil. Os ids
      são do CRM e não são sequenciais (28 vem depois de 18, 29 entre 24 e 25).
-     A etapa 1 NÃO está aqui de propósito: é do funil da Estrela. */
+     A etapa 1 NÃO está aqui de propósito: é do funil da Estrela.
+
+     ⚠️ ESTA LISTA É ORDEM, NÃO É FILTRO. Etapa que não estiver aqui aparece
+     assim mesmo, no fim, com o rótulo que o próprio CRM deu e um aviso — ver
+     `montarFunil()`. O motivo tem data: a primeira versão desta tela foi
+     escrita em 30/08 contra a foto de 27/08, quando a etapa 19 (Proposta)
+     tinha ZERO negócios e por isso não apareceu no reconhecimento. Horas
+     depois a foto nova trouxe 4 — e eles entravam no total "em aberto" sem
+     barra nenhuma no funil. As barras somavam 553 e o KPI dizia 557.
+     Uma tela que conhece uma lista fechada de etapas esconde, em silêncio,
+     toda etapa que o CRM criar depois dela. */
   var ETAPAS = [
     { id: 18, nome: 'Lead Frio' },
     { id: 28, nome: 'Lead Morno' },
     { id: 24, nome: 'Lead Quente (Qualificado)' },
     { id: 29, nome: 'Lead Agendado' },
     { id: 25, nome: 'Visita Realizada' },
+    { id: 19, nome: 'Proposta' },
     { id: 20, nome: 'Aprovação' },
     { id: 21, nome: 'Contrato' }
   ];
@@ -597,26 +613,36 @@ body{padding-bottom:64px}
           'no que está em aberto');
 
     // ---- funil
+    var linhasFunil = montarFunil(abertos);
     var maior = Math.max(ganhas, perdidas, 1);
-    var linhasFunil = ETAPAS.map(function (e) {
-      var q = L.filter(function (l) { return l.etapa === e.id; }).length;
-      if (q > maior) maior = q;
-      return { e: e, q: q };
-    });
+    linhasFunil.forEach(function (x) { if (x.q > maior) maior = x.q; });
 
     var h = '';
     linhasFunil.forEach(function (x) {
-      var naFila = FILA_ETAPAS.indexOf(x.e.id) >= 0;
-      var med = mediana(L.filter(function (l) { return l.etapa === x.e.id; })
-                         .map(function (l) { return l.silencio; }));
-      h += barra(x.e.nome,
-                 'silêncio mediano ' + (med === null ? '—' : med + 'd') +
-                 (naFila ? ' · entra na fila de cobrança' : ''),
-                 x.q, maior, naFila ? 'fila' : '');
+      var naFila = FILA_ETAPAS.indexOf(x.id) >= 0;
+      var med = mediana(abertos.filter(function (l) { return l.etapa === x.id; })
+                               .map(function (l) { return l.silencio; }));
+      var sub = 'silêncio mediano ' + (med === null ? '—' : med + 'd') +
+                (naFila ? ' · entra na fila de cobrança' : '');
+      if (x.desconhecida) {
+        sub = 'ETAPA NOVA no CRM, fora da ordem conhecida desta tela · ' + sub;
+      }
+      h += barra(x.nome, sub, x.q, maior, x.desconhecida ? 'nova' : (naFila ? 'fila' : ''));
     });
     h += barra('Venda Ganha', 'fim da linha', ganhas, maior, 'ganha');
     h += barra('Venda Perdida', 'fim da linha', perdidas, maior, 'perdida');
     $('#funil').innerHTML = h;
+
+    /* A prova de que nada se escondeu: as barras do que está em aberto têm de
+       somar exatamente o KPI "Em aberto". Se um dia não somarem, a tela diz —
+       em vez de deixar a diferença calada, que foi como a Proposta sumiu. */
+    var somaAbertas = linhasFunil.reduce(function (a, x) { return a + x.q; }, 0);
+    if (somaAbertas !== abertos.length) {
+      $('#funil').insertAdjacentHTML('beforeend',
+        '<div class="nada" style="color:var(--crit)">⚠️ As barras somam ' +
+        num(somaAbertas) + ' e há ' + num(abertos.length) +
+        ' em aberto. Há negócio fora de toda etapa listada — não confie neste funil.</div>');
+    }
 
     // ---- fila de cobrança: por vendedor, NUNCA por cliente
     if (!fila.length) {
@@ -680,6 +706,42 @@ body{padding-bottom:64px}
             '<td class="motivos">' + esc(listar(v.motivos, 3) || '—') + '</td></tr>';
     });
     $('#tVend').innerHTML = tv + '</tbody>';
+  }
+
+  /* As linhas do funil: primeiro as etapas conhecidas, NA ORDEM em que se anda
+     no funil; depois qualquer etapa que exista no dado e não esteja na lista.
+     A segunda metade é a que importa — ela é o que impede a tela de esconder
+     uma etapa que o CRM criou depois de este arquivo ser escrito. O rótulo da
+     etapa desconhecida sai do próprio `Estágio` do CRM, não de um chute. */
+  function montarFunil(abertos) {
+    var linhas = ETAPAS.map(function (e) {
+      return { id: e.id, nome: e.nome, desconhecida: false,
+               q: abertos.filter(function (l) { return l.etapa === e.id; }).length };
+    });
+
+    var conhecidas = {};
+    ETAPAS.forEach(function (e) { conhecidas[e.id] = true; });
+
+    var estranhas = {};
+    abertos.forEach(function (l) {
+      if (conhecidas[l.etapa]) return;
+      var e = estranhas[l.etapa] || (estranhas[l.etapa] = { q: 0, rotulos: {} });
+      e.q++;
+      if (l.estagio) e.rotulos[l.estagio] = (e.rotulos[l.estagio] || 0) + 1;
+    });
+
+    Object.keys(estranhas).map(Number).sort(function (a, b) {
+      return estranhas[b].q - estranhas[a].q;
+    }).forEach(function (id) {
+      var e = estranhas[id];
+      var rot = Object.keys(e.rotulos).sort(function (a, b) {
+        return e.rotulos[b] - e.rotulos[a];
+      })[0];
+      linhas.push({ id: id, q: e.q, desconhecida: true,
+                    nome: (rot || 'Etapa sem rótulo') + ' (etapa ' + id + ')' });
+    });
+
+    return linhas;
   }
 
   function kpi(lb, vl, sub, alerta) {
