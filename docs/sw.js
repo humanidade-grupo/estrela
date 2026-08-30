@@ -1,6 +1,12 @@
-/* Estrela Urbanidade — Painel Comercial
+/* Painel Comercial — Parque da Saudade + Estrela Urbanidade
    Service worker: instalação PWA + reserva offline.
-   Atualizado em: 30/08/2026 — "N fora da regra" ao lado do carimbo no selo
+   Atualizado em: 30/08/2026 (2ª do dia) — o repo passou de `estrela` para
+   `painel-comercial` e o endereço mudou junto: o Pages agora serve em
+   /painel-comercial/, e o GitHub NÃO redireciona Pages de projeto renomeado.
+   O nome do cache carregava o nome velho e mudou com ele — cache que sobrevive
+   a uma troca de escopo é cache que serve a casca errada. Quem tinha o Painel
+   instalado precisa reinstalar: o escopo do PWA mudou.
+   Antes, 30/08 — "N fora da regra" ao lado do carimbo no selo
    da metade PS (decisão 44 do Diário): busca própria à rota fn=fora-da-regra
    depois de a tela subir, tooltip com a quebra carga-inicial × etapa-fora,
    e ausência silenciosa quando a rota não responde.
@@ -16,7 +22,7 @@
    abas: no Parque escolhem o mês da tela; na Estrela, o fim da janela de 12m.
    Estratégia: rede primeiro (pega versão nova quando online), cache como
    reserva offline. A cada deploy, bumpar a versão em CACHE. */
-const CACHE = 'estrela-painel-260830-1';
+const CACHE = 'painel-comercial-260830-2';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./'])).then(() => self.skipWaiting()));
