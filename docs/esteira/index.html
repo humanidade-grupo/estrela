@@ -177,6 +177,12 @@ text-decoration:none}
 stroke-linecap:round;stroke-linejoin:round}
 .bnav span{font-size:10px;font-weight:600}
 .bnav [aria-selected="true"]{color:var(--s1b)}
+/* A guarda do [hidden] — terceira vez que esta casa paga por ela (Pocket
+   b23f507 e Painel 47500f2, ambas em 29/08). `display` declarado em classe de
+   autor VENCE o `[hidden]{display:none}` da folha do navegador, então a barra
+   inferior nasceria à mostra no celular por cima do portão de token. O
+   `hidden` do HTML só volta a valer se a folha de estilo o disser. */
+.bnav[hidden]{display:none}
 @media (max-width:640px){
 .wrap{padding:12px 10px 40px}
 h1{font-size:17px}
