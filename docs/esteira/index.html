@@ -376,6 +376,16 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
       <div class="cards" id="cards"></div>
     </section>
 
+    <section id="secRelogio">
+      <div class="sec-head"><h2>Tempo na etapa — o segundo relógio</h2></div>
+      <p class="sec-note">Tudo acima mede <strong>silêncio no CRM</strong>: dias desde a última mexida
+        no registro, que qualquer anotação zera. Esta seção mede outra coisa — <strong>quanto tempo o
+        negócio ficou dentro da etapa antes de sair dela</strong>, lida do log
+        <code>HistoricoEtapas</code>. São dois relógios com nomes diferentes e
+        <strong>nunca se somam</strong>: um mede abandono, o outro mede ciclo.</p>
+      <div id="relogio"></div>
+    </section>
+
     <section id="secFila">
       <div class="sec-head">
         <h2>Fila de cobrança</h2>
@@ -540,6 +550,9 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
   var VENDS = [];          // [{curto, nome, equipe, total, ativa, et, par, mot, ...}]
   var FILA = [];           // [{cliente, etapa, vendedor, dias}]
   var EXTRAS = [];         // etapas fora da ORDEM que apareceram no dado
+  var LOG = null;          // linhas de mudança do HistoricoEtapas; null = ainda não chegou
+  var LOG_ERRO = '';       // por que não chegou, quando não chegou
+  var LOG_CARIMBO = '';
   var sel = new Set();
   var ordemCards = 'ativa', ordemCob = 'dias';
 
@@ -764,6 +777,7 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
     $('#conteudo').hidden = false;
     renderFiltro();
     renderTudo();
+    carregarLog();   // depois de a tela subir — o Apps Script enfileira execuções do mesmo usuário
   }
 
   var salvar = function () {
@@ -973,6 +987,7 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
         ' dias nessas etapas. Raro — confira o carimbo.</td></tr></tbody>';
 
     renderReads(V, T, cob, fm7, fm30, somaEt);
+    renderRelogio();
   }
 
   /* ---------- leituras ----------
@@ -982,6 +997,113 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
      daquele dia: repetida ao vivo, viraria frase fixa contando o que já não é
      verdade. O que sobrevive à mudança do dado é o que tem regra — e é isso
      que fica aqui. Leitura de gente continua sendo trabalho de gente. */
+  /* ---------- o segundo relógio ----------
+     Lido do HistoricoEtapas, e SEMPRE depois de a tela principal subir: o Apps
+     Script enfileira execuções do mesmo usuário, então disparar as duas rotas
+     juntas não divide a espera — só esconde qual das duas demora. Mesmo desenho
+     do contador "N fora da regra" do Painel (decisão 44). E falha aqui NUNCA
+     derruba o resto: o log é derivado, a foto é a fonte. */
+  function carregarLog() {
+    var token = '';
+    try { token = localStorage.getItem(CHAVE_TOKEN) || ''; } catch (e) {}
+    if (!token) return;
+    comPrazo(API + '?app=etapas&fn=list&tipo=mudanca&token=' + encodeURIComponent(token), 45000)
+      .then(function (r) {
+        if (!r || r.ok !== true) { LOG_ERRO = (r && r.error) || 'resposta sem dado'; }
+        else if (r.truncado === true) { LOG_ERRO = 'o log veio cortado (' + r.n + ' de ' + r.total_aba + ')'; }
+        else { LOG = r.etapas || []; LOG_CARIMBO = String(r.carimbo || ''); }
+        renderRelogio();
+      })
+      .catch(function (e) { LOG_ERRO = String(e.message || e); renderRelogio(); });
+  }
+
+  function renderRelogio() {
+    var el = $('#relogio'); if (!el) return;
+
+    if (LOG === null) {
+      el.innerHTML = LOG_ERRO
+        ? '<div class="vazio">Não consegui ler o log de etapas: ' + esc(LOG_ERRO) +
+          '. O resto da página não depende dele.</div>'
+        : '<div class="vazio">Lendo o log de etapas…</div>';
+      return;
+    }
+
+    var V = ativos(), nomes = {};
+    V.forEach(function (v) { nomes[v.nome] = true; });
+    var L = LOG.filter(function (e) { return nomes[e.vendedor]; });
+
+    if (!L.length) {
+      el.innerHTML = '<div class="vazio">Nenhuma mudança de etapa registrada nos últimos 30 dias' +
+        (V.length === VENDS.length ? '' : ' para esta seleção') + '. O log nasceu em 29/08/2026.</div>';
+      return;
+    }
+
+    /* `dias_na_anterior` VAZIO não é zero: vazio é "não se aplica", zero é
+       "mudou no mesmo dia". Tratá-los igual seria inventar medição. */
+    var comDuracao = L.filter(function (e) {
+      return typeof e.dias_na_anterior === 'number' && isFinite(e.dias_na_anterior);
+    });
+    var censurada = function (e) { return String(e.censurado).toUpperCase() === 'SIM'; };
+    var reais = comDuracao.filter(function (e) { return !censurada(e); });
+    var pisos = comDuracao.filter(censurada);
+
+    var porAnterior = {};
+    comDuracao.forEach(function (e) {
+      var id = Number(e.etapa_anterior_id);
+      var g = porAnterior[id] || (porAnterior[id] = { reais: [], pisos: [] });
+      (censurada(e) ? g.pisos : g.reais).push(e.dias_na_anterior);
+    });
+
+    var linhas = Object.keys(porAnterior).map(Number).sort(function (x, y) {
+      var ix = ORDEM.indexOf(x), iy = ORDEM.indexOf(y);
+      return (ix < 0 ? 99 : ix) - (iy < 0 ? 99 : iy);
+    }).map(function (id) {
+      var g = porAnterior[id];
+      var nome = ET[id] ? ET[id].n : 'Etapa ' + id;
+      var medR = mediana(g.reais), medP = mediana(g.pisos);
+      return '<tr><td class="l name">' + esc(nome) + '<span class="et-id">' + id + '</span></td>' +
+        '<td class="num">' + (g.reais.length + g.pisos.length) + '</td>' +
+        '<td class="num' + (medR === null ? ' dim' : '') + '">' +
+          (medR === null ? '—' : medR + ' d') + '</td>' +
+        '<td class="num' + (medP === null ? ' dim' : '') + '">' +
+          (medP === null ? '—' : '≥ ' + medP + ' d') + '</td>' +
+        '<td class="num ' + (g.pisos.length ? '' : 'dim') + '">' + (g.pisos.length || '—') + '</td></tr>';
+    }).join('');
+
+    var aviso = '';
+    if (!reais.length) {
+      /* O caso de hoje, e ele precisa ser dito com todas as letras: existem
+         medições e nenhuma delas mede. Toda linha parte do baseline, então o
+         piso é a IDADE DO PRÓPRIO LOG — não o tempo do negócio na etapa. */
+      var piso = mediana(pisos.map(function (e) { return e.dias_na_anterior; }));
+      aviso = '<div class="tarja amarela">' +
+        '<div class="t">O relógio está andando e ainda não tem o que dizer.</div>' +
+        '<p>As <b>' + comDuracao.length + '</b> transições registradas são <b>todas censuradas</b> ' +
+        '(<code>censurado = SIM</code>): a linha anterior de cada negócio é o <b>baseline</b> de ' +
+        '29/08, e baseline não diz desde quando o negócio estava na etapa. Cada duração é um ' +
+        '<b>piso</b>, não uma medida' +
+        (piso === null ? '' : ' — e hoje o piso é <b>≥ ' + piso +
+          ' d</b>, que é a idade do próprio log, não o tempo de ninguém') + '.</p>' +
+        '<p><b>Quando isto passa a medir:</b> na segunda vez que um negócio mudar de etapa depois do ' +
+        'baseline. Aí a linha anterior dele já é uma mudança com data conhecida, ' +
+        '<code>censurado</code> vira <code>NAO</code> e a duração é real. A coluna ' +
+        '<b>duração real</b> abaixo é o número a acompanhar: hoje está em <b>0 de ' +
+        comDuracao.length + '</b>.</p></div>';
+    }
+
+    el.innerHTML = aviso +
+      '<div class="scroll"><table><thead><tr>' +
+      '<th class="l">Saiu da etapa</th><th>Transições</th>' +
+      '<th>Duração real</th><th>Piso (censurada)</th><th>Censuradas</th>' +
+      '</tr></thead><tbody>' + linhas + '</tbody></table></div>' +
+      '<p class="sec-note" style="margin-top:12px">Log lido em <b>' + esc(LOG_CARIMBO || '—') +
+      '</b> · janela dos últimos 30 dias · <b>' + comDuracao.length +
+      '</b> transições, das quais <b>' + reais.length + '</b> com duração real e <b>' +
+      pisos.length + '</b> apenas piso. <b>As duas colunas nunca se somam</b>: piso e medida não ' +
+      'são a mesma grandeza, e misturá-las subestima o ciclo de forma sistemática — com ' +
+      'aparência de número certo.</p>';
+  }
+
   function renderReads(V, T, cob, fm7, fm30, somaEt) {
     var R = [];
 
