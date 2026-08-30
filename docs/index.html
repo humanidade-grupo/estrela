@@ -1636,6 +1636,7 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
         color:#7d8ea6;font:11.5px/1.5 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif;
         padding:7px 14px;text-align:center;backdrop-filter:blur(8px)}
   #selo b{color:#a9b8cc;font-weight:600}
+  #selo .fora{text-decoration:underline dotted;text-underline-offset:3px;cursor:help}
   #selo.velho{background:rgba(69,26,3,.96);color:#fbbf24;border-top-color:rgba(245,158,11,.4)}
   #selo.velho b{color:#fcd34d}
   body.tem-selo{padding-bottom:34px}
@@ -1698,7 +1699,7 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
     document.body.classList.add('tem-selo');
   }
 
-  var CARIMBO = { eu: '', ps: '', copia: false };
+  var CARIMBO = { eu: '', ps: '', copia: false, psFora: 0, psForaTitulo: '' };
 
   // A data de atualização fica SEMPRE na tela, e é a do cofre da empresa
   // ABERTA — foi a falta dela que deixou o cofre do Parque oito dias
@@ -1719,8 +1720,41 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
     } else {
       var ms = ps ? CARIMBO.msPs : CARIMBO.msEu;
       selo('Cofre — ' + nome + ' · atualizado em <b>' + quando + '</b>' +
-           (ms ? ' · resposta em ' + (ms / 1000).toFixed(1) + 's' : ''));
+           (ms ? ' · resposta em ' + (ms / 1000).toFixed(1) + 's' : '') +
+           // "N fora da regra" ao lado do carimbo (Diário, decisão 44): o que o
+           // importador descarta precisa aparecer em algum lugar, senão vira mistério
+           (ps && CARIMBO.psFora > 0
+             ? ' · <span class="fora" title="' + CARIMBO.psForaTitulo + '"><b>' +
+               CARIMBO.psFora + '</b> fora da regra</span>'
+             : ''));
     }
+  }
+
+  /* O contador do fora-da-regra (decisão 44). Leitura pura da rota
+     fn=fora-da-regra — o número já mora na Config (facilita.fora_da_regra_mapa),
+     zero requisição ao CRM. A busca sai DEPOIS de a tela subir, porque o Apps
+     Script enfileira execuções do mesmo usuário: junto com as duas rotas
+     principais ela só esconderia qual das três está demorando. Falhou?
+     O trecho não aparece — contador ausente é melhor que contador inventado. */
+  function buscarForaDaRegra(token) {
+    if (!token || CARIMBO.copia) return;
+    comPrazo(API + '?token=' + encodeURIComponent(token) + '&app=vendas-facilita&fn=fora-da-regra',
+             30000, 'O fora-da-regra')
+      .then(function (j) {
+        if (!j || !j.ok) return;
+        var ini = 0, eta = 0;
+        (j.casos || []).forEach(function (c) {
+          if (c.classe === 'CARGA_INICIAL') ini++; else eta++;
+        });
+        CARIMBO.psFora = Number(j.total) || 0;
+        CARIMBO.psForaTitulo =
+          'Candidatos a venda que a regra de leitura descartou — ' +
+          ini + ' com data anterior ao corte de 13/04 (carga inicial) · ' +
+          eta + ' com a unidade atrelada a etapa fora de 19–22. ' +
+          'Detalhe na aba Divergencias do Cofre (Tipo FORA_DA_REGRA).';
+        if (document.body.classList.contains('emp-ps')) atualizarSelo('ps');
+      })
+      .catch(function () { /* sem resposta, sem trecho — o selo segue como está */ });
   }
 
   function trocarEmpresa(emp) {
@@ -1853,6 +1887,10 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
     var salvo = 'eu';
     try { salvo = localStorage.getItem(CHAVE_EMP) || 'eu'; } catch (e) {}
     trocarEmpresa(salvo);
+
+    // o contador do fora-da-regra chega por conta própria e reescreve o selo
+    // quando responder; se o token não estiver no aparelho, não há o que buscar
+    try { buscarForaDaRegra(localStorage.getItem(CHAVE_TOKEN)); } catch (e) {}
 
     // Chat: só agora, com o portão fora e a empresa já escolhida — ele lê a
     // classe do body para saber sobre quem responder. Isolado como as duas

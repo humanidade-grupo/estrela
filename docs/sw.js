@@ -1,6 +1,10 @@
 /* Estrela Urbanidade — Painel Comercial
    Service worker: instalação PWA + reserva offline.
-   Atualizado em: 29/08/2026 (3ª do dia) — a barra de estoque da M-19 sobe
+   Atualizado em: 30/08/2026 — "N fora da regra" ao lado do carimbo no selo
+   da metade PS (decisão 44 do Diário): busca própria à rota fn=fora-da-regra
+   depois de a tela subir, tooltip com a quebra carga-inicial × etapa-fora,
+   e ausência silenciosa quando a rota não responde.
+   Antes, 29/08 (3ª do dia) — a barra de estoque da M-19 sobe
    para a linha do seletor, à direita, junto do botão Atualizar; e ganha a
    guarda [hidden] (o display de autor vencia o hidden do navegador e a barra
    nascia à mostra, com traços).
@@ -12,7 +16,7 @@
    abas: no Parque escolhem o mês da tela; na Estrela, o fim da janela de 12m.
    Estratégia: rede primeiro (pega versão nova quando online), cache como
    reserva offline. A cada deploy, bumpar a versão em CACHE. */
-const CACHE = 'estrela-painel-260829-3';
+const CACHE = 'estrela-painel-260830-1';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./'])).then(() => self.skipWaiting()));
