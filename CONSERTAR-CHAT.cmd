@@ -1,6 +1,6 @@
 @echo off
 REM ============================================
-REM  grupo-humanidade / painel-comercial (repo `estrela`)
+REM  grupo-humanidade / painel-comercial
 REM  Reescrito em: 18/08/2026.
 REM
 REM  Este arquivo NAO conserta mais nada sozinho — de proposito.

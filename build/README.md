@@ -4,7 +4,20 @@
  Como gerar e publicar uma versao nova do Painel Vendas x Estoque.
 ============================================ -->
 
-> ## ⛔ APOSENTADO EM 17/08/2026 — não use este caminho
+> ## ⚰️ APAGADO EM 30/08/2026 — este diretório é uma lápide, não uma ferramenta
+>
+> Os scripts que este documento explicava **não existem mais**: `encrypt_painel.py`,
+> `shell.template.html`, `_extrair_template.py`, `publicar.ps1`, `rotacionar-token.ps1`
+> e o `PUBLICAR.cmd` da raiz foram removidos do repositório (decisão 7 do Diário).
+> Estavam marcados como aposentados desde 17/08 e continuavam rastreados — e o
+> `PUBLICAR.cmd` ainda **funcionava**: um duplo-clique pedia a senha do painel e
+> rodava o gerador morto. Código morto que ainda roda é convite a rodar por engano.
+>
+> Ficam no histórico do git, recuperáveis por `git log --diff-filter=D -- build/`.
+> Este README ficou de propósito: apagar o gerador sem deixar a explicação faria
+> alguém reconstruí-lo.
+>
+> ## ⛔ Por que o caminho morreu, em 17/08/2026
 >
 > O painel deixou de embutir dado. Ele agora **lê do Cofre** pela porta única
 > (`?app=estrela&fn=dados&token=…`), e por isso **não há mais o que criptografar**:
