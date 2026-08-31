@@ -373,10 +373,7 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
         </div>
       </div>
       <div class="vends" id="vends"></div>
-      <p class="filtro-nota">Marque quem você quer ver: tudo abaixo — totais, esteira, matriz,
-        fichas e fila de cobrança — é recalculado do zero para a seleção, negócio por negócio. O
-        número ao lado de cada nome é quantos negócios aquela pessoa tem no funil, somando os que
-        ainda estão em jogo e os que já foram ganhos ou perdidos.</p>
+      <p class="filtro-nota" id="filtro-nota">Marque quem voc&ecirc; quer ver: tudo abaixo — totais, esteira, matriz, fichas e fila de cobran&ccedil;a — &eacute; recalculado do zero para a sele&ccedil;&atilde;o, neg&oacute;cio por neg&oacute;cio. O n&uacute;mero ao lado de cada nome &eacute; quantos neg&oacute;cios aquela pessoa tem no funil, somando os que ainda est&atilde;o em jogo e os que j&aacute; foram ganhos ou perdidos.</p>
     </div>
 
     <section><div class="tiles" id="tiles"></div></section>
@@ -580,6 +577,23 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
      para mostrar quem esta lista deixa de fora. */
   var EQUIPE = ['ana luiza', 'wanderson', 'guilherme', 'jaime', 'felipe'];
 
+  /* CONTAS QUE NAO SAO VENDEDOR. Existem no CRM como responsavel por um punhado
+     de negocios, mas nao sao gente do time: `API` e o usuario da integracao da
+     SATI (uid 801), `Ricardo Andrade` e a conta de administrador e
+     `JOSE CARLOS` e um usuario com nome de cliente. Somados dao meia duzia de
+     negocios e, na secao de origem, cada um ocupava uma barra inteira ao lado
+     de quem tem 137 — proporcao de 1 lead desenhada do mesmo tamanho da de 137.
+
+     Somem da pagina como VENDEDOR, e os negocios deles sao contados a parte no
+     rodape do filtro: sumir da lista de gente e correto, sumir da aritmetica
+     nao. Esta lista e manual pelo mesmo motivo da EQUIPE — a rota nao sabe quem
+     e pessoa e quem e integracao. */
+  var NAO_VENDEDOR = ['api', 'ricardo andrade', 'jose carlos'];
+  function ehVendedor(n) {
+    var x = norm(n);
+    return !NAO_VENDEDOR.some(function (k) { return x === k || x.indexOf(k + ' ') === 0; });
+  }
+
   var $ = function (s) { return document.querySelector(s); };
   var nf = new Intl.NumberFormat('pt-BR');
   var num = function (n) { return nf.format(n); };
@@ -629,6 +643,7 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
 
   // ================================================================ estado
   var VENDS = [];          // [{curto, nome, equipe, total, ativa, et, par, mot, ...}]
+  var OCULTOS = [];        // contas que nao sao vendedor, contadas mas nao listadas
   var FILA = [];           // [{cliente, etapa, vendedor, dias}]
   var EXTRAS = [];         // etapas fora da ORDEM que apareceram no dado
   var LOG = null;          // linhas de mudança do HistoricoEtapas; null = ainda não chegou
@@ -682,7 +697,8 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
       return;
     }
 
-    var V = (r.vendedores || []), O = r.semDonoAtivo || { total: 0, nomes: [] };
+    var V = (r.vendedores || []).filter(function (x) { return ehVendedor(x.vendedor); });
+    var O = r.semDonoAtivo || { total: 0, nomes: [] };
     var som = function (k) {
       return V.reduce(function (a, v) { return a + (v[k] || 0); }, 0) + (O[k] || 0);
     };
@@ -906,6 +922,13 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
       primeiro[p] = (primeiro[p] || 0) + 1;
     });
 
+    /* Fora da lista de vendedores ANTES de virar chip, cartao, linha e barra.
+       Filtrar no fim exigiria lembrar em cinco lugares; filtrar aqui e uma
+       linha e nao tem como esquecer um. */
+    OCULTOS = nomes.filter(function (n) { return !ehVendedor(n); })
+                   .map(function (n) { return { nome: n, n: porNome[n].length }; });
+    nomes = nomes.filter(ehVendedor);
+
     VENDS = nomes.map(function (n) {
       var ls = porNome[n];
       var partes = n.split(/\s+/);
@@ -957,6 +980,8 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
       var v = VENDS.filter(function (x) { return x.nome === l.vendedor; })[0];
       return { cliente: l.cliente, etapa: l.etapa, curto: v ? v.curto : l.vendedor, dias: l.parado };
     });
+
+    notaOcultos();
 
     /* ---- seleção inicial: equipe atual, ou o que ficou guardado ---- */
     var conhecidosCurto = {}; VENDS.forEach(function (v) { conhecidosCurto[v.curto] = true; });
@@ -1490,6 +1515,24 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
      visitas nao mexe nele. Fechado, vira uma linha com o resumo de quem esta
      sendo mostrado — que e a unica coisa que precisa estar sempre visivel,
      porque um filtro ativo e invisivel e como a pagina mente. */
+  /* A nota do filtro ganha, quando houver, a conta do que foi ocultado. Sem
+     isto a pagina passaria a mostrar menos negocios que o CRM sem dizer por que
+     — e diferenca de total sem explicacao e o que faz alguem parar de confiar
+     na tela inteira. */
+  function notaOcultos() {
+    var base = $('#filtro-nota');
+    if (!base || !OCULTOS.length) return;
+    if (base.querySelector('.oc')) return;
+    var n = OCULTOS.reduce(function (a, o) { return a + o.n; }, 0);
+    var e = document.createElement('span');
+    e.className = 'oc';
+    e.innerHTML = ' <strong>' + n + '</strong> neg\u00f3cio(s) ficam de fora da p\u00e1gina por ' +
+      'estarem sob contas que n\u00e3o s\u00e3o vendedor (' +
+      OCULTOS.map(function (o) { return esc(o.nome) + ' ' + o.n; }).join(' \u00b7 ') +
+      ') \u2014 integra\u00e7\u00e3o, administrador e usu\u00e1rio com nome de cliente.';
+    base.appendChild(e);
+  }
+
   $('#f-abrir').addEventListener('click', function (ev) {
     ev.preventDefault();
     var f = $('#secFiltro'), fechado = f.classList.toggle('fechado');
