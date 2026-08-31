@@ -164,6 +164,7 @@ tfoot td{border-top:1px solid var(--line); font-weight:700; color:var(--ink-2)}
 td.name{font-weight:600}
 .dim{color:var(--ink-3)}
 .sep{border-left:1px solid var(--line)}
+tr.orf td{border-top:2px solid var(--line); color:var(--ink-2); font-style:italic}
 
 /* ---------- cartões por vendedor ---------- */
 .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(390px,1fr)); gap:16px}
@@ -378,6 +379,23 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
         terminou — quem ainda está na esteira não entra em nenhum dos dois lados, senão quem
         recebeu muito lead novo pareceria pior que quem recebeu pouco.</p>
       <div class="scroll"><table id="matriz"></table></div>
+    </section>
+
+    <section id="secOrigem">
+      <div class="sec-head"><h2>De onde vem a carteira</h2></div>
+      <p class="sec-note">Para cada vendedor, os leads que <strong>entraram neste m&ecirc;s</strong>,
+        separados por como chegaram. <strong>Pr&oacute;pria</strong> &eacute; o que ele mesmo cadastrou;
+        <strong>SATI</strong> &eacute; o que a distribui&ccedil;&atilde;o autom&aacute;tica mandou;
+        <strong>Formul&aacute;rio</strong> &eacute; o formul&aacute;rio do Facilita. Quem separa as tr&ecirc;s
+        &eacute; o pr&oacute;prio sistema, no momento em que o registro nasce &mdash; ningu&eacute;m digita isso,
+        ent&atilde;o n&atilde;o h&aacute; o que combinar com a equipe. <strong>Como ler:</strong> um
+        <em>% pr&oacute;prio</em> alto n&atilde;o &eacute; m&eacute;rito nem dem&eacute;rito sozinho &mdash; pode
+        ser quem vai atr&aacute;s, ou quem n&atilde;o est&aacute; recebendo da fila. As duas leituras se
+        separam olhando a coluna SATI ao lado: baixa para todo mundo &eacute; m&ecirc;s fraco de
+        capta&ccedil;&atilde;o autom&aacute;tica; baixa s&oacute; para um &eacute; composi&ccedil;&atilde;o de fila.</p>
+      <p class="sec-note" id="origemAmostra"></p>
+      <div class="scroll"><table id="tabOrigem"></table></div>
+      <p class="sec-note" id="origemRodape"></p>
     </section>
 
     <section id="secFichas">
@@ -620,6 +638,90 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
   }
   function bloqueia(t, corpo) { tarja(t, corpo); $('#conteudo').hidden = true; }
 
+  // ============================================================ origem
+  /* Secao EXTRA, e por isso isolada: le outra rota (?app=origem) e outra aba
+     (Leads_Origem, alimentada por varredura propria as 6h). Se falhar, ela diz
+     que falhou e some — nunca derruba a Esteira, que ja funcionava antes dela
+     existir. Dependencia nova nao pode quebrar tela velha. */
+  function montarOrigem(r) {
+    if (!r || r.ok !== true) {
+      $('#origemAmostra').innerHTML = '';
+      $('#tabOrigem').innerHTML = '';
+      $('#origemRodape').innerHTML = 'Sem dado de origem nesta carga' +
+        (r && r.erro ? ' (' + esc(r.erro) + ')' : '') +
+        '. O resto da p\u00e1gina n\u00e3o depende disto.';
+      return;
+    }
+
+    var V = (r.vendedores || []), O = r.semDonoAtivo || { total: 0, nomes: [] };
+    var som = function (k) {
+      return V.reduce(function (a, v) { return a + (v[k] || 0); }, 0) + (O[k] || 0);
+    };
+    var tP = som('propria'), tS = som('sati'), tF = som('formulario');
+    var tT = tP + tS + tF;
+
+    /* O TAMANHO DA AMOSTRA, DITO NA CARA. Recorte mensal no dia 3 sao poucas
+       dezenas de leads no time inteiro; sem esta linha, tres leads viram
+       tendencia na cabeca de quem le. */
+    var mes = (r.mes || '').split('-');
+    var NOMES = ['', 'janeiro', 'fevereiro', 'mar\u00e7o', 'abril', 'maio', 'junho', 'julho',
+                 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+    var nomeMes = NOMES[Number(mes[1])] || r.mes;
+    $('#origemAmostra').innerHTML =
+      '<strong>' + esc(nomeMes) + '</strong>, dias 1 a ' + r.dia + ' \u2014 <strong>' + num(tT) +
+      '</strong> lead(s) no time inteiro.' +
+      (tT < 40 ? ' <strong>Amostra pequena:</strong> no come\u00e7o do m\u00eas uma diferen\u00e7a de ' +
+                 'dois ou tr\u00eas leads vira percentual grande. Espere a semana fechar antes de ' +
+                 'concluir.' : '');
+
+    var linha = function (v, cls) {
+      var t = v.total || 0;
+      return '<tr class="' + (cls || '') + '"><td class="l name">' + esc(v.vendedor) + '</td>' +
+        '<td class="num' + (v.propria ? '' : ' dim') + '">' + (v.propria || '\u2014') + '</td>' +
+        '<td class="num' + (v.sati ? '' : ' dim') + '">' + (v.sati || '\u2014') + '</td>' +
+        '<td class="num' + (v.formulario ? '' : ' dim') + '">' + (v.formulario || '\u2014') + '</td>' +
+        '<td class="num sep"><strong>' + t + '</strong></td>' +
+        '<td class="num">' + (t ? pct(v.propria / t) : '\u2014') + '</td></tr>';
+    };
+
+    $('#tabOrigem').innerHTML =
+      '<thead><tr><th class="l">Vendedor</th><th>Pr\u00f3pria</th><th>SATI</th>' +
+      '<th>Formul\u00e1rio</th><th class="sep">Total</th><th>% pr\u00f3prio</th></tr></thead><tbody>' +
+      V.map(function (v) { return linha(v); }).join('') +
+      (O.total ? linha({ vendedor: 'Sem dono ativo \u2014 ' +
+                          O.nomes.map(function (n) { return n.vendedor; }).join(', '),
+                         propria: O.propria, sati: O.sati,
+                         formulario: O.formulario, total: O.total }, 'orf') : '') +
+      '</tbody><tfoot><tr><td class="l">Total</td>' +
+      '<td class="num">' + tP + '</td><td class="num">' + tS + '</td><td class="num">' + tF + '</td>' +
+      '<td class="num sep">' + tT + '</td>' +
+      '<td class="num">' + (tT ? pct(tP / tT) : '\u2014') + '</td></tr></tfoot>';
+
+    var notas = [];
+    if (O.total) {
+      notas.push('A linha <em>sem dono ativo</em> \u00e9 de quem n\u00e3o est\u00e1 mais na equipe. ' +
+        'Tirar algu\u00e9m da fila impede lead <strong>novo</strong> de cair para essa pessoa e ' +
+        '<strong>n\u00e3o devolve os que ela j\u00e1 tinha</strong> \u2014 eles continuam sob o nome ' +
+        'dela, sem quem atenda, e n\u00e3o aparecem em nenhuma outra tela.');
+    }
+    if (r.roster === false) {
+      notas.push('<strong>N\u00e3o consegui ler a lista de quem est\u00e1 ativo</strong>, ent\u00e3o ' +
+        'todos entraram como ativos e a linha de sem dono ativo pode estar faltando.');
+    }
+    if (r.completa === false) {
+      notas.push('<strong>A varredura de origem n\u00e3o fechou</strong> \u2014 estes n\u00fameros ' +
+        's\u00e3o parciais.');
+    }
+    if (r.carimbo) notas.push('Dados de origem atualizados em ' + esc(r.carimbo) + '.');
+    $('#origemRodape').innerHTML = notas.join(' ');
+  }
+
+  function carregarOrigem(token) {
+    comPrazo(API + '?app=origem&fn=dados&token=' + encodeURIComponent(token), 30000)
+      .then(montarOrigem)
+      .catch(function (e) { montarOrigem({ ok: false, erro: e.message || String(e) }); });
+  }
+
   // ================================================================ carga
   function carregar() {
     var token = '';
@@ -641,6 +743,7 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
           return;
         }
         montar(r);
+        carregarOrigem(token);   // extra e isolada: falha dela nao derruba a pagina
       })
       .catch(function (e) {
         bloqueia('Não consegui falar com o Cofre.',
