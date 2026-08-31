@@ -1,6 +1,14 @@
 /* Painel Comercial — Parque da Saudade + Estrela Urbanidade
    Service worker: instalação PWA + reserva offline.
-   Atualizado em: 31/08/2026 (2ª do dia) — "De onde vem a carteira" ganha uma
+   Atualizado em: 31/08/2026 (3ª do dia) — A FILA DE COBRANÇA CAIU DE CINCO
+   ETAPAS PARA TRÊS: Lead Quente, Lead Agendado e Visita Realizada. Aprovação e
+   Contrato saíram por decisão do Ricardo — ali o negócio já está fechando e o
+   que destrava é papel, crédito e assinatura, não um toque de vendedor. Havia
+   DUAS listas no código (o `cob:1` do ET e um array literal) e nada lia a
+   primeira; agora o array é derivado do ET, então a etapa se corrige num lugar
+   só. Os números da fila CAEM com este deploy — sem bump, metade da equipe
+   compararia o total novo com o texto velho das cinco etapas.
+   Antes, 31/08/2026 (2ª do dia) — "De onde vem a carteira" ganha uma
    ROSCA à direita do texto de leitura, com o total do mês e as três origens
    SEPARADAS (própria · SATI · formulário). A tabela e as barras logo abaixo
    continuam somando SATI + formulário numa coluna só ("Recebido"): são duas
@@ -39,7 +47,7 @@
    abas: no Parque escolhem o mês da tela; na Estrela, o fim da janela de 12m.
    Estratégia: rede primeiro (pega versão nova quando online), cache como
    reserva offline. A cada deploy, bumpar a versão em CACHE. */
-const CACHE = 'painel-comercial-260831-8';
+const CACHE = 'painel-comercial-260831-9';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./'])).then(() => self.skipWaiting()));

@@ -520,11 +520,15 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
           Então ele é um bom retrato de <b>abandono</b> e um retrato ruim de <b>velocidade</b>.
           Quanto tempo cada etapa consome está na seção “Tempo na etapa”, que é outro relógio e
           nunca se soma a este.</li>
-        <li><strong>Fila de cobrança</strong> são os negócios sem toque há mais de 7 dias nas cinco
-          etapas em que parar custa dinheiro: Lead Quente, Lead Agendado, Visita Realizada, Aprovação
-          e Contrato. O lead já se qualificou, já custou mídia e já sabe o preço — cada dia parado
-          ali é margem que evapora. Lead Frio e Lead Morno ficam fora porque com eles a conversa é
-          de reciclagem, não de cobrança.</li>
+        <li><strong>Fila de cobrança</strong> são os negócios sem toque há mais de 7 dias nas três
+          etapas em que parar custa dinheiro: Lead Quente, Lead Agendado e Visita Realizada. O lead
+          já se qualificou, já custou mídia e já sabe o preço, e ainda não decidiu nada — cada dia
+          parado ali é margem que evapora. As duas pontas ficam fora, por motivos opostos: com
+          <b>Lead Frio e Lead Morno</b> a conversa é de reciclagem, não de cobrança; em
+          <b>Proposta, Aprovação e Contrato</b> o negócio já está fechando, e o que destrava é
+          papel, crédito e assinatura, não um toque de vendedor. Nenhuma das duas some da tela —
+          elas continuam na esteira, na matriz e nas fichas, e a nota da fila diz quantos estão
+          parados em cada ponta.</li>
         <li><strong>Fechamento = ganhas ÷ (ganhas + perdidas)</strong>, contando só o que já terminou.
           Quem ainda está na esteira não entra em nenhum dos lados — senão quem recebeu muito lead
           novo pareceria pior que quem recebeu pouco. É a taxa acumulada desde abril de 2026, não a
@@ -596,11 +600,25 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
     18:{n:'Lead Frio'}, 28:{n:'Lead Morno'},
     24:{n:'Lead Quente', cob:1}, 29:{n:'Lead Agendado', cob:1},
     25:{n:'Visita Realizada', cob:1}, 19:{n:'Proposta'},
-    20:{n:'Aprovação', cob:1}, 21:{n:'Contrato', cob:1},
+    20:{n:'Aprovação'}, 21:{n:'Contrato'},
     22:{n:'Venda Ganha'}, 23:{n:'Venda Perdida'}
   };
   var ORDEM = [18, 28, 24, 29, 25, 19, 20, 21];
-  var COB   = [24, 29, 25, 20, 21];   // lista fechada, do documento de 29/08
+
+  /* ⚠️ A FILA DE COBRANÇA SAI DAQUI, e de um lugar só.
+     Até 31/08 havia DUAS listas: o `cob:1` acima e um array literal
+     [24,29,25,20,21] logo abaixo — e nada no código lia o `cob:1`. Quem
+     corrigisse a etapa no lugar errado não mudava nada na tela e não teria
+     como saber. Agora o `cob:1` é a declaração e o array é derivado dela, na
+     ordem do funil (por isso filtra ORDEM, e não Object.keys: as chaves são
+     ids do CRM e vêm em ordem numérica, que não é a ordem em que se anda).
+
+     REDUZIDA DE CINCO PARA TRÊS EM 31/08, por decisão do Ricardo: Aprovação e
+     Contrato saíram. Ali o negócio já está fechando — o que se faz é outra
+     conversa, e não é a desta fila, que existe para lead que esfria. Elas
+     continuam contando em tudo o mais (esteira, matriz, fichas, tempo na
+     etapa); o que mudou é quem entra na lista de cobrar. */
+  var COB = ORDEM.filter(function (id) { return ET[id].cob; });
   var ETAPA_GANHA = 22, ETAPA_PERDIDA = 23, ETAPA_ESTRELA = 1;
   var DIAS_COB = 7, DIAS_VELHO = 30;
 
@@ -1141,6 +1159,12 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
     var cob = FILA.filter(function (p) { return curtos[p.curto]; });
     var fm7  = [18, 28].reduce(function (a, id) { return a + somaPar(id, 3); }, 0);
     var fm30 = [18, 28].reduce(function (a, id) { return a + somaPar(id, 4); }, 0);
+    /* Proposta, Aprovação e Contrato também ficam fora da fila. SUMIR DA LISTA
+       DE COBRANÇA É CORRETO, SUMIR DA ARITMÉTICA NÃO: a nota da seção diz
+       quantos estão parados lá, senão o total da fila encolhe sem explicação e
+       quem lembra do número de ontem para de confiar na tela. Mesma lição do
+       filtro de API/administrador (6896aaf). */
+    var fech7 = [19, 20, 21].reduce(function (a, id) { return a + somaPar(id, 3); }, 0);
 
     var nsel = document.getElementById('n-sel');
     if (nsel) nsel.textContent = V.length === VENDS.length ? 'todos os vendedores'
@@ -1162,8 +1186,8 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
       { k:'Filas quentes', v:num(T.quentes),
         s:'Lead Quente, Agendado e Visita Realizada: quem já demonstrou interesse de verdade' },
       { k:'Na fila de cobrança', v:num(cob.length),
-        s:'sem nenhum toque há mais de ' + DIAS_COB + ' dias, nas cinco etapas em que parar ' +
-          'custa dinheiro', cls:'is-crit' },
+        s:'nas três filas quentes, sem nenhum toque há mais de ' + DIAS_COB +
+          ' dias — é onde parar custa dinheiro', cls:'is-crit' },
       { k:'Fechamento histórico', v:T.dec ? pct(T.ganha / T.dec) : '—',
         s:'<b>' + num(T.ganha) + '</b> ganhas em <b>' + num(T.dec) + '</b> negócios que já ' +
           'terminaram, desde abril. Quem ainda está em jogo não entra na conta' }
@@ -1383,11 +1407,15 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
     /* ---- fila de cobrança ---- */
     $('#nota-cob').innerHTML =
       'São os <strong>' + num(cob.length) + '</strong> negócios sem nenhum toque há mais de ' +
-      DIAS_COB + ' dias nas cinco etapas em que parar custa dinheiro — Lead Quente, Agendado, ' +
-      'Visita Realizada, Aprovação e Contrato. Nelas o lead já se qualificou, já custou mídia e já ' +
-      'sabe o preço: cada dia parado é margem que evapora. Lead Frio e Lead Morno ficam de fora — ' +
-      'lá há <strong>' + num(fm7) + '</strong> parados, mas a conversa com eles é de reciclagem, ' +
-      'não de cobrança.';
+      DIAS_COB + ' dias nas três etapas em que parar custa dinheiro — <strong>Lead Quente, ' +
+      'Lead Agendado e Visita Realizada</strong>. Nelas o lead já se qualificou, já custou mídia e ' +
+      'já sabe o preço, e ainda não decidiu nada: cada dia parado é margem que evapora. ' +
+      'Duas pontas ficam de fora, por motivos opostos. <strong>Lead Frio e Lead Morno</strong> ' +
+      'porque a conversa com eles é de reciclagem, não de cobrança — lá há <strong>' + num(fm7) +
+      '</strong> parados. <strong>Proposta, Aprovação e Contrato</strong> porque ali o negócio já ' +
+      'está fechando, e o que destrava é papel, crédito e assinatura, não um toque de vendedor — ' +
+      'lá há <strong>' + num(fech7) + '</strong> parados, que continuam aparecendo na matriz e nas ' +
+      'fichas.';
 
     var ord = cob.slice().sort(function (a, b) {
       return ordemCob === 'vend' ? (a.curto.localeCompare(b.curto, 'pt') || b.dias - a.dias)
