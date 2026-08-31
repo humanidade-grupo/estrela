@@ -47,6 +47,13 @@
   CRM. Qualquer anotação o zera. NÃO é tempo na etapa: isso é assunto do
   HistoricoEtapas, e entra aqui em coluna própria, nomeada, nunca somada a
   esta.
+
+  REESCRITA DE 31/08: todos os textos VISÍVEIS foram reescritos para quem abre
+  a página sem contexto do projeto — a explicação passa a estar no ponto em que
+  o número aparece, e não só no rodapé.
+  O vocabulário interno (foto, carimbo, censurado/baseline/piso) saiu do texto
+  visível DE PROPÓSITO: é metáfora de quem construiu e não diz nada a quem
+  chega de fora. Aqui nos comentários ele fica.
 -->
 <style>
 /* Paleta e tipografia do Painel Comercial. A estrutura é a do artefato; a
@@ -297,8 +304,10 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
 <div class="gate" id="gate">
   <div class="gatebox">
     <h2>Esteira do Funil</h2>
-    <p>Parque da Saudade · digite o token de acesso. Ele fica guardado neste
-       aparelho e é o mesmo token do Painel Comercial.</p>
+    <p>Parque da Saudade. Esta tela mostra em que etapa cada negócio do
+       Facilita está parado hoje, e há quantos dias. Como ela exibe nome de
+       cliente, pede token — o mesmo do Painel Comercial. Você digita uma vez:
+       ele fica guardado neste aparelho.</p>
     <input id="tk" type="password" autocomplete="off" spellcheck="false"
            placeholder="token" aria-label="Token de acesso">
     <button id="btEntrar" type="button">Entrar</button>
@@ -312,8 +321,10 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
     <div class="hd">
       <div class="eyebrow">Parque da Saudade · Funil de vendas</div>
       <h1>Esteira do funil, vendedor por vendedor</h1>
-      <p class="lede">Onde cada lead está parado hoje, há quantos dias, e o que cada vendedor
-        fecha e perde. Feito para a conversa de cobrança — não para o fechamento contábil.</p>
+      <p class="lede">Todo negócio do Parque vive numa etapa do Facilita, de Lead Frio até
+        Contrato. Esta página é a foto de quantos estão parados em cada etapa agora, há quantos
+        dias, e nas mãos de quem. Ela foi feita para a conversa de cobrança da semana — não é
+        relatório de faturamento, e por isso não mostra valor nenhum.</p>
       <div class="stamp" id="stamp"></div>
     </div>
     <a class="voltar" href="../" title="Voltar ao Painel Comercial">
@@ -327,39 +338,45 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
 
     <div class="filtro" id="secFiltro">
       <div class="filtro-top">
-        <span class="filtro-lab">Vendedores no painel</span>
+        <span class="filtro-lab">Quem aparece nesta página</span>
         <div class="filtro-acoes">
-          <button type="button" id="f-equipe">equipe atual</button>
-          <button type="button" id="f-todos">todos</button>
+          <button type="button" id="f-equipe">só a equipe atual</button>
+          <button type="button" id="f-todos">todos que aparecem no CRM</button>
         </div>
       </div>
       <div class="vends" id="vends"></div>
-      <p class="filtro-nota">Tudo abaixo — totais, esteira, matriz, fichas e fila de cobrança —
-        recalcula com a seleção, <b>sobre as linhas cruas</b>. O número ao lado de cada nome é o
-        total de negócios daquela pessoa no funil.</p>
+      <p class="filtro-nota">Marque quem você quer ver: tudo abaixo — totais, esteira, matriz,
+        fichas e fila de cobrança — é recalculado do zero para a seleção, negócio por negócio. O
+        número ao lado de cada nome é quantos negócios aquela pessoa tem no funil, somando os que
+        ainda estão em jogo e os que já foram ganhos ou perdidos.</p>
     </div>
 
     <section><div class="tiles" id="tiles"></div></section>
 
     <section id="secEsteira">
       <div class="sec-head"><h2>Esteira ativa hoje</h2></div>
-      <p class="sec-note">Quantos negócios estão parados em cada etapa <em>neste momento</em>.
-        Venda Ganha e Venda Perdida ficam fora daqui de propósito: são resultado acumulado desde
-        abril, não estoque de hoje — somar as duas coisas no mesmo funil é o erro que faz a etapa
-        final parecer maior que a de entrada.</p>
+      <p class="sec-note">Quantos negócios estão parados em cada etapa <em>neste momento</em>. A
+        barra compara o tamanho de cada fila; as tarjas à direita contam quantos daqueles negócios
+        estão sem nenhuma anotação no CRM há mais de 8 dias e há mais de 30. Venda Ganha e Venda
+        Perdida não aparecem aqui de propósito: são o acumulado desde abril, e esta lista é só de
+        quem ainda está em jogo hoje. Se as duas coisas fossem somadas, a última etapa do funil
+        apareceria maior que a primeira.</p>
       <div class="esteira" id="esteira"></div>
       <div class="legend">
-        <span><i class="sw" style="background:var(--accent)"></i> negócios na etapa</span>
-        <span><i class="sw" style="background:var(--warn)"></i> parado 8 a 30 dias</span>
-        <span><i class="sw" style="background:var(--crit)"></i> parado há mais de 30 dias</span>
+        <span><i class="sw" style="background:var(--accent)"></i> negócios parados nesta etapa</span>
+        <span><i class="sw" style="background:var(--warn)"></i> sem nenhum toque de 8 a 30 dias</span>
+        <span><i class="sw" style="background:var(--crit)"></i> sem nenhum toque há mais de 30 dias</span>
       </div>
     </section>
 
     <section id="secMatriz">
       <div class="sec-head"><h2>Matriz por vendedor</h2></div>
-      <p class="sec-note">A esteira ativa de cada um, etapa por etapa, com o histórico de decididos
-        à direita. <strong>Fechamento</strong> = ganhas ÷ (ganhas + perdidas) — a taxa entre os
-        negócios que já terminaram, ignorando quem ainda está em jogo.</p>
+      <p class="sec-note">Cada linha é um vendedor. As colunas da esquerda são o que ele tem em
+        jogo <strong>hoje</strong>, etapa por etapa. As três últimas mudam de assunto: são o
+        <strong>acumulado desde abril de 2026</strong>, e não têm relação com o tamanho da fila
+        atual. <strong>Fechamento</strong> = ganhas ÷ (ganhas + perdidas), contando só o que já
+        terminou — quem ainda está na esteira não entra em nenhum dos dois lados, senão quem
+        recebeu muito lead novo pareceria pior que quem recebeu pouco.</p>
       <div class="scroll"><table id="matriz"></table></div>
     </section>
 
@@ -373,19 +390,25 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
           <button class="seg" data-sort="fech" aria-pressed="false">Fechamento</button>
         </div>
       </div>
-      <p class="sec-note">Por etapa: quantos, a <strong>mediana</strong> de dias sem atualização, o
-        pior caso, e quantos passaram de 7 e de 30 dias. Mediana e não média — é a regra do projeto,
-        e numa fila com um lead de 80 dias a média mente.</p>
+      <p class="sec-note">Uma ficha por vendedor, etapa por etapa: quantos negócios, a
+        <strong>mediana</strong> de dias sem nenhuma anotação, o pior caso, e quantos já passaram de
+        7 e de 30 dias. Mediana e não média: numa fila com um esquecido de 80 dias, a média se
+        desloca e some com o caso do meio. <strong>Como ler:</strong> mediana alta com o máximo
+        parecido é fila inteira parada — problema de rotina. Mediana baixa com máximo alto é o
+        contrário: a carteira está em dia e há um ou dois casos esquecidos dentro dela. São duas
+        conversas diferentes.</p>
       <div class="cards" id="cards"></div>
     </section>
 
     <section id="secRelogio">
       <div class="sec-head"><h2>Tempo na etapa — o segundo relógio</h2></div>
-      <p class="sec-note">Tudo acima mede <strong>silêncio no CRM</strong>: dias desde a última mexida
-        no registro, que qualquer anotação zera. Esta seção mede outra coisa — <strong>quanto tempo o
-        negócio ficou dentro da etapa antes de sair dela</strong>, lida do log
-        <code>HistoricoEtapas</code>. São dois relógios com nomes diferentes e
-        <strong>nunca se somam</strong>: um mede abandono, o outro mede ciclo.</p>
+      <p class="sec-note">Tudo acima conta os dias desde a <strong>última vez que alguém mexeu no
+        negócio</strong> — e qualquer anotação zera o contador. Isso mede abandono, não velocidade:
+        um negócio pode estar há três meses na mesma etapa e marcar “1 dia parado”, só porque o
+        vendedor escreveu uma linha ontem. Esta seção mede a outra coisa: <strong>quanto tempo o
+        negócio ficou dentro de uma etapa antes de sair dela</strong> — o ciclo de venda. Vem de um
+        registro à parte, que anota toda mudança de etapa e começou a rodar em 29/08/2026. Os dois
+        números medem coisas diferentes e <strong>nunca se somam</strong>.</p>
       <div id="relogio"></div>
     </section>
 
@@ -405,52 +428,55 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
 
     <section>
       <div class="sec-head"><h2>O que salta aos olhos</h2></div>
-      <p class="sec-note">Leituras calculadas do próprio dado, para checar com o time antes de virar
-        conclusão. Cada uma aparece só quando o que ela afirma continua verdadeiro na seleção.</p>
+      <p class="sec-note">Quatro observações que a página testa sozinha a cada abertura: fila de
+        cobrança concentrada numa pessoa · etapa que quase não existe · pilha esquecida fora da
+        cobrança · abandono acima de 30 dias. Cada uma aparece só enquanto continuar verdadeira na
+        seleção. São ponto de partida para conversar com o time — não conclusão.</p>
       <div class="reads" id="reads"></div>
     </section>
 
     <div class="nota">
       <h2>Como ler — e o que não está aqui</h2>
       <ul>
-        <li><strong>Fila de cobrança</strong> são os negócios parados há mais de 7 dias nas cinco
+        <li><strong>Dias parado é silêncio no CRM, não tempo na etapa.</strong> O contador mede
+          os dias desde a última vez que alguém mexeu no negócio no Facilita. Qualquer mexida o
+          zera — uma anotação, uma troca de campo —, mesmo que o negócio não tenha andado um passo.
+          Então ele é um bom retrato de <b>abandono</b> e um retrato ruim de <b>velocidade</b>.
+          Quanto tempo cada etapa consome está na seção “Tempo na etapa”, que é outro relógio e
+          nunca se soma a este.</li>
+        <li><strong>Fila de cobrança</strong> são os negócios sem toque há mais de 7 dias nas cinco
           etapas em que parar custa dinheiro: Lead Quente, Lead Agendado, Visita Realizada, Aprovação
-          e Contrato. O lead já se qualificou, já custou mídia e já sabe o preço — cada dia parado aí
-          é margem que evapora. Lead Frio e Lead Morno ficam fora porque a conversa lá é de
-          reciclagem, não de cobrança.</li>
+          e Contrato. O lead já se qualificou, já custou mídia e já sabe o preço — cada dia parado
+          ali é margem que evapora. Lead Frio e Lead Morno ficam fora porque com eles a conversa é
+          de reciclagem, não de cobrança.</li>
         <li><strong>Fechamento = ganhas ÷ (ganhas + perdidas)</strong>, contando só o que já terminou.
-          Quem ainda está na esteira não entra em nenhum dos lados — senão quem tem muito lead novo
-          pareceria pior que quem tem pouco. É a taxa histórica desde abril/2026, não do mês.</li>
-        <li><strong>Dias parado = tempo desde a última atualização do negócio</strong> (o campo
-          <code>updated_at</code> do Facilita), não o tempo dentro da etapa. Qualquer mexida no
-          registro — uma anotação, uma troca de campo — zera o contador sem que o lead tenha andado.
-          Então ele mede <em>silêncio no CRM</em>, que é um bom retrato de abandono e um retrato ruim
-          de ciclo de venda. Ciclo por etapa é assunto do <code>HistoricoEtapas</code>, e vai entrar
-          aqui em coluna própria — nunca somada a esta.</li>
-        <li><strong>Mediana, não média.</strong> Numa fila com um lead de 80 dias a média se desloca e
-          some com o caso do meio. A mediana diz onde está o lead típico; a coluna “máx” diz qual é o
-          pior.</li>
-        <li><strong>Não é mais uma foto embutida.</strong> Diferente da versão de 29/08, esta página
-          lê o Cofre ao vivo a cada abertura. O que ela mostra é a última <em>importação</em> do funil
-          — o carimbo no topo diz de quando é, e acima de 48 horas ele fica em amarelo com aviso.</li>
-        <li><strong>Origem do lead vem vazia — e não é porque o CRM não a tenha.</strong> No Facilita
-          o campo é <b>obrigatório</b>, com 13 opções em produção (a lista vive em
-          <code>Origem do Lead — Lista Padronizada</code>). Uma varredura ao vivo da API em 14/08
-          mostrou que a origem <b>não está em lugar nenhum do contrato desta instância</b>: nem nas
-          16 chaves de <code>/deals</code>, nem nos <b>171 custom-fields</b>, nem nos endpoints de
-          cliente. <b>Não é caro de buscar — é indisponível por API.</b> Ela sai por export da
-          interface do Facilita, ou no dia em que o fornecedor expuser o campo. Nada de origem é
-          desenhado aqui justamente para não transformar buraco de contrato em “lead sem
-          origem”.</li>
-        <li><strong>Não há valor, ticket nem VGV.</strong> O campo de valor que vem por aqui é o custo
-          cru do negócio. A regra do projeto diz que ticket e VGV só se calculam por
-          <code>Valor Face × (1 − Desconto %)</code> na <code>Vendas_Facilita</code>, com mediana e
-          sem cortesias.</li>
-        <li><strong>A etapa 1 é descartada</strong> — é do funil da Estrela, não do Parque.</li>
-        <li><strong>A lista de “equipe atual” é manual por enquanto.</strong> Quando a aba de usuários
-          do Cofre existir, o filtro passa a ler dela quem está ativo, em vez de vir marcado na mão.
-          Por isso o botão <em>todos</em> existe: é ele que mostra quem a lista manual está deixando
-          de fora.</li>
+          Quem ainda está na esteira não entra em nenhum dos lados — senão quem recebeu muito lead
+          novo pareceria pior que quem recebeu pouco. É a taxa acumulada desde abril de 2026, não a
+          do mês.</li>
+        <li><strong>Mediana, não média.</strong> Numa fila com um esquecido de 80 dias, a média se
+          desloca e some com o caso do meio. A mediana diz onde está o negócio típico; a coluna
+          “máx” diz qual é o pior.</li>
+        <li><strong>Os números são de uma cópia, não do Facilita ao vivo.</strong> Toda madrugada às
+          5h o sistema copia o funil inteiro. Esta página lê essa cópia a cada abertura — a data no
+          topo diz de quando ela é, e passando de 48 horas ela fica amarela com aviso. O que
+          aconteceu no CRM depois daquela hora ainda não está aqui.</li>
+        <li><strong>Origem do lead não aparece — e não é porque o CRM não tenha.</strong> No Facilita
+          o campo é <b>obrigatório</b>, com 13 opções em uso. Uma varredura completa da API em 14/08
+          mostrou que a origem <b>não é devolvida por nenhuma rota</b> desta instância: nem nos dados
+          do negócio, nem nos <b>171 campos personalizados</b>, nem no cadastro do cliente. Não é
+          caro de buscar — é <b>indisponível por API</b>. Ela sai por exportação manual da tela do
+          Facilita, ou no dia em que o fornecedor expuser o campo. Nada de origem é desenhado aqui
+          justamente para não transformar buraco de contrato em “lead sem origem”.</li>
+        <li><strong>Não há valor, ticket nem VGV.</strong> O campo de valor que chega por aqui é o
+          custo cru do negócio. Ticket e VGV só se calculam por
+          <code>Valor Face × (1 − Desconto %)</code>, com mediana e sem cortesias — e isso é assunto
+          de outra tela.</li>
+        <li><strong>A etapa 1 é descartada</strong> — ela é do funil da Estrela Urbanidade, não do
+          Parque.</li>
+        <li><strong>A lista de “equipe atual” é digitada à mão, por enquanto.</strong> Quando o
+          cadastro de usuários existir, o filtro passará a ler dele quem está ativo. Até lá, o botão
+          <em>todos que aparecem no CRM</em> é o que mostra quem a lista manual está deixando de
+          fora — use-o quando um nome esperado não aparecer.</li>
       </ul>
     </div>
 
@@ -599,7 +625,7 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
     var token = '';
     try { token = localStorage.getItem(CHAVE_TOKEN) || ''; } catch (e) {}
     if (!token) { abrirPortao(''); return; }
-    $('#avisos').innerHTML = '<p class="sec-note" style="margin-top:20px">Lendo o Cofre…</p>';
+    $('#avisos').innerHTML = '<p class="sec-note" style="margin-top:20px">Lendo os dados…</p>';
 
     comPrazo(API + '?app=leads&fn=list&token=' + encodeURIComponent(token), 45000)
       .then(function (r) {
@@ -608,7 +634,7 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
           if (/token/i.test(err)) {
             try { localStorage.removeItem(CHAVE_TOKEN); } catch (e) {}
             $('#avisos').innerHTML = '';
-            abrirPortao('Token recusado pelo Cofre. Confira e digite de novo.');
+            abrirPortao('Token recusado. Confira e digite de novo.');
             return;
           }
           bloqueia('O Cofre respondeu, mas sem dado.', '<p>' + esc(err) + '</p>');
@@ -660,22 +686,22 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
       horas < 48 ? 'há ' + horas + 'h' : 'há ' + Math.floor(horas / 24) + ' dias';
 
     $('#stamp').innerHTML =
-      '<span class="foto">Foto de <b' + (horas !== null && horas >= 48 ? ' style="color:var(--warn)"' : '') +
-        '>' + esc(carimbo || 'sem carimbo') + '</b>' + (idade ? ' · ' + idade : '') + '</span>' +
-      '<span>Fonte: <b>Cofre do Parque · aba Leads</b> (funil 2, via <code>/exec</code>)</span>' +
+      '<span class="foto">Dados de <b' + (horas !== null && horas >= 48 ? ' style="color:var(--warn)"' : '') +
+        '>' + esc(carimbo || 'sem data') + '</b>' + (idade ? ' · ' + idade : '') + '</span>' +
+      '<span>Vêm do <b>Facilita</b>, por cópia automática toda madrugada às 5h</span>' +
       '<span><b>' + num(r.total_aba) + '</b> negócios · <span id="n-sel"></span></span>';
 
     if (!carimbo) {
-      tarja('A foto chegou sem carimbo.',
-        '<p>A rota respondeu, mas <code>leads.ultima_importacao</code> está vazia na ' +
-        '<code>Config</code> do Cofre — não dá para saber de quando é este funil.</p>', true);
+      tarja('Os dados chegaram sem data.',
+        '<p>A cópia foi lida, mas o sistema não registrou de quando ela é — não dá para saber se ' +
+        'este funil é de hoje ou da semana passada. <em>(<code>leads.ultima_importacao</code> ' +
+        'vazio na <code>Config</code> do Cofre.)</em></p>', true);
     } else if (horas !== null && horas >= 48) {
-      tarja('A foto do funil tem mais de 48 horas.',
-        '<p>Ela é de <b>' + esc(carimbo) + '</b>, ' + Math.floor(horas / 24) + ' dias atrás. Os números ' +
+      tarja('Os dados do funil têm mais de 48 horas.',
+        '<p>São de <b>' + esc(carimbo) + '</b>, ' + Math.floor(horas / 24) + ' dias atrás. Os números ' +
         'estão <b>certos para aquele instante</b> e provavelmente errados para hoje.</p>' +
-        '<p>Quem tira a foto é o <code>importarLeads()</code>, no gatilho diário das 5h. Foto parada ' +
-        'quer dizer que a rodada não fechou — confira <code>leads.ultimo_erro</code> na ' +
-        '<code>Config</code>.</p>', true);
+        '<p>A cópia é tirada todo dia às 5h; parada quer dizer que a rodada não fechou — confira ' +
+        '<code>leads.ultimo_erro</code> na <code>Config</code>.</p>', true);
     }
 
     /* ---- linhas cruas -> vendedores ---- */
@@ -780,8 +806,9 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
     } catch (e) {}
     if (!sel.size) sel = new Set(VENDS.map(function (v) { return v.curto; }));
 
-    $('#rodapeMs').textContent = 'Cofre respondeu em ' + num(r.ms || 0) + ' ms · ' +
-      num(linhas.length) + ' linhas cruas · todas as contas rodam neste aparelho.';
+    $('#rodapeMs').textContent = 'Dados carregados em ' + num(r.ms || 0) + ' ms · ' +
+      num(linhas.length) + ' negócios lidos · todas as contas são feitas neste aparelho, ' +
+      'sobre a lista completa.';
 
     $('#conteudo').hidden = false;
     renderFiltro();
@@ -861,12 +888,17 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
 
     /* ---- tiles ---- */
     $('#tiles').innerHTML = [
-      { k:'Esteira ativa', v:num(T.ativa), s:'negócios em jogo agora, de ' + num(T.total) + ' no filtro' },
-      { k:'Filas quentes', v:num(T.quentes), s:'Quente + Agendado + Visita Realizada' },
+      { k:'Esteira ativa', v:num(T.ativa),
+        s:'ainda em jogo: nem ganhos, nem perdidos — de <b>' + num(T.total) +
+          '</b> que já passaram por estas mãos' },
+      { k:'Filas quentes', v:num(T.quentes),
+        s:'Lead Quente, Agendado e Visita Realizada: quem já demonstrou interesse de verdade' },
       { k:'Na fila de cobrança', v:num(cob.length),
-        s:'parados +' + DIAS_COB + ' dias nas etapas que custam dinheiro', cls:'is-crit' },
+        s:'sem nenhum toque há mais de ' + DIAS_COB + ' dias, nas cinco etapas em que parar ' +
+          'custa dinheiro', cls:'is-crit' },
       { k:'Fechamento histórico', v:T.dec ? pct(T.ganha / T.dec) : '—',
-        s:num(T.ganha) + ' ganhas de ' + num(T.dec) + ' decididas desde abril' }
+        s:'<b>' + num(T.ganha) + '</b> ganhas em <b>' + num(T.dec) + '</b> negócios que já ' +
+          'terminaram, desde abril. Quem ainda está em jogo não entra na conta' }
     ].map(function (t) {
       return '<div class="tile ' + (t.cls || '') + '"><div class="k">' + t.k +
         '</div><div class="v num">' + t.v + '</div><div class="s">' + t.s + '</div></div>';
@@ -911,7 +943,7 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
         var nome = ET[id] ? ET[id].n : 'Etapa ' + id;
         return '<th>' + esc(nome.replace('Visita Realizada', 'Visita').replace('Lead ', '')) + '</th>';
       }).join('') +
-      '<th class="sep">Ativa</th><th class="sep">Ganhas</th><th>Perdidas</th><th>Fechamento</th>' +
+      '<th class="sep">Em jogo hoje</th><th class="sep">Ganhas</th><th>Perdidas</th><th>Fechamento</th>' +
       '</tr></thead><tbody>' +
       V.map(function (v) {
         return '<tr><td class="l name">' + esc(v.curto) + '</td>' +
@@ -973,10 +1005,12 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
 
     /* ---- fila de cobrança ---- */
     $('#nota-cob').innerHTML =
-      'Os <strong>' + num(cob.length) + '</strong> negócios parados há mais de ' + DIAS_COB +
-      ' dias nas etapas que custam dinheiro — Lead Quente, Agendado, Visita Realizada, Aprovação e ' +
-      'Contrato. Lead Frio e Lead Morno ficam fora: são <strong>' + num(fm7) + '</strong> parados e ' +
-      'viram outra conversa, não esta.';
+      'São os <strong>' + num(cob.length) + '</strong> negócios sem nenhum toque há mais de ' +
+      DIAS_COB + ' dias nas cinco etapas em que parar custa dinheiro — Lead Quente, Agendado, ' +
+      'Visita Realizada, Aprovação e Contrato. Nelas o lead já se qualificou, já custou mídia e já ' +
+      'sabe o preço: cada dia parado é margem que evapora. Lead Frio e Lead Morno ficam de fora — ' +
+      'lá há <strong>' + num(fm7) + '</strong> parados, mas a conversa com eles é de reciclagem, ' +
+      'não de cobrança.';
 
     var ord = cob.slice().sort(function (a, b) {
       return ordemCob === 'vend' ? (a.curto.localeCompare(b.curto, 'pt') || b.dias - a.dias)
@@ -993,7 +1027,7 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
             '<td class="l">' + esc(p.curto) + '</td><td>' + chipDias(p.dias) + '</td></tr>';
         }).join('') + '</tbody>'
       : '<tbody><tr><td class="vazio" colspan="4">Ninguém parado há mais de ' + DIAS_COB +
-        ' dias nessas etapas. Raro — confira o carimbo.</td></tr></tbody>';
+        ' dias nessas etapas. Raro — confira a data no topo.</td></tr></tbody>';
 
     renderReads(V, T, cob, fm7, fm30, somaEt);
     renderRelogio();
@@ -1031,9 +1065,9 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
 
     if (LOG === null) {
       el.innerHTML = LOG_ERRO
-        ? '<div class="vazio">Não consegui ler o log de etapas: ' + esc(LOG_ERRO) +
-          '. O resto da página não depende dele.</div>'
-        : '<div class="vazio">Lendo o log de etapas…</div>';
+        ? '<div class="vazio">Não consegui ler o registro de mudanças de etapa: ' + esc(LOG_ERRO) +
+          '. Nada mais nesta página depende dele — o resto continua correto.</div>'
+        : '<div class="vazio">Lendo o registro de mudanças de etapa…</div>';
       return;
     }
 
@@ -1043,7 +1077,7 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
 
     if (!L.length) {
       el.innerHTML = '<div class="vazio">Nenhuma mudança de etapa registrada nos últimos 30 dias' +
-        (V.length === VENDS.length ? '' : ' para esta seleção') + '. O log nasceu em 29/08/2026.</div>';
+        (V.length === VENDS.length ? '' : ' para esta seleção') + '. O registro nasceu em 29/08/2026.</div>';
       return;
     }
 
@@ -1086,31 +1120,31 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
          piso é a IDADE DO PRÓPRIO LOG — não o tempo do negócio na etapa. */
       var piso = mediana(pisos.map(function (e) { return e.dias_na_anterior; }));
       aviso = '<div class="tarja amarela">' +
-        '<div class="t">O relógio está andando e ainda não tem o que dizer.</div>' +
-        '<p>As <b>' + comDuracao.length + '</b> transições registradas são <b>todas censuradas</b> ' +
-        '(<code>censurado = SIM</code>): a linha anterior de cada negócio é o <b>baseline</b> de ' +
-        '29/08, e baseline não diz desde quando o negócio estava na etapa. Cada duração é um ' +
-        '<b>piso</b>, não uma medida' +
-        (piso === null ? '' : ' — e hoje o piso é <b>≥ ' + piso +
-          ' d</b>, que é a idade do próprio log, não o tempo de ninguém') + '.</p>' +
-        '<p><b>Quando isto passa a medir:</b> na segunda vez que um negócio mudar de etapa depois do ' +
-        'baseline. Aí a linha anterior dele já é uma mudança com data conhecida, ' +
-        '<code>censurado</code> vira <code>NAO</code> e a duração é real. A coluna ' +
-        '<b>duração real</b> abaixo é o número a acompanhar: hoje está em <b>0 de ' +
+        '<div class="t">O relógio está ligado, mas ainda não tem o que dizer.</div>' +
+        '<p>Para saber quanto tempo um negócio ficou numa etapa é preciso conhecer o dia em que ' +
+        'ele <b>entrou</b> nela — e o registro só começou em 29/08/2026. Para os <b>' +
+        comDuracao.length + '</b> negócios que mudaram de etapa desde então, o sistema sabe quando ' +
+        'saíram, mas não quando entraram. Cada duração aqui é, portanto, um <b>mínimo</b> ' +
+        '(“ficou pelo menos tantos dias”), nunca uma medida' +
+        (piso === null ? '' : ' — e hoje esse mínimo é <b>≥ ' + piso +
+          ' dias</b>, que é simplesmente a idade do registro, não o tempo de ninguém') + '.</p>' +
+        '<p><b>Quando isto passa a medir de verdade:</b> na segunda vez que um negócio mudar de ' +
+        'etapa. Aí a entrada dele naquela etapa tem data conhecida, e a duração é real. O número a ' +
+        'acompanhar é a coluna <b>tempo medido</b> abaixo: hoje está em <b>0 de ' +
         comDuracao.length + '</b>.</p></div>';
     }
 
     el.innerHTML = aviso +
       '<div class="scroll"><table><thead><tr>' +
-      '<th class="l">Saiu da etapa</th><th>Transições</th>' +
-      '<th>Duração real</th><th>Piso (censurada)</th><th>Censuradas</th>' +
+      '<th class="l">Saiu da etapa</th><th>Mudanças</th>' +
+      '<th>Tempo medido</th><th>Tempo mínimo</th><th>Sem data de entrada</th>' +
       '</tr></thead><tbody>' + linhas + '</tbody></table></div>' +
-      '<p class="sec-note" style="margin-top:12px">Log lido em <b>' + esc(LOG_CARIMBO || '—') +
-      '</b> · janela dos últimos 30 dias · <b>' + comDuracao.length +
-      '</b> transições, das quais <b>' + reais.length + '</b> com duração real e <b>' +
-      pisos.length + '</b> apenas piso. <b>As duas colunas nunca se somam</b>: piso e medida não ' +
-      'são a mesma grandeza, e misturá-las subestima o ciclo de forma sistemática — com ' +
-      'aparência de número certo.</p>';
+      '<p class="sec-note" style="margin-top:12px">Registro lido em <b>' + esc(LOG_CARIMBO || '—') +
+      '</b> · mudanças dos últimos 30 dias · <b>' + comDuracao.length +
+      '</b> mudanças, das quais <b>' + reais.length + '</b> com tempo medido e <b>' +
+      pisos.length + '</b> apenas com tempo mínimo. <b>As duas colunas nunca se somam:</b> um ' +
+      'mínimo não é uma medida, e juntar os dois faz o ciclo de venda parecer mais curto do que ' +
+      'é — com toda a cara de número certo.</p>';
   }
 
   function renderReads(V, T, cob, fm7, fm30, somaEt) {
@@ -1157,7 +1191,8 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
       ? R.map(function (r) {
           return '<div class="read ' + r.c + '"><h3>' + r.h + '</h3><p>' + r.p + '</p></div>';
         }).join('')
-      : '<div class="vazio">Nada fora do padrão nesta seleção.</div>';
+      : '<div class="vazio">Nenhuma das quatro observações se aplica a esta seleção. Isso não ' +
+        'quer dizer que esteja tudo bem — quer dizer que nada disparou as regras desta seção.</div>';
   }
 
   // ================================================================ controles
