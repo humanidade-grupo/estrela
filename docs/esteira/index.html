@@ -165,6 +165,23 @@ td.name{font-weight:600}
 .dim{color:var(--ink-3)}
 .sep{border-left:1px solid var(--line)}
 tr.orf td{border-top:2px solid var(--line); color:var(--ink-2); font-style:italic}
+/* filtro colapsado por padrao: e um controle, nao um painel — ocupava a
+   primeira tela inteira antes de qualquer numero aparecer */
+.filtro.fechado .vends,.filtro.fechado .filtro-nota,.filtro.fechado .filtro-acoes{display:none}
+#f-abrir{background:none;border:1px solid var(--line);color:var(--ink-2);border-radius:999px;
+  padding:3px 11px;font:inherit;font-size:12px;cursor:pointer}
+#f-abrir:hover{color:var(--ink);border-color:var(--ink-3)}
+/* barras: propria x recebido, uma linha por vendedor */
+.barras{display:grid;grid-template-columns:auto 1fr auto;gap:7px 12px;align-items:center;
+  margin:4px 0 2px}
+.barras .bl{font-size:13px;color:var(--ink-2);white-space:nowrap}
+.barras .bt{height:17px;display:flex;border-radius:4px;overflow:hidden;background:var(--line)}
+.barras .bp{background:#38bdf8}
+.barras .br{background:#a78bfa}
+.barras .bv{font-size:12.5px;color:var(--ink-3);white-space:nowrap;font-variant-numeric:tabular-nums}
+.leg{display:flex;gap:16px;align-items:center;font-size:12.5px;color:var(--ink-3);margin:2px 0 12px}
+.leg i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;
+  vertical-align:-1px}
 
 /* ---------- cartões por vendedor ---------- */
 .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(390px,1fr)); gap:16px}
@@ -337,9 +354,10 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
 
   <div id="conteudo" hidden>
 
-    <div class="filtro" id="secFiltro">
+    <div class="filtro fechado" id="secFiltro">
       <div class="filtro-top">
-        <span class="filtro-lab">Quem aparece nesta página</span>
+        <span class="filtro-lab">Quem aparece nesta p&aacute;gina <button type="button"
+          id="f-abrir" aria-expanded="false">escolher</button></span>
         <div class="filtro-acoes">
           <button type="button" id="f-equipe">só a equipe atual</button>
           <button type="button" id="f-todos">todos que aparecem no CRM</button>
@@ -394,6 +412,7 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
         separam olhando a coluna SATI ao lado: baixa para todo mundo &eacute; m&ecirc;s fraco de
         capta&ccedil;&atilde;o autom&aacute;tica; baixa s&oacute; para um &eacute; composi&ccedil;&atilde;o de fila.</p>
       <p class="sec-note" id="origemAmostra"></p>
+      <div id="origemBarras"></div>
       <div class="scroll"><table id="tabOrigem"></table></div>
       <p class="sec-note" id="origemRodape"></p>
     </section>
@@ -646,6 +665,7 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
   function montarOrigem(r) {
     if (!r || r.ok !== true) {
       $('#origemAmostra').innerHTML = '';
+      $('#origemBarras').innerHTML = '';
       $('#tabOrigem').innerHTML = '';
       $('#origemRodape').innerHTML = 'Sem dado de origem nesta carga' +
         (r && r.erro ? ' (' + esc(r.erro) + ')' : '') +
@@ -676,26 +696,49 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
 
     var linha = function (v, cls) {
       var t = v.total || 0;
+      var rec = (v.sati || 0) + (v.formulario || 0);
       return '<tr class="' + (cls || '') + '"><td class="l name">' + esc(v.vendedor) + '</td>' +
         '<td class="num' + (v.propria ? '' : ' dim') + '">' + (v.propria || '\u2014') + '</td>' +
-        '<td class="num' + (v.sati ? '' : ' dim') + '">' + (v.sati || '\u2014') + '</td>' +
-        '<td class="num' + (v.formulario ? '' : ' dim') + '">' + (v.formulario || '\u2014') + '</td>' +
+        '<td class="num' + (rec ? '' : ' dim') + '" title="SATI ' + (v.sati || 0) +
+        ' + formul\u00e1rio ' + (v.formulario || 0) + '">' + (rec || '\u2014') + '</td>' +
         '<td class="num sep"><strong>' + t + '</strong></td>' +
         '<td class="num">' + (t ? pct(v.propria / t) : '\u2014') + '</td></tr>';
     };
 
     $('#tabOrigem').innerHTML =
-      '<thead><tr><th class="l">Vendedor</th><th>Pr\u00f3pria</th><th>SATI</th>' +
-      '<th>Formul\u00e1rio</th><th class="sep">Total</th><th>% pr\u00f3prio</th></tr></thead><tbody>' +
+      '<thead><tr><th class="l">Vendedor</th><th>Pr\u00f3pria</th>' +
+      '<th>Recebido</th><th class="sep">Total</th><th>% pr\u00f3prio</th></tr></thead><tbody>' +
       V.map(function (v) { return linha(v); }).join('') +
       (O.total ? linha({ vendedor: 'Sem dono ativo \u2014 ' +
                           O.nomes.map(function (n) { return n.vendedor; }).join(', '),
                          propria: O.propria, sati: O.sati,
                          formulario: O.formulario, total: O.total }, 'orf') : '') +
       '</tbody><tfoot><tr><td class="l">Total</td>' +
-      '<td class="num">' + tP + '</td><td class="num">' + tS + '</td><td class="num">' + tF + '</td>' +
+      '<td class="num">' + tP + '</td>' +
+      '<td class="num" title="SATI ' + tS + ' + formul\u00e1rio ' + tF + '">' + (tS + tF) + '</td>' +
       '<td class="num sep">' + tT + '</td>' +
       '<td class="num">' + (tT ? pct(tP / tT) : '\u2014') + '</td></tr></tfoot>';
+
+    /* ---- barras: uma linha por vendedor, propria x recebido ----
+       Proporcao dentro de cada barra, e todas as barras com a MESMA largura
+       total: a pergunta e "que fatia do que ele pegou foi atras dele", nao
+       "quem pegou mais". Volume ja esta na coluna Total ao lado. O numero
+       absoluto vai na ponta para a barra nao esconder que 100% de 3 leads e
+       diferente de 100% de 60. */
+    var comAlgo = V.filter(function (v) { return (v.total || 0) > 0; });
+    $('#origemBarras').innerHTML = !comAlgo.length ? '' :
+      '<div class="leg"><span><i style="background:#38bdf8"></i>Pr\u00f3pria</span>' +
+      '<span><i style="background:#a78bfa"></i>Recebido (SATI + formul\u00e1rio)</span></div>' +
+      '<div class="barras">' + comAlgo.map(function (v) {
+        var pr = v.propria || 0, re = (v.sati || 0) + (v.formulario || 0), t = pr + re;
+        if (!t) return '';
+        return '<span class="bl">' + esc(curtoNome(v.vendedor)) + '</span>' +
+          '<span class="bt">' +
+            '<span class="bp" style="width:' + (100 * pr / t).toFixed(1) + '%"></span>' +
+            '<span class="br" style="width:' + (100 * re / t).toFixed(1) + '%"></span>' +
+          '</span>' +
+          '<span class="bv">' + pr + ' / ' + re + '</span>';
+      }).join('') + '</div>';
 
     var notas = [];
     if (O.total) {
@@ -714,6 +757,15 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
     }
     if (r.carimbo) notas.push('Dados de origem atualizados em ' + esc(r.carimbo) + '.');
     $('#origemRodape').innerHTML = notas.join(' ');
+  }
+
+  /* Mesmo encurtamento das outras secoes: primeiro nome, dois quando repete.
+     Nome completo numa barra empurra o grafico inteiro para a direita. */
+  function curtoNome(n) {
+    var p = String(n || '').trim().split(/\s+/);
+    if (p.length < 2) return p[0] || '\u2014';
+    var col = ['ana', 'jose', 'joao', 'maria', 'luiz', 'luis'];
+    return col.indexOf(p[0].toLowerCase()) >= 0 ? p[0] + ' ' + p[1] : p[0];
   }
 
   function carregarOrigem(token) {
@@ -1315,6 +1367,18 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
       ordemCob = b.getAttribute('data-psort'); renderTudo();
     });
   });
+  /* O filtro comeca FECHADO. Ele e um controle, nao um painel: aberto, ocupava
+     a primeira tela inteira antes de qualquer numero aparecer, e a maioria das
+     visitas nao mexe nele. Fechado, vira uma linha com o resumo de quem esta
+     sendo mostrado — que e a unica coisa que precisa estar sempre visivel,
+     porque um filtro ativo e invisivel e como a pagina mente. */
+  $('#f-abrir').addEventListener('click', function (ev) {
+    ev.preventDefault();
+    var f = $('#secFiltro'), fechado = f.classList.toggle('fechado');
+    this.setAttribute('aria-expanded', fechado ? 'false' : 'true');
+    this.textContent = fechado ? 'escolher' : 'ocultar';
+  });
+
   $('#f-equipe').addEventListener('click', function () {
     sel = new Set(VENDS.filter(function (v) { return v.equipe; }).map(function (v) { return v.curto; }));
     if (!sel.size) sel = new Set(VENDS.map(function (v) { return v.curto; }));
