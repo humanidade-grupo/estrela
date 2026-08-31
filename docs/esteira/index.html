@@ -1135,13 +1135,13 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
     /* ---- leitura de cada ficha ----
        DETERMINISTICA E CALCULADA AQUI, de proposito. Nao e texto gerado: a
        mesma carteira tem que produzir a mesma frase toda vez, porque esta
-       pagina e lida em conversa de cobranca — duas pessoas abrindo e vendo
+       página é lida em conversa de cobrança — duas pessoas abrindo e vendo
        leituras diferentes seria pior que nao ter leitura nenhuma.
 
        Tres disciplinas herdadas do resto desta apuracao:
        · COMPARATIVA, contra a MEDIANA do time visivel, nunca contra limiar
          inventado. Mes fraco para todos deixa de virar acusacao individual.
-       · PISO DE AMOSTRA. Carteira pequena nao recebe diagnostico, recebe o
+       · PISO DE AMOSTRA. Carteira pequena não recebe diagnóstico, recebe o
          aviso de que e pequena — abaixo dele um caso vira "tendencia".
        · FATO, NUNCA CAUSA (regra 10 do CLAUDE.md). A frase diz o que o numero
          mostra e onde agir; nao diz se a pessoa esta desleixada, de ferias, de
@@ -1164,14 +1164,12 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
     function leituraFicha(v) {
       if (v.ativa < PISO_FICHA) {
         return { cls: '', t: 'Carteira pequena para leitura',
-          p: '<strong>' + v.ativa + '</strong> negocio(s) em jogo. Abaixo de ' + PISO_FICHA +
-             ' um caso so vira percentual grande — os numeros acima valem, a leitura nao.' };
+          p: '<strong>' + v.ativa + '</strong> neg\u00f3cio(s) em jogo. Abaixo de ' + PISO_FICHA +
+             ' um caso s\u00f3 vira percentual grande \u2014 os n\u00fameros acima valem, a leitura n\u00e3o.' };
       }
 
       var f = [], s7 = v.p7 / v.ativa, s30 = v.p30 / v.ativa;
 
-      /* Onde a parada se concentra: e o que vira tarefa de segunda-feira.
-         "36% parado" nao diz o que fazer; "9 dos 13 estao em Visita" diz. */
       var pior = null;
       ORD.forEach(function (id) {
         var par = v.par[id];
@@ -1187,29 +1185,47 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
       else { t = 'Dentro do ritmo do time'; }
 
       f.push('<strong>' + v.p7 + '</strong> dos <strong>' + v.ativa +
-             '</strong> em jogo estao sem toque ha mais de ' + DIAS_COB + ' dias (' + pct(s7) +
+             '</strong> em jogo est\u00e3o sem toque h\u00e1 mais de ' + DIAS_COB + ' dias (' + pct(s7) +
              '), contra <strong>' + pct(CTX.s7) + '</strong> na mediana do time' +
-             (v.p30 ? ', e <strong>' + v.p30 + '</strong> ja passaram de ' + DIAS_VELHO + '.' : '.'));
+             (v.p30 ? ', e <strong>' + v.p30 + '</strong> j\u00e1 passaram de ' + DIAS_VELHO + '.' : '.'));
 
       if (pior && pior.p7 >= 2) {
         var nome = ET[pior.id] ? ET[pior.id].n : 'Etapa ' + pior.id;
-        var junta = pior.max !== null && pior.mediana >= DIAS_COB && pior.max <= pior.mediana * 2;
+
+        /* MEDIANA MANDA, MAXIMO SO DESEMPATA.
+           A primeira versao decidia por `max <= mediana * 2` e, numa fila com
+           mediana de 48 dias e maximo de 110, imprimiu "a fila anda e ha
+           esquecido dentro dela". Mediana de 48 dias E a fila parada: o caso do
+           MEIO ja estava ha 48 dias sem toque. O maximo so importa quando a
+           mediana e baixa — ai sim ele denuncia o esquecido solto numa carteira
+           em dia, que e a leitura que a nota da secao ensina. */
+        var fila;
+        if (pior.mediana >= DIAS_VELHO) {
+          fila = 'a fila inteira parou \u2014 o caso do <em>meio</em> j\u00e1 passou de ' +
+                 DIAS_VELHO + ' dias sem toque.';
+        } else if (pior.mediana >= DIAS_COB) {
+          fila = 'a fila parou junto, e isso \u00e9 rotina a retomar, n\u00e3o caso perdido.';
+        } else if (pior.max !== null && pior.max >= DIAS_COB * 2) {
+          fila = 'a fila anda e h\u00e1 esquecidos dentro dela \u2014 a conversa \u00e9 um a um.';
+        } else {
+          fila = 'a parada \u00e9 recente e a fila continua andando.';
+        }
+
         f.push('A parada se concentra em <strong>' + esc(nome) + '</strong> (' + pior.p7 +
                ' de ' + v.p7 + '), mediana de ' + pior.mediana + ' dia(s)' +
-               (pior.max === null ? '' : ' e maximo de ' + pior.max) + ' — ' +
-               (junta ? 'a fila parou junto, e isso e rotina a retomar, nao caso perdido.'
-                      : 'a fila anda e ha esquecido dentro dela; a conversa e um a um.'));
+               (pior.max === null ? '' : ' e m\u00e1ximo de ' + pior.max) + ' \u2014 ' + fila);
       }
 
       var dec = v.ganha + v.perdida;
       if (dec >= PISO_DEC && v.fech !== null && CTX.fech) {
         var d = v.fech - CTX.fech;
+        var comp = Math.abs(d) < 0.05 ? 'em linha com os '
+                 : d > 0 ? '<strong>acima</strong> dos ' : '<strong>abaixo</strong> dos ';
         f.push('Fecha <strong>' + pct(v.fech) + '</strong> do que decide (' + v.ganha + ' de ' +
-               dec + '), ' + (Math.abs(d) < 0.05 ? 'em linha com' :
-                 d > 0 ? '<strong>acima</strong> de' : '<strong>abaixo</strong> de') +
-               ' os ' + pct(CTX.fech) + ' do time.');
+               dec + '), ' + comp + pct(CTX.fech) + ' do time.');
       } else if (dec) {
-        f.push('So <strong>' + dec + '</strong> negocio(s) decidido(s) — poucos para ler fechamento.');
+        f.push('S\u00f3 <strong>' + dec + '</strong> neg\u00f3cio(s) decidido(s) \u2014 poucos para ' +
+               'ler fechamento.');
       }
 
       if (v.perdida >= 4 && v.mot.length && v.mot[0][1] / v.perdida >= 0.4) {
