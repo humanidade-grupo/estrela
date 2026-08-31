@@ -32,10 +32,11 @@
 
   FORA, DE PROPÓSITO: `Origem do Lead` — vem vazia em 100% das linhas, mas NÃO
   porque o CRM não a tenha: no Facilita o campo é obrigatório, com 13 opções em
-  produção. O que não devolve é a LISTAGEM /deals, e o importador grava vazio de
-  propósito (`origem: ''` em _lfProjetar). O dado existe e está caro, não
-  perdido. · `Valor` (é o custo cru; ticket e VGV só se calculam por
-  Valor Face × (1 − Desconto %) na Vendas_Facilita) · a etapa 1 (funil da Estrela).
+  produção. A varredura da API de 14/08 provou que a origem não está em lugar
+  nenhum do contrato desta instância — nem em /deals, nem nos 171 custom-fields.
+  Não é caro de buscar: é indisponível. Sai por export da interface, ou quando o
+  Facilita expuser o campo. · `Valor` (é o custo cru; ticket e VGV só se calculam
+  por Valor Face × (1 − Desconto %)) · a etapa 1 (funil da Estrela).
 
   ⚠️ VENDA GANHA E VENDA PERDIDA NÃO ENTRAM NA ESTEIRA. São resultado
   acumulado desde abril; a esteira é estoque de hoje. Somar as duas coisas no
@@ -434,11 +435,13 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
           — o carimbo no topo diz de quando é, e acima de 48 horas ele fica em amarelo com aviso.</li>
         <li><strong>Origem do lead vem vazia — e não é porque o CRM não a tenha.</strong> No Facilita
           o campo é <b>obrigatório</b>, com 13 opções em produção (a lista vive em
-          <code>Origem do Lead — Lista Padronizada</code>). O que não devolve a origem é a
-          <b>listagem</b> <code>/deals</code>, que é o endpoint do importador — por isso a aba chega
-          com o campo vazio em 100% das linhas. <b>O dado existe; recuperá-lo custaria uma chamada
-          por negócio</b>, e é decisão de custo, não de software. Nada de origem é desenhado aqui
-          justamente para não transformar buraco de endpoint em “lead sem origem”.</li>
+          <code>Origem do Lead — Lista Padronizada</code>). Uma varredura ao vivo da API em 14/08
+          mostrou que a origem <b>não está em lugar nenhum do contrato desta instância</b>: nem nas
+          16 chaves de <code>/deals</code>, nem nos <b>171 custom-fields</b>, nem nos endpoints de
+          cliente. <b>Não é caro de buscar — é indisponível por API.</b> Ela sai por export da
+          interface do Facilita, ou no dia em que o fornecedor expuser o campo. Nada de origem é
+          desenhado aqui justamente para não transformar buraco de contrato em “lead sem
+          origem”.</li>
         <li><strong>Não há valor, ticket nem VGV.</strong> O campo de valor que vem por aqui é o custo
           cru do negócio. A regra do projeto diz que ticket e VGV só se calculam por
           <code>Valor Face × (1 − Desconto %)</code> na <code>Vendas_Facilita</code>, com mediana e
