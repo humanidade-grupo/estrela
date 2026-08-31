@@ -1,6 +1,15 @@
 /* Painel Comercial — Parque da Saudade + Estrela Urbanidade
    Service worker: instalação PWA + reserva offline.
-   Atualizado em: 31/08/2026 (3ª do dia) — A FILA DE COBRANÇA CAIU DE CINCO
+   Atualizado em: 31/08/2026 (4ª do dia) — NASCE A RETROSPECTIVA DO TIME
+   COMERCIAL em /retrospectiva/, tela de GESTÃO do Parque que lê
+   ?app=retrospectiva&fn=dados. Ela é o ESPELHO DE LEITURA do artefato
+   `2df469ed` do claude.ai, e não o substitui: no artefato o Ricardo escreve a
+   leitura do mês e conduz a reunião; aqui Fábricia e Rodrigo leem, porque o
+   artefato lê pelo conector do Drive e não é compartilhável. Não escreve nada.
+   Fica dentro do escopo deste PWA pelo mesmo motivo da Esteira: o público é o
+   do Painel. FORA, por decisão: a coluna reservada do formulário do time e a
+   planilha da liderança — o token de gestão é um só para os três.
+   Antes, 31/08/2026 (3ª do dia) — A FILA DE COBRANÇA CAIU DE CINCO
    ETAPAS PARA TRÊS: Lead Quente, Lead Agendado e Visita Realizada. Aprovação e
    Contrato saíram por decisão do Ricardo — ali o negócio já está fechando e o
    que destrava é papel, crédito e assinatura, não um toque de vendedor. Havia
@@ -47,7 +56,7 @@
    abas: no Parque escolhem o mês da tela; na Estrela, o fim da janela de 12m.
    Estratégia: rede primeiro (pega versão nova quando online), cache como
    reserva offline. A cada deploy, bumpar a versão em CACHE. */
-const CACHE = 'painel-comercial-260831-9';
+const CACHE = 'painel-comercial-260831-10';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./'])).then(() => self.skipWaiting()));

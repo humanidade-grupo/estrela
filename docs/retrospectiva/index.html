@@ -1,0 +1,1682 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Retrospectiva do Time Comercial — Parque da Saudade</title>
+<link rel="icon" href="../favicon-32.png" sizes="32x32">
+<!--
+  RETROSPECTIVA DO TIME COMERCIAL — Parque da Saudade. Tela de GESTÃO.
+
+  ORIGEM DO LAYOUT: o artefato `claude.ai/code/artifact/2df469ed` — lido inteiro
+  pela ferramenta de artefatos, não descrito de memória. A ESTRUTURA é dele: o
+  trilho de meses à esquerda, a dobra dos números no topo, as camadas numeradas,
+  as barras com a régua do mês anterior e a média dos três, o acordeão de
+  perguntas, as travas com o corte de 3, a tabela de compromissos e a aba
+  "A série". A casca visual também é dele — ele já foi padronizado no visual do
+  Painel Comercial em 31/08, com o acento dourado do Parque.
+
+  ⚠️ O ARTEFATO NÃO FOI APOSENTADO POR ESTA PÁGINA, e isto é o contrário do que
+  aconteceu com a Esteira (regra 8 do CLAUDE.md, que manda aposentar o ponteiro
+  no mesmo passo). Aqui há DOIS VIVOS, por decisão de 31/08:
+    · no ARTEFATO o Ricardo ESCREVE a leitura do mês e o plano, e é por ele que
+      ele conduz a reunião. Ele salva a própria versão e lê as planilhas pelo
+      conector do Drive, com a credencial de quem abre.
+    · nesta PÁGINA a gestão LÊ. Ela existe porque o artefato não é
+      compartilhável: conector barra link público, e Fábricia e Rodrigo não têm
+      conta na organização.
+  Mexer no artefato não é tarefa desta página, e o inverso também vale.
+
+  ═══ O QUE ESTA TELA NÃO TEM, E POR QUÊ ═══
+  O `hub_token_gestao` é UM só, compartilhado entre Ricardo, Fábricia e Rodrigo.
+  O que a rota devolve, os três leem. Então saíram do artefato para cá:
+    · TODA A ESCRITA — o botão Salvar, os campos de leitura, aposta e ações. O
+      Painel Comercial nunca escreve (camada 3 do CLAUDE.md). A leitura do mês
+      aparece aqui como TEXTO SEM EDIÇÃO, vindo da aba `Leitura`.
+    · O CAMPO RESERVADO do formulário do time ("algo que você não falaria numa
+      reunião com todo mundo junto"). Ele não é escondido aqui: ele é descartado
+      no SERVIDOR e não chega nesta página. Ver Retrospectiva.gs.
+    · A ABA "SOBRE MIM" inteira — o feedback da Fábricia e do Rodrigo sobre a
+      coordenação. A planilha da liderança não tem rota.
+
+  ═══ MECÂNICA (copiada da Esteira do Funil, que é o padrão da casa) ═══
+  Token `hub_token_gestao` no localStorage, o mesmo do Painel — quem já usa não
+  digita nada. Sem token, nenhum número aparece. O carimbo exibido é o da FOTO
+  (quando o resumo do Cofre foi calculado), nunca a hora do fetch, com tarja
+  acima de 48h. `truncado` ausente ou true bloqueia o desenho inteiro. Todas as
+  contas rodam no navegador, sobre as linhas cruas que a rota devolve.
+
+  SEGURANÇA: nenhum segredo neste arquivo. O repositório é público.
+-->
+<style>
+/* =====================================================================
+   A casca do artefato 2df469ed, que já é a do Painel Comercial com o
+   acento do Parque. Tema escuro único: o Painel não tem modo claro.
+
+   O artefato carregava um <link> de Google Fonts que não era usado —
+   as três variáveis de fonte apontam para a pilha do sistema, porque é
+   assim que o Painel resolve alinhamento de número (tabular-nums, não
+   fonte mono). O link saiu; a cara não mudou.
+   ===================================================================== */
+:root{
+  --bg:#0b1220;--card:rgba(255,255,255,.045);--card2:rgba(255,255,255,.03);
+  --edge:rgba(255,255,255,.09);--edge2:rgba(255,255,255,.14);
+  --text-1:#eef4fa;--text-2:#9fb2c8;--text-3:#64778f;
+  --s1:#f2c744;--s1b:#f7d977;
+  --grid:rgba(255,255,255,.07);--surface-1:#121c2c;
+  --chip-bg:rgba(255,255,255,.05);
+  --ok:#4ade80;--warn:#fbbf24;--crit:#f87171;
+  --warn-bg:rgba(217,119,6,.14);
+
+  /* Barras de referência (M-1 e média): dois cinzas recessivos sobre o escuro. */
+  --ref:rgba(255,255,255,.26);--ref2:rgba(255,255,255,.13);
+
+  --radius:16px; --rail:236px;
+  --f-body:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+
+  --shadow:0 10px 34px rgba(0,0,0,.3);
+}
+
+*{box-sizing:border-box}
+html{color-scheme:dark}
+body{margin:0; color:var(--text-1); min-height:100vh;
+     background:radial-gradient(1200px 600px at 80% -10%,#2b2412 0%,var(--bg) 55%) fixed;
+     font:14px/1.5 var(--f-body); -webkit-font-smoothing:antialiased}
+h1,h2,h3{font-weight:800; letter-spacing:-.005em; text-wrap:balance; margin:0}
+a{color:var(--s1b)}
+.eyebrow{font-size:10.5px; letter-spacing:.07em; text-transform:uppercase;
+         color:var(--text-3); font-weight:700}
+
+.shell{display:flex; min-height:100vh; align-items:stretch}
+.rail{width:var(--rail); flex:0 0 var(--rail); border-right:1px solid var(--edge);
+      background:var(--card2); backdrop-filter:blur(8px);
+      padding:22px 0 28px; display:flex; flex-direction:column;
+      gap:18px; position:sticky; top:0; height:100vh; overflow-y:auto}
+.rail-head{padding:0 20px; display:flex; flex-direction:column; gap:5px}
+.rail-head h1{font-size:18px; line-height:1.25}
+.rail-head p{margin:0; font-size:11.5px; color:var(--text-3)}
+.rail-voltar{margin-top:4px; font-size:11.5px; text-decoration:none; display:inline-flex;
+             align-items:center; gap:5px; color:var(--text-3)}
+.rail-voltar:hover{color:var(--text-1)}
+.rail-group{display:flex; flex-direction:column; gap:2px}
+.rail-group .eyebrow{padding:0 20px 6px}
+.tab{appearance:none; border:0; background:none; cursor:pointer; font-family:var(--f-body);
+     font-size:13.5px; font-weight:600; color:var(--text-3); text-align:left;
+     padding:9px 20px; display:flex; align-items:center; gap:9px;
+     border-left:2px solid transparent; width:100%}
+.tab:hover{color:var(--text-1); background:rgba(255,255,255,.035)}
+.tab[aria-selected="true"]{color:var(--s1b); border-left-color:var(--s1);
+     background:rgba(255,255,255,.05)}
+.tab .dot{width:6px; height:6px; border-radius:50%; flex:0 0 6px; background:var(--edge2)}
+.tab.has-data .dot{background:var(--s1)}
+.tab:focus-visible{outline:2px solid var(--s1); outline-offset:-2px}
+.main{flex:1 1 auto; min-width:0; padding:22px 28px 70px; max-width:1180px}
+
+.fonte{display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:9px 14px;
+       margin-bottom:18px; border:1px solid var(--edge); border-radius:16px;
+       background:var(--card); backdrop-filter:blur(8px); font-size:12.5px; color:var(--text-2)}
+.fonte.alerta{border-color:rgba(251,191,36,.3); background:var(--warn-bg)}
+.fonte.alerta, .fonte.alerta strong{color:var(--warn)}
+.fonte .fim{margin-left:auto; white-space:nowrap; font-size:12px}
+.trocar{background:none; border:none; color:var(--text-3); font:inherit; font-size:12px;
+        cursor:pointer; text-decoration:underline; padding:0}
+.trocar:hover{color:var(--text-1)}
+
+.month-head{display:flex; flex-direction:column; gap:7px; margin-bottom:20px}
+.month-head h2{font-size:26px; line-height:1.15}
+.month-head .sub{color:var(--text-2); font-size:13px; max-width:66ch; margin:0}
+
+/* Seis cartões: 3 por fileira em tela larga, para as duas fileiras ficarem
+   cheias. Cinco e um sobrando lê como cartão esquecido. */
+.tiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+       gap:10px; margin-bottom:16px}
+.tile{background:var(--card); border:1px solid var(--edge); border-radius:16px;
+      backdrop-filter:blur(8px); padding:12px 14px;
+      display:flex; flex-direction:column; gap:2px}
+.tile .k{font-size:10.5px; letter-spacing:.07em; text-transform:uppercase;
+         color:var(--text-3); font-weight:700}
+.tile .v{font-size:22px; font-weight:800; line-height:1.15;
+         font-variant-numeric:tabular-nums; white-space:nowrap}
+.tile .n{font-size:11.5px; color:var(--text-2)}
+.tile.flag-warn{border-color:rgba(251,191,36,.3)} .tile.flag-warn .v{color:var(--warn)}
+.tile.flag-ok .v{color:var(--s1b)}
+
+.camada{margin:0 0 14px; padding-top:8px; display:flex; align-items:baseline; gap:12px;
+        border-top:2px solid var(--edge2)}
+.camada h2{font-size:15px; letter-spacing:.01em; padding-top:10px}
+.camada span{font-size:11.5px; color:var(--text-3); padding-top:10px}
+
+section.block{margin-bottom:26px}
+section.block > header{display:flex; flex-direction:column; gap:3px; margin-bottom:12px}
+section.block h3{font-size:15px}
+section.block header p{margin:0; font-size:12px; color:var(--text-3); max-width:74ch}
+.card{background:var(--card); border:1px solid var(--edge); border-radius:18px;
+      backdrop-filter:blur(8px); box-shadow:var(--shadow); padding:15px 17px}
+.card.aviso{border-color:rgba(251,191,36,.3); background:var(--warn-bg); margin-bottom:18px}
+.linha-aviso{display:flex; flex-wrap:wrap; gap:10px; align-items:center; font-size:13.5px}
+.duas{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(330px,100%),1fr)); gap:14px}
+
+.bars{display:flex; flex-direction:column; gap:15px}
+.bar-row{display:flex; flex-direction:column; gap:6px}
+.bar-topo{display:flex; align-items:baseline; gap:14px; justify-content:space-between; flex-wrap:wrap}
+.bar-label{font-size:13px; color:var(--text-1); display:flex; align-items:baseline; gap:8px;
+           min-width:0; overflow-wrap:anywhere}
+/* Os valores de referência viram fichas com a bolinha da cor da própria barra:
+   é a bolinha que amarra o número à barra. Texto corrido não amarra nada. */
+.chips{display:flex; flex-wrap:wrap; gap:6px}
+.chip{display:inline-flex; align-items:center; gap:6px; padding:3px 11px 3px 8px;
+      border:1px solid var(--edge); border-radius:999px; background:var(--chip-bg);
+      font-size:11.5px; color:var(--text-3); white-space:nowrap}
+.chip i{width:9px; height:9px; border-radius:5px; flex:0 0 9px; background:var(--ref)}
+.chip i.ref2{background:var(--ref2)}
+.chip b{font-weight:700; color:var(--text-2); font-variant-numeric:tabular-nums}
+.chip em{font-style:normal; font-variant-numeric:tabular-nums}
+.chip em.sobe{color:var(--ok)} .chip em.desce{color:var(--crit)}
+.bar-track{height:14px; border-radius:7px; background:rgba(255,255,255,.05); overflow:hidden}
+/* A barra do mês anterior é mais fina de propósito: ela é régua, não resultado. */
+.bar-track.ref,.bar-track.ref2{height:8px; border-radius:4px}
+.bar-par{display:flex; flex-direction:column; gap:4px}
+.bar-fill{height:100%; border-radius:7px; background:var(--s1); min-width:3px}
+.bar-fill.warn{background:var(--warn)}
+.bar-fill.ref{background:var(--ref); border-radius:4px}
+.bar-fill.ref2{background:var(--ref2); border-radius:4px}
+.bar-val{font-size:12.5px; font-weight:700; color:var(--text-1); text-align:right;
+         font-variant-numeric:tabular-nums; white-space:nowrap}
+.bar-m1{font-variant-numeric:tabular-nums}
+.legenda-m1{display:flex; align-items:center; gap:7px; margin:16px 0 0; flex-wrap:wrap;
+            font-size:10.5px; letter-spacing:.07em; font-weight:700;
+            text-transform:uppercase; color:var(--text-3)}
+.legenda-m1 i{display:inline-block; width:15px; height:9px; border-radius:5px; background:var(--s1)}
+.legenda-m1 i.ref{background:var(--ref)}
+.legenda-m1 i.ref2{background:var(--ref2)}
+.legenda-m1 span + i{margin-left:9px}
+
+/* Farol: as mesmas três cores do .schip do Painel. */
+.flag{font-size:11px; letter-spacing:.05em; text-transform:uppercase; font-weight:700;
+      padding:3px 10px; border-radius:999px; white-space:nowrap;
+      background:var(--warn-bg); color:var(--warn); border:1px solid rgba(251,191,36,.3)}
+.flag.ok{background:rgba(22,163,74,.15); color:var(--ok); border-color:rgba(74,222,128,.35)}
+.flag.crit{background:rgba(220,38,38,.13); color:var(--crit); border-color:rgba(248,113,113,.3)}
+
+.quotes{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr)); gap:12px}
+.quote{background:var(--card); border:1px solid var(--edge); border-left:3px solid var(--s1);
+       border-radius:18px; backdrop-filter:blur(8px); box-shadow:var(--shadow);
+       padding:14px 16px; display:flex; flex-direction:column; gap:8px}
+.quote p{margin:0; font-size:14.5px; line-height:1.5; color:var(--text-1); max-width:none}
+.quote .who{font-size:11px; color:var(--text-3); letter-spacing:.05em;
+            text-transform:uppercase; font-weight:700}
+.quote.vazia{border-left-color:var(--edge2)}
+.quote.vazia p{font-size:13px; color:var(--text-3); font-style:italic}
+
+.table-wrap{max-height:420px; overflow:auto; border:1px solid var(--edge);
+            border-radius:10px; background:var(--card2)}
+table{border-collapse:collapse; width:100%; font-size:12.5px;
+      font-variant-numeric:tabular-nums; min-width:480px}
+th,td{padding:7px 10px; text-align:left; border-bottom:1px solid var(--grid)}
+th{font-size:10.5px; letter-spacing:.05em; text-transform:uppercase;
+   color:var(--text-3); font-weight:700; border-bottom:1px solid var(--edge2);
+   position:sticky; top:0; background:var(--surface-1); white-space:nowrap}
+td{color:var(--text-1)}
+tbody tr:last-child td{border-bottom:0}
+td.num, th.num{text-align:right}
+
+/* -- A leitura e o plano, SEM EDIÇÃO ------------------------------------
+   No artefato isto era formulário. Aqui é texto: o Painel não escreve, e o
+   `white-space:pre-wrap` preserva as quebras de linha de quem colou. */
+.escrita{display:flex; flex-direction:column; gap:16px}
+.campo{display:flex; flex-direction:column; gap:6px}
+.campo .rot{font-size:10.5px; letter-spacing:.07em; text-transform:uppercase;
+            color:var(--text-3); font-weight:700}
+.leitura-lida{font-size:15px; line-height:1.55; white-space:pre-wrap; margin:0}
+.vazio-texto{color:var(--text-3); font-style:italic; font-size:13px}
+
+/* -- Dobra dos números --------------------------------- */
+.dobra{border:1px solid var(--edge); border-radius:18px; background:var(--card);
+       backdrop-filter:blur(8px); box-shadow:var(--shadow); margin-bottom:28px}
+.dobra > summary{cursor:pointer; list-style:none; padding:13px 18px; display:flex;
+                 align-items:center; gap:14px; flex-wrap:wrap; border-radius:18px}
+.dobra > summary::-webkit-details-marker{display:none}
+.dobra > summary::after{content:'expandir'; margin-left:auto;
+                        font-size:10.5px; letter-spacing:.07em; text-transform:uppercase;
+                        font-weight:700; color:var(--text-3)}
+.dobra[open] > summary::after{content:'recolher'}
+.dobra > summary:hover{background:rgba(255,255,255,.035)}
+.dobra > summary:focus-visible{outline:2px solid var(--s1); outline-offset:-2px}
+.resumo-linha{display:flex; gap:9px; flex-wrap:wrap; align-items:baseline;
+              font-size:12.5px; color:var(--text-3); font-variant-numeric:tabular-nums}
+.resumo-linha b{font-size:22px; color:var(--text-1);
+                font-variant-numeric:tabular-nums; font-weight:800}
+.dobra .corpo{padding:16px 18px 6px; border-top:1px solid var(--edge)}
+.dobra .corpo .empty{border:0; padding:0; background:none; box-shadow:none}
+.nota-fina{margin:12px 0 0; font-size:12px; color:var(--text-3); max-width:76ch}
+
+/* Acordeão de pergunta: mais discreto que a dobra dos números — aqui o que
+   pesa é o texto de dentro, não a moldura. */
+.perguntas{display:flex; flex-direction:column; gap:8px}
+.dobra.q{margin-bottom:0; box-shadow:none; background:var(--card2)}
+.dobra.q > summary{padding:11px 16px; gap:12px}
+.dobra.q > summary::after{font-size:10px}
+.q-tema{font-size:14px; font-weight:700; color:var(--text-1)}
+.q-conta{font-size:10.5px; letter-spacing:.06em; font-weight:700;
+         text-transform:uppercase; color:var(--text-3)}
+.dobra.q .corpo{padding:16px}
+.dobra .corpo > .nota-fina:first-child{margin:0 0 16px}
+
+.empty{border:1px dashed var(--edge2); border-radius:18px; background:var(--card);
+       backdrop-filter:blur(8px); padding:24px 22px;
+       display:flex; flex-direction:column; gap:14px}
+.empty h3{font-size:16px}
+.empty p{margin:0; color:var(--text-2); font-size:13.5px; max-width:68ch}
+.steps{margin:0; padding-left:20px; display:flex; flex-direction:column; gap:7px;
+       font-size:13px; color:var(--text-2)}
+.steps li::marker{color:var(--text-3)}
+.note{margin-top:32px; padding-top:16px; border-top:1px solid var(--edge);
+      font-size:11.5px; color:var(--text-3); max-width:78ch}
+
+/* Tarja de bloqueio: mesma da Esteira. Quando ela aparece, nada mais aparece. */
+.tarja{background:rgba(220,38,38,.13); border:1px solid rgba(248,113,113,.5); color:#ffd9d9;
+       border-radius:14px; padding:14px 16px; margin:0 0 20px}
+.tarja p{margin:6px 0}
+.tarja .t{font-size:15px; font-weight:800; margin-bottom:4px; color:#ffb4b4}
+.tarja code{background:rgba(0,0,0,.3); padding:1px 5px; border-radius:5px; font-size:12px}
+.tarja.amarela{background:var(--warn-bg); border-color:rgba(251,191,36,.5); color:#ffeccd}
+.tarja.amarela .t{color:var(--warn)}
+
+/* ---------- portão de token (idêntico ao da Esteira) ---------- */
+.gate{position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center;
+      background:rgba(8,14,24,.94); backdrop-filter:blur(6px); padding:20px}
+.gatebox{background:#101a2a; border:1px solid rgba(255,255,255,.14); border-radius:18px;
+         padding:22px; max-width:400px; width:100%}
+.gatebox h2{margin:0 0 6px; font-size:17px}
+.gatebox p{color:var(--text-2); font-size:13px; margin:0 0 14px}
+.gatebox input{width:100%; padding:11px 13px; border-radius:11px; border:1px solid rgba(255,255,255,.14);
+               background:#0b1424; color:var(--text-1); font:15px/1.2 inherit; letter-spacing:.04em}
+.gatebox button{width:100%; margin-top:10px; padding:11px; border-radius:11px; border:none;
+                background:var(--s1); color:#2b2412; font:700 14px/1.2 inherit; cursor:pointer}
+.gatebox .erro{color:var(--crit); font-size:12.5px; margin-top:9px; min-height:16px}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   A GUARDA DO [hidden] — quarta vez que esta casa paga por ela (pocket-nps
+   b23f507, painel-comercial 47500f2, esteira). `display` declarado pelo autor
+   VENCE o [hidden]{display:none} que o navegador traz: qualquer elemento
+   listado abaixo nasceria à mostra, e nesta página isso significa o conteúdo
+   aparecendo por cima do portão de token, antes de qualquer autenticação.
+   Regra desta casa: toda classe que declara `display` ganha o par.
+   ═══════════════════════════════════════════════════════════════════════ */
+.shell[hidden],.rail[hidden],.rail-head[hidden],.rail-group[hidden],.rail-voltar[hidden],
+.tab[hidden],.main[hidden],.fonte[hidden],.month-head[hidden],.tiles[hidden],.tile[hidden],
+.camada[hidden],.duas[hidden],.bars[hidden],.bar-row[hidden],.bar-topo[hidden],
+.bar-label[hidden],.chips[hidden],.chip[hidden],.bar-par[hidden],.legenda-m1[hidden],
+.legenda-m1 i[hidden],.quotes[hidden],.quote[hidden],.escrita[hidden],.campo[hidden],
+.perguntas[hidden],.empty[hidden],.steps[hidden],.linha-aviso[hidden],.resumo-linha[hidden],
+.gate[hidden],.dobra[hidden],.dobra > summary[hidden],section.block[hidden],
+section.block > header[hidden]{display:none}
+
+@media (max-width: 860px){
+  /* O trilho de meses não cabe ao lado do conteúdo em tela estreita: vira
+     fileira de abas no topo. Continua sendo o mesmo componente. */
+  .shell{flex-direction:column}
+  .rail{width:100%; flex:0 0 auto; height:auto; position:static; border-right:0;
+        border-bottom:1px solid var(--edge); padding:16px 0 10px}
+  .rail-group{flex-direction:row; overflow-x:auto; gap:0; padding-bottom:2px}
+  .rail-group .eyebrow{display:none}
+  .tab{width:auto; white-space:nowrap; border-left:0; border-bottom:2px solid transparent;
+       padding:9px 14px}
+  .tab[aria-selected="true"]{border-left:0; border-bottom-color:var(--s1)}
+  .main{padding:20px 16px 70px}
+  .month-head h2{font-size:23px}
+}
+/* Mesmo corte do Painel Comercial: 640px. */
+@media (max-width: 640px){
+  .main{padding:14px 10px 60px}
+  .rail-head{padding:0 12px}
+  .rail-head h1{font-size:16px}
+  .tab{padding:8px 12px; font-size:13px}
+  .month-head h2{font-size:20px}
+  .tiles{grid-template-columns:repeat(2,1fr); gap:8px}
+  .tile{padding:9px 11px}
+  .tile .k{font-size:10px}
+  .tile .v{font-size:17px}
+  .card, .dobra .corpo{padding:11px 12px}
+  .dobra > summary{padding:11px 12px}
+  .resumo-linha b{font-size:19px}
+  .fonte{padding:8px 11px; font-size:12px}
+  .duas, .quotes{gap:10px}
+}
+@media (prefers-reduced-motion: reduce){*{animation:none !important; transition:none !important}}
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate">
+  <div class="gatebox">
+    <h2>Retrospectiva do Comercial</h2>
+    <p>Parque da Saudade. Esta tela reúne, mês a mês, o que o time respondeu na
+       retrospectiva e os números que o Cofre fechou. Como ela mostra o que cada
+       vendedor escreveu, pede token — o mesmo do Painel Comercial. Você digita
+       uma vez: ele fica guardado neste aparelho.</p>
+    <input id="tk" type="password" autocomplete="off" spellcheck="false"
+           placeholder="token" aria-label="Token de acesso">
+    <button id="btEntrar" type="button">Entrar</button>
+    <div class="erro" id="gateErro"></div>
+  </div>
+</div>
+
+<div class="shell" id="app" hidden>
+  <nav class="rail" aria-label="Meses">
+    <div class="rail-head">
+      <h1>Retrospectiva do Comercial</h1>
+      <p>Parque da Saudade · números, time, leitura e plano</p>
+      <a class="rail-voltar" href="../">&larr; Painel Comercial</a>
+    </div>
+    <div class="rail-group" id="tabs" role="tablist" aria-orientation="vertical">
+      <span class="eyebrow">Meses</span>
+    </div>
+  </nav>
+  <main class="main" id="painel" role="tabpanel"></main>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var API = 'https://script.google.com/macros/s/AKfycbydLmUEX3g6FeojFGAcVHfNKoPsr4d9oTBUdi7GtcfsirQL6xHJM0BELVGcCrcqrICY/exec';
+  var CHAVE_TOKEN = 'hub_token_gestao';   // o mesmo do Painel e da Esteira — não duplicar
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     CONFIGURAÇÃO — o que não vem da rota.
+
+     As metas são o `meta.oficial.*` da Config do Cofre, transcritas como no
+     artefato. Não vêm pela rota porque a rota serve as abas Resumo_*, e a meta
+     não mora nelas. Mês novo: acrescentar aqui.
+     ═══════════════════════════════════════════════════════════════════════ */
+  var METAS = { '2026-03':30, '2026-04':40, '2026-05':50, '2026-06':60,
+                '2026-07':70, '2026-08':80, '2026-09':90, '2026-10':100 };
+
+  /* A equipe é manual, como na Esteira: nem o Cofre nem o formulário sabem quem
+     está ativo. Serve para dizer QUEM AINDA NÃO RESPONDEU — sem a lista, um
+     formulário com 4 respostas parece completo. */
+  var EQUIPE = ['Ana Luiza', 'Guilherme', 'Wanderson', 'Jaime', 'Ana Maria', 'Felipe'];
+
+  /* As 13 travas do formulário, na ordem em que ele as oferece. Elas vêm numa
+     célula só, separadas por vírgula — e vários rótulos TÊM vírgula dentro
+     ("curioso, sem condição de comprar"). Por isso o casamento é por texto
+     inteiro, e o que sobra vira "(resposta aberta)". */
+  var TRAVAS = [
+    'Chegou pouco lead para mim',
+    'Chegou lead, mas de má qualidade (curioso, sem condição de comprar)',
+    'O lead demorou a chegar na minha mão — quando falei, já estava frio',
+    'Preço e condição de pagamento (parcela alta, falta de entrada)',
+    'Concorrência (preço, condição ou proposta melhor)',
+    'Cliente adiou a decisão / decisão da família travou',
+    'Minha escala e meus turnos (PDV, fim de semana, plantão)',
+    'Falta de material e apoio de marketing na rua (panfleto, peça, PDV)',
+    'Problemas nos sistemas (Facilita, Pocket, Carteira do Dia)',
+    'Estoque: o jazigo ou a quadra que o cliente queria não tinha',
+    'Falta de treino em alguma parte da venda',
+    'Questões pessoais / imprevistos',
+    'Nada específico — foi ritmo mesmo, eu produzi menos'
+  ];
+
+  var MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                  'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+  /* ══════════════════════════════ estado ══════════════════════════════ */
+  var NUMEROS = null;    // resumo do Cofre, por mês
+  var FEEDBACK = null;   // respostas do time, por mês
+  var LEITURA = null;    // a leitura e o plano do Ricardo, por mês
+  var CARIMBO = '';      // quando o resumo foi CALCULADO — nunca a hora do fetch
+  var HORAS = null;      // idade do carimbo
+  var MS = null;         // quanto a rota demorou, como no rodapé do Painel
+  var AVISOS = [];       // recados que a rota mandou (aba faltando, etc.)
+  var ABA = { tipo:'mes', id:null };
+
+  /* ═════════════════════════════ utilidades ═════════════════════════════ */
+  var $ = function (s) { return document.querySelector(s); };
+  var el = function (t, c, x) {
+    var n = document.createElement(t);
+    if (c) n.className = c;
+    if (x !== undefined) n.textContent = x;
+    return n;
+  };
+  var esc = function (s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c];
+    });
+  };
+  var nf = function (n, d) {
+    return (n === null || n === undefined || isNaN(n)) ? '—'
+      : new Intl.NumberFormat('pt-BR', { maximumFractionDigits: d === undefined ? 1 : d }).format(n);
+  };
+  var brl = function (n) {
+    return (n === null || n === undefined || isNaN(n)) ? '—'
+      : 'R$ ' + new Intl.NumberFormat('pt-BR', { maximumFractionDigits:0 }).format(n);
+  };
+  /* Valor curto para cartão: um KPI que quebra em duas linhas desalinha a
+     fileira inteira, e nesta escala a casa do milhar não muda decisão nenhuma. */
+  var brlCurto = function (n) {
+    if (n === null || n === undefined || isNaN(n)) return '—';
+    var a = Math.abs(n), sinal = n < 0 ? '−' : '';
+    if (a >= 1e6) return sinal + 'R$ ' + nf(a/1e6, 2) + ' mi';
+    if (a >= 1e5) return sinal + 'R$ ' + nf(a/1e3, 0) + ' mil';
+    return sinal + 'R$ ' + nf(a, 0);
+  };
+  var media = function (a) { return a.length ? a.reduce(function (x,y){ return x+y; },0)/a.length : null; };
+
+  /* A planilha é pt-BR: vírgula é decimal e ponto é milhar. Um ponto único
+     seguido de exatamente 3 dígitos é milhar ("879.552" = 879552); com outra
+     quantidade de dígitos é decimal ("18.30" = 18,30). Sem essa regra, VGV e
+     ticket voltavam mil vezes menores — foi o que aconteceu em 28/08.
+     A rota já devolve número quando a célula é numérica; este caminho é para
+     quando ela é texto. */
+  function numero(v){
+    if (v === undefined || v === null || v === '') return null;
+    if (typeof v === 'number') return isNaN(v) ? null : v;
+    var s = String(v).replace(/[R$\s%]/g,'').replace(/ /g,'');
+    if (!s || s === '—') return null;
+    var neg = /^-/.test(s);
+    s = s.replace(/^-/,'');
+    if (s.indexOf(',') >= 0){
+      s = s.replace(/\./g,'').replace(',','.');
+    } else {
+      var pontos = (s.match(/\./g)||[]).length;
+      if (pontos > 1) s = s.replace(/\./g,'');
+      else if (pontos === 1 && /\.\d{3}$/.test(s)) s = s.replace('.','');
+    }
+    var n = parseFloat(s);
+    return isNaN(n) ? null : (neg ? -n : n);
+  }
+
+  /* Índice da coluna cujo cabeçalho contém TODOS os termos. Substring, e não
+     igualdade, porque o Google reescreve o cabeçalho conforme o idioma da conta
+     e as perguntas do formulário são frases inteiras. */
+  function idx(cab){
+    var termos = [].slice.call(arguments, 1);
+    for (var i = 0; i < cab.length; i++){
+      var c = String(cab[i]).toLowerCase();
+      var todos = termos.every(function (t) { return c.indexOf(String(t).toLowerCase()) >= 0; });
+      if (todos) return i;
+    }
+    return -1;
+  }
+
+  /* O Google nomeia a coluna de data conforme o idioma da planilha. */
+  function idxCarimbo(cab){
+    var i = idx(cab, 'Carimbo de data');
+    return i >= 0 ? i : idx(cab, 'Timestamp');
+  }
+
+  /* Dias CORRIDOS, não úteis. O time vende sábado e domingo — a régua de ritmo
+     que ignora o fim de semana infla o que falta por dia e some com os dias em
+     que a venda de fato acontece. */
+  function diasDoMes(ano, mes, ateDia){
+    var total = new Date(ano, mes, 0).getDate();
+    return { total: total, ate: Math.min(ateDia, total) };
+  }
+
+  function mesAnterior(id){
+    var p = id.split('-').map(Number), a = p[0], m = p[1];
+    return m === 1 ? (a-1) + '-12' : a + '-' + String(m-1).padStart(2,'0');
+  }
+  function proximoMes(id){
+    var p = id.split('-').map(Number), a = p[0], m = p[1];
+    return m === 12 ? (a+1) + '-01' : a + '-' + String(m+1).padStart(2,'0');
+  }
+  function nomeCurto(id){
+    return MESES_PT[parseInt(id.split('-')[1],10)-1].slice(0,3).toLowerCase() +
+           '/' + id.split('-')[0].slice(2);
+  }
+  function nomeMes(id){
+    return MESES_PT[parseInt(id.split('-')[1],10)-1] + ' de ' + id.split('-')[0];
+  }
+
+  /* '2026-08' direto, ou 'agosto/2026' como o formulário pergunta. */
+  function mesDoRotulo(v){
+    var s = String(v == null ? '' : v).trim();
+    var d = s.match(/^(\d{4})-(\d{2})$/);
+    if (d) return s;
+    var m = s.toLowerCase().match(/^([a-zç]+)\s*\/\s*(\d{4})$/);
+    if (!m) return null;
+    var i = -1;
+    MESES_PT.forEach(function (x, k) { if (x.toLowerCase() === m[1]) i = k; });
+    return i < 0 ? null : m[2] + '-' + String(i+1).padStart(2,'0');
+  }
+  /* Planilha em pt-BR escreve 28/08/2026; em inglês, 08/28/2026. Só dá para
+     desempatar quando um dos dois passa de 12 — e por isso o "Mês de
+     referência" é pergunta obrigatória: este caminho é só o último recurso. */
+  function mesDoCarimbo(v){
+    var m = String(v == null ? '' : v).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (!m) {
+      var iso = String(v == null ? '' : v).match(/^(\d{4})-(\d{2})/);
+      return iso ? iso[1] + '-' + iso[2] : null;
+    }
+    var a = parseInt(m[1],10), b = parseInt(m[2],10);
+    var mes = a > 12 ? b : (b > 12 ? a : b);
+    return m[3] + '-' + String(mes).padStart(2,'0');
+  }
+
+  /* MEDIANA para nada aqui, mas a média dos 3 anteriores tem uma sutileza:
+     ausência conta como zero em CONTAGEM (a venda que não aconteceu por aquela
+     origem é informação), e é ignorada em MÉDIA (ticket, desconto), onde zero
+     distorceria. */
+  function mediaTres(meses, extrair, zeroConta){
+    if (!meses.length) return null;
+    var vals = meses.map(extrair).filter(function (v) {
+      return v !== null && v !== undefined && !isNaN(v);
+    });
+    var base = zeroConta === false ? vals.filter(function (v) { return v !== 0; }) : vals;
+    if (!base.length) return null;
+    return base.reduce(function (a,b) { return a+b; }, 0) / base.length;
+  }
+  function tresAnteriores(id){
+    var saida = [], cur = id;
+    for (var k = 0; k < 3; k++){
+      cur = mesAnterior(cur);
+      if (NUMEROS && NUMEROS[cur]) saida.push(NUMEROS[cur]);
+    }
+    return saida;
+  }
+  /* Com um mês só, a "média dos anteriores" É o mês anterior — a terceira barra
+     repetiria a segunda. Só faz sentido a partir de dois. */
+  function rotuloMedia(meses){ return meses.length >= 2 ? 'média ' + meses.length + 'm' : null; }
+
+  function variacao(atual, anterior, id, fmt){
+    if (anterior === null || anterior === undefined || isNaN(anterior)) return null;
+    var f = fmt || function (x) { return nf(x); };
+    var d = atual - anterior;
+    if (!isFinite(d)) return null;
+    var sinal = d > 0 ? '+' : d < 0 ? '−' : '';
+    return d === 0 ? 'igual a ' + nomeCurto(id) : sinal + f(Math.abs(d)) + ' vs ' + nomeCurto(id);
+  }
+
+  function comPrazo(url, ms) {
+    return new Promise(function (resolve, reject) {
+      var venceu = false;
+      var t = setTimeout(function () {
+        venceu = true; reject(new Error('o Cofre não respondeu em ' + (ms / 1000) + 's'));
+      }, ms);
+      fetch(url, { cache: 'no-store' })
+        .then(function (r) { return r.json(); })
+        .then(function (j) { if (!venceu) { clearTimeout(t); resolve(j); } })
+        .catch(function (e) { if (!venceu) { clearTimeout(t); reject(e); } });
+    });
+  }
+
+  /* ══════════════════════════════ portão ══════════════════════════════ */
+  function abrirPortao(msg) {
+    $('#gate').style.display = 'flex';
+    $('#gateErro').textContent = msg || '';
+    $('#app').hidden = true;
+    setTimeout(function () { $('#tk').focus(); }, 60);
+  }
+  function fecharPortao() {
+    $('#gate').style.display = 'none';
+    $('#app').hidden = false;
+  }
+  $('#btEntrar').onclick = function () {
+    var v = $('#tk').value.trim();
+    if (!v) { $('#gateErro').textContent = 'Digite o token.'; return; }
+    try { localStorage.setItem(CHAVE_TOKEN, v); } catch (e) {}
+    $('#tk').value = ''; fecharPortao(); carregar();
+  };
+  $('#tk').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('#btEntrar').click(); });
+
+  /* ══════════════ leitura das três tabelas que a rota devolve ══════════════
+     Todas chegam como {colunas:[], linhas:[[]]}. A rota não resume nada de
+     propósito: o servidor que resume esconde de quem lê qual conta foi feita, e
+     é a conta que costuma estar errada, não o número.
+     ═══════════════════════════════════════════════════════════════════════ */
+
+  function lerResumo(resumo){
+    if (!resumo || !resumo.meses || !resumo.meses.linhas.length) return null;
+
+    var cM = resumo.meses.colunas;
+    var g = function (l, termo) { var i = idx(cM, termo); return i < 0 ? null : l[i]; };
+
+    var porMes = {};
+    resumo.meses.linhas.forEach(function (l) {
+      var id = String(g(l,'Mês') || '').trim();
+      if (!/^\d{4}-\d{2}$/.test(id)) return;
+      var p = id.split('-').map(Number), ano = p[0], mm = p[1];
+      var hoje = new Date();
+      var corrente = (hoje.getFullYear() === ano && hoje.getMonth()+1 === mm);
+      var du = diasDoMes(ano, mm, corrente ? hoje.getDate() : new Date(ano, mm, 0).getDate());
+      var vendas = numero(g(l,'Vendas')) || 0;
+      var meta = METAS[id] || null;
+      var faltam = meta ? Math.max(0, meta - vendas) : null;
+      var duRest = du.total - du.ate;
+      porMes[id] = {
+        id:id, ano:ano, mes:mm, corrente:corrente,
+        vendas: vendas,
+        vgv: numero(g(l,'VGV')) || 0,
+        ticket: numero(g(l,'Ticket')),
+        descontoMedio: numero(g(l,'Desconto')),
+        pctCheio: numero(g(l,'Preço Cheio')),
+        confirmadas: numero(g(l,'Confirmadas')) || 0,
+        naoConfirmadas: numero(g(l,'Não confirmadas')) || 0,
+        q1: numero(g(l,'Dias 1-15')) || 0,
+        q2: numero(g(l,'Dias 16')) || 0,
+        atualizado: String(g(l,'Atualizado') || '').trim(),
+        meta:meta, faltam:faltam, du:du,
+        ritmo: du.ate ? vendas / du.ate : 0,
+        ritmoNecessario: (faltam !== null && duRest > 0) ? faltam / duRest : null,
+        duRestantes: duRest,
+        porVendedor: [], origens: [], formas: [], modalidades: []
+      };
+    });
+
+    var tV = resumo.vendedores;
+    if (tV && tV.linhas.length){
+      var c = tV.colunas;
+      var iM = idx(c,'Mês'), iV = idx(c,'Vendedor'), iN = idx(c,'Vendas'), iG = idx(c,'VGV');
+      tV.linhas.forEach(function (l) {
+        var m = porMes[String(l[iM]||'').trim()];
+        if (!m) return;
+        m.porVendedor.push({ quem:String(l[iV]||'—').trim(),
+                             n:numero(l[iN])||0, vgv:numero(l[iG])||0 });
+      });
+      Object.keys(porMes).forEach(function (k) {
+        porMes[k].porVendedor.sort(function (a,b) { return b.n - a.n; });
+      });
+    }
+
+    var tD = resumo.dimensoes;
+    if (tD && tD.linhas.length){
+      var c2 = tD.colunas;
+      var jM = idx(c2,'Mês'), jDim = idx(c2,'Dimensão'), jVal = idx(c2,'Valor'), jN = idx(c2,'Vendas');
+      tD.linhas.forEach(function (l) {
+        var m = porMes[String(l[jM]||'').trim()];
+        if (!m) return;
+        var d = String(l[jDim] || '');
+        var alvo = /origem/i.test(d) ? m.origens
+                 : /forma/i.test(d) ? m.formas
+                 : /modalidade/i.test(d) ? m.modalidades : null;
+        if (alvo) alvo.push({ rotulo:String(l[jVal]||'—').trim(), n:numero(l[jN])||0 });
+      });
+    }
+
+    return Object.keys(porMes).length ? porMes : null;
+  }
+
+  function lerFeedback(bloco){
+    if (!bloco || !bloco.colunas || !bloco.colunas.length || !bloco.linhas.length) return null;
+    var cab = bloco.colunas;
+    var c = {
+      carimbo: idxCarimbo(cab), mes: idx(cab,'Mês de referência'),
+      quem: idx(cab,'Quem está respondendo'), auto: idx(cab,'Como você avalia o SEU'),
+      pesou: idx(cab,'o que mais pesou'), travas: idx(cab,'O que atrapalhou o seu'),
+      principal: idx(cab,'qual foi o PRINCIPAL'),
+      processo: idx(cab,'por causa de PROCESSO'), motivo: idx(cab,'motivo nº 1 de perda'),
+      vaiFazer: idx(cab,'vai fazer diferente'), empresa: idx(cab,'A EMPRESA precisa fazer'),
+      compromisso: idx(cab,'quantas vendas você se compromete'),
+      confianca: idx(cab,'você acredita que o time bate')
+    };
+    if (c.quem < 0) return null;
+
+    /* As grades de nota vêm como "Pergunta [Item]" — uma coluna por item. */
+    var grade = function (p) {
+      var o = {};
+      cab.forEach(function (x, i) {
+        if (String(x).toLowerCase().indexOf(p.toLowerCase()) < 0) return;
+        var m = String(x).match(/\[(.+)\]/);
+        if (m) o[m[1].trim()] = i;
+      });
+      return o;
+    };
+    var gLeads = grade('Os leads que chegaram'), gCanais = grade('te ajudou a vender');
+
+    var porMes = {};
+    bloco.linhas.forEach(function (l) {
+      var id = (c.mes >= 0 && mesDoRotulo(l[c.mes])) ||
+               (c.carimbo >= 0 && mesDoCarimbo(l[c.carimbo]));
+      if (id) (porMes[id] = porMes[id] || []).push(l);
+    });
+
+    var saida = {};
+    Object.keys(porMes).forEach(function (id) {
+      saida[id] = montarFeedback(porMes[id], c, gLeads, gCanais);
+    });
+    return Object.keys(saida).length ? saida : null;
+  }
+
+  function montarFeedback(rows, c, gLeads, gCanais){
+    var quem = [];
+    rows.forEach(function (r) {
+      var q = String(r[c.quem] || '').trim();
+      if (q && quem.indexOf(q) < 0) quem.push(q);
+    });
+    var faltam = EQUIPE.filter(function (v) {
+      return !quem.some(function (q) { return q.toLowerCase() === v.toLowerCase(); });
+    });
+    var notas = function (i) {
+      return rows.map(function (r) { return numero(r[i]); })
+                 .filter(function (n) { return n !== null; });
+    };
+
+    var cont = {};
+    rows.forEach(function (r) {
+      var txt = c.travas >= 0 ? String(r[c.travas] || '') : '';
+      var resto = txt;
+      TRAVAS.forEach(function (op) {
+        if (txt.indexOf(op) >= 0){ cont[op] = (cont[op]||0)+1; resto = resto.replace(op,''); }
+      });
+      resto.split(',').map(function (s) { return s.trim(); })
+           .filter(function (s) { return s.length > 2; })
+           .forEach(function (s) { var k = s + ' (resposta aberta)'; cont[k] = (cont[k]||0)+1; });
+    });
+
+    var perdas = {};
+    rows.forEach(function (r) {
+      var v = c.motivo >= 0 ? String(r[c.motivo] || '').trim() : '';
+      if (v) perdas[v] = (perdas[v]||0)+1;
+    });
+
+    /* As respostas abertas são agrupadas POR PERGUNTA, não por pessoa: na
+       reunião o que se lê é "o que os seis disseram sobre X", nunca "tudo que o
+       fulano escreveu".
+       ⚠️ A pergunta reservada não está nesta lista porque ela NÃO CHEGA AQUI —
+       a rota a descarta no servidor (Retrospectiva.gs). Não é ocultação de
+       tela: o dado não trafega. */
+    var perguntas = [
+      { i:c.pesou,     tema:'O que mais pesou no mês' },
+      { i:c.principal, tema:'A trava principal, e por quê' },
+      { i:c.processo,  tema:'Venda perdida por processo' },
+      { i:c.empresa,   tema:'O que a empresa precisa fazer' },
+      { i:c.vaiFazer,  tema:'O que eu vou fazer diferente' }
+    ].map(function (campo) {
+      if (campo.i < 0) return null;
+      var respostas = rows.map(function (r) {
+        var t = String(r[campo.i] || '').trim();
+        if (!t) return null;
+        var vazia = t.length < 8 || /^(n[ãa]o|nada|-|n\/a)\.?$/i.test(t);
+        return { quem: String(r[c.quem] || '—').trim(),
+                 texto: t.length > 1200 ? t.slice(0,1197) + '…' : t, vazia: vazia };
+      }).filter(Boolean);
+      return respostas.some(function (r) { return !r.vazia; })
+        ? { tema:campo.tema, respostas:respostas } : null;
+    }).filter(Boolean);
+
+    return {
+      equipe: EQUIPE.length, respondentes: quem.length, respostasDe: quem, aguardando: faltam,
+      completo: faltam.length === 0,
+      autoavaliacao: c.auto >= 0 ? media(notas(c.auto)) : null,
+      confianca: c.confianca >= 0 ? media(notas(c.confianca)) : null,
+      travas: Object.keys(cont).map(function (k) { return { rotulo:k, n:cont[k] }; })
+                    .sort(function (a,b) { return b.n - a.n; }),
+      leads: Object.keys(gLeads).map(function (r) {
+                return { rotulo:r.split(' ')[0], nota:media(notas(gLeads[r])) };
+             }).filter(function (x) { return x.nota !== null; }),
+      canais: Object.keys(gCanais).map(function (r) {
+                return { rotulo:r, nota:media(notas(gCanais[r])) };
+             }).filter(function (x) { return x.nota !== null; }),
+      perdas: Object.keys(perdas).map(function (k) { return { rotulo:k, n:perdas[k] }; })
+                    .sort(function (a,b) { return b.n - a.n; }),
+      compromissos: rows.map(function (r) {
+                      return { quem: String(r[c.quem] || '—').trim(),
+                               numero: c.compromisso >= 0 ? (numero(r[c.compromisso])||0) : 0 };
+                    }).filter(function (x) { return x.numero > 0; }),
+      /* ⚠️ QUEM RESPONDEU E NÃO VIROU NÚMERO.
+         O campo do compromisso é de texto livre, e em agosto/2026 um vendedor
+         respondeu "minha meta continua 18, minha última maior meta foi 17
+         preciso superar ela" — uma frase com DOIS números dentro. Ler 18 ali é
+         adivinhar; ler 17 é adivinhar errado. Então a soma não o inclui, que é
+         o certo — mas a soma passa a DIZER que ele ficou de fora.
+         Compromisso somado que engole uma declaração em silêncio é a mesma
+         falha do número cortado sem bandeira: o total parece completo. */
+      compromissosSemNumero: rows.map(function (r) {
+                      var bruto = c.compromisso >= 0 ? String(r[c.compromisso] || '').trim() : '';
+                      return { quem: String(r[c.quem] || '—').trim(), texto: bruto };
+                    }).filter(function (x) {
+                      return x.texto !== '' && numero(x.texto) === null;
+                    }),
+      perguntas: perguntas
+    };
+  }
+
+  /* A aba `Leitura` — o que o Ricardo colou do artefato, uma vez por mês. */
+  function lerLeitura(bloco){
+    if (!bloco || !bloco.colunas || !bloco.colunas.length || !bloco.linhas.length) return null;
+    var cab = bloco.colunas;
+    var c = {
+      mes: idx(cab,'Mês'), aconteceu: idx(cab,'Aconteceu'), porque: idx(cab,'Por que'),
+      aprendi: idx(cab,'Aprendi'), meta: idx(cab,'Meta'), acoes: idx(cab,'Ações')
+    };
+    if (c.mes < 0) return null;
+    var saida = {};
+    bloco.linhas.forEach(function (l) {
+      var id = mesDoRotulo(l[c.mes]);
+      if (!id) return;
+      var t = function (i) { return i < 0 ? '' : String(l[i] == null ? '' : l[i]).trim(); };
+      /* Última linha do mesmo mês vence: colar duas vezes é mais provável que
+         apagar a anterior, e a segunda colagem é a correção. */
+      saida[id] = { aconteceu:t(c.aconteceu), porque:t(c.porque), aprendi:t(c.aprendi),
+                    meta:t(c.meta), acoes:t(c.acoes) };
+    });
+    return Object.keys(saida).length ? saida : null;
+  }
+
+  /* ══════════════════════════════ desenho ══════════════════════════════ */
+  function tile(k, v, n, flag){
+    var t = el('div', 'tile' + (flag ? ' flag-' + flag : ''));
+    t.append(el('span','k',k), el('span','v',v));
+    if (n) t.append(el('span','n',n));
+    return t;
+  }
+  function bloco(titulo, desc){
+    var s = el('section','block'), h = el('header');
+    h.append(el('h3', null, titulo));
+    if (desc) h.append(el('p', null, desc));
+    s.append(h); return s;
+  }
+  function camada(n, titulo, nota){
+    var d = el('div','camada');
+    d.append(el('span','eyebrow', n), el('h2', null, titulo));
+    if (nota) d.append(el('span', null, nota));
+    return d;
+  }
+  function tabela(cabs, linhas){
+    var wrap = el('div','table-wrap'), t = el('table'), th = el('thead'), tr = el('tr');
+    cabs.forEach(function (c) { tr.append(el('th', c.num ? 'num' : null, c.t)); });
+    th.append(tr); t.append(th);
+    var tb = el('tbody');
+    linhas.forEach(function (l) {
+      var r = el('tr');
+      l.forEach(function (v,i) { r.append(el('td', cabs[i].num ? 'num' : null, String(v))); });
+      tb.append(r);
+    });
+    t.append(tb); wrap.append(t); return wrap;
+  }
+
+  /* Um item pode trazer `ref`: o valor do mesmo recorte no mês anterior. Ele
+     vira uma SEGUNDA BARRA, mais fina e em tom recessivo, logo abaixo da do mês
+     atual — as duas na mesma escala, para a comparação se ler sem contar
+     número. `ref2` é a média dos anteriores, e é a terceira. */
+  function barras(itens, o){
+    o = Object.assign({ max:null, sufixo:'', corte:null, rotuloCorte:'', fmt:null,
+                        rotuloRef:'M-1', rotuloRef2:null, mesesRef2:0, rotuloAtual:'atual' }, o||{});
+    var max = o.max || Math.max.apply(null, itens.map(function (i) {
+      return Math.max(i.valor, i.ref || 0, i.ref2 || 0);
+    }).concat([1]));
+    var w = el('div','bars');
+    var temRef = false;
+
+    var trilha = function (valor, classe) {
+      var track = el('div','bar-track' + (classe ? ' ' + classe : ''));
+      var fill = el('div','bar-fill' + (classe ? ' ' + classe : ''));
+      fill.style.width = valor > 0 ? Math.max(1.5, (valor / max) * 100) + '%' : '0';
+      track.append(fill);
+      return track;
+    };
+
+    var ficha = function (classe, rotulo, valor, atual) {
+      var c = el('span','chip');
+      c.append(el('i', classe));
+      c.append(el('span', null, rotulo));
+      c.append(el('b', null, nf(valor)));
+      var d = atual - valor;
+      c.append(el('em', Math.abs(d) < 0.05 ? '' : (d > 0 ? 'sobe' : 'desce'),
+        Math.abs(d) < 0.05 ? '=' : (d > 0 ? '+' : '−') + nf(Math.abs(d))));
+      return c;
+    };
+
+    itens.forEach(function (i) {
+      var row = el('div','bar-row');
+      var topo = el('div','bar-topo');
+      var lab = el('div','bar-label');
+      lab.append(el('span','txt', i.rotulo));
+      var acima = o.corte !== null && i.valor >= o.corte;
+      if (acima && o.rotuloCorte) lab.append(el('span','flag', o.rotuloCorte));
+      topo.append(lab, el('div','bar-val', o.fmt ? o.fmt(i) : nf(i.valor) + o.sufixo));
+      row.append(topo);
+
+      var comRef = i.ref !== undefined && i.ref !== null;
+      var comRef2 = o.rotuloRef2 && i.ref2 !== undefined && i.ref2 !== null;
+      if (comRef || comRef2){
+        temRef = true;
+        var chips = el('div','chips');
+        if (comRef)  chips.append(ficha('', o.rotuloRef, i.ref, i.valor));
+        if (comRef2) chips.append(ficha('ref2', o.rotuloRef2, i.ref2, i.valor));
+        row.append(chips);
+        var par = el('div','bar-par');
+        par.append(trilha(i.valor, acima ? 'warn' : ''));
+        if (comRef) par.append(trilha(i.ref, 'ref'));
+        if (comRef2) par.append(trilha(i.ref2, 'ref2'));
+        row.append(par);
+      } else {
+        row.append(trilha(i.valor, acima ? 'warn' : ''));
+      }
+      w.append(row);
+    });
+
+    if (temRef){
+      var lg = el('div','legenda-m1');
+      lg.append(el('i'), el('span', null, o.rotuloAtual + ' — este mês'));
+      lg.append(el('i','ref'), el('span', null, o.rotuloRef + ' — mês anterior'));
+      if (o.rotuloRef2) lg.append(el('i','ref2'),
+        el('span', null, 'média — ' + o.mesesRef2 + ' meses anteriores'));
+      w.append(lg);
+    }
+    return w;
+  }
+
+  /* Junta o recorte atual com o mesmo recorte no mês anterior e a média dos 3.
+     Rótulo ausente num mês conta zero: a venda que não aconteceu por aquela
+     origem é informação, não buraco. */
+  function pareia(atuais, anteriores, tres, campo){
+    var mapa = {};
+    (anteriores||[]).forEach(function (x) { mapa[x.rotulo] = x.n; });
+    return (atuais||[]).map(function (x) {
+      var item = { rotulo:x.rotulo, valor:x.n,
+                   ref: mapa[x.rotulo] === undefined ? 0 : mapa[x.rotulo] };
+      if (tres && tres.length){
+        item.ref2 = mediaTres(tres, function (m) {
+          var achado = (m[campo]||[]).filter(function (y) { return y.rotulo === x.rotulo; })[0];
+          return achado ? achado.n : 0;
+        });
+      }
+      return item;
+    });
+  }
+
+  /* ── a faixa de origem do dado ──────────────────────────────────────────
+     O carimbo é o da FOTO — quando o resumo do Cofre foi CALCULADO —, nunca a
+     hora do fetch. Página que busca ao vivo e mostra a hora do fetch parece
+     viva servindo dado de três dias atrás. */
+  function faixaFonte(){
+    var f = el('div','fonte');
+    var velho = HORAS !== null && HORAS >= 48;
+    if (velho) f.classList.add('alerta');
+
+    f.append(el('span', 'flag' + (velho ? '' : ' ok'), velho ? 'dado antigo' : 'ao vivo'));
+
+    var t = el('div');
+    var forte = el('strong', null, 'Números de ' + (CARIMBO || 'data desconhecida'));
+    t.append(forte);
+    if (HORAS !== null){
+      var idade = HORAS < 1 ? 'há menos de 1 hora'
+                : HORAS < 48 ? 'há ' + HORAS + 'h'
+                : 'há ' + Math.floor(HORAS / 24) + ' dias';
+      t.append(el('span', null, ' · ' + idade));
+    }
+    t.append(el('span', null, ' — é quando o Cofre fechou a conta do mês, não a hora ' +
+      'em que esta página abriu.'));
+    f.append(t);
+
+    var fim = el('span','fim');
+    if (MS !== null) fim.append(el('span', null, 'resposta em ' + MS + ' ms · '));
+    var bt = el('button','trocar','trocar token');
+    bt.type = 'button';
+    bt.addEventListener('click', function () {
+      try { localStorage.removeItem(CHAVE_TOKEN); } catch (e) {}
+      abrirPortao('');
+    });
+    fim.append(bt);
+    f.append(fim);
+    return f;
+  }
+
+  function tarjas(p){
+    if (!CARIMBO){
+      var a = el('div','tarja amarela');
+      a.append(el('div','t','Os números chegaram sem data.'));
+      a.append(Object.assign(el('p'), { innerHTML:
+        'O resumo foi lido, mas não veio a data em que ele foi calculado — não dá para saber se ' +
+        'estes números são de hoje ou da semana passada. <em>(coluna <code>Atualizado em</code> ' +
+        'vazia na aba <code>Resumo_Mes</code> do Cofre.)</em>' }));
+      p.append(a);
+    } else if (HORAS !== null && HORAS >= 48){
+      var b = el('div','tarja amarela');
+      b.append(el('div','t','Os números têm mais de 48 horas.'));
+      b.append(Object.assign(el('p'), { innerHTML:
+        'São de <b>' + esc(CARIMBO) + '</b>, ' + Math.floor(HORAS/24) + ' dias atrás. Estão ' +
+        '<b>certos para aquele instante</b> e provavelmente errados para hoje. O resumo é ' +
+        'refeito de tempos em tempos pelo Apps Script; parado quer dizer que a rodada não fechou.' }));
+      p.append(b);
+    }
+    AVISOS.forEach(function (av) {
+      var c = el('div','tarja amarela');
+      c.append(el('div','t','Recado do Cofre'));
+      c.append(el('p', null, av));
+      p.append(c);
+    });
+  }
+
+  /* ── Camada I · números, recolhidos ───────────────────────────────────── */
+  function secaoNumeros(p, id){
+    var n = NUMEROS && NUMEROS[id];
+
+    if (!n){
+      var d0 = el('details','dobra');
+      var s0 = el('summary');
+      s0.append(el('span','flag crit','sem número'));
+      s0.append(el('span','resumo-linha', NUMEROS
+        ? 'Nenhum número para este mês.'
+        : 'O Cofre ainda não tem as abas de resumo.'));
+      d0.append(s0);
+      var c0 = el('div','corpo'), e0 = el('div','empty');
+      if (!NUMEROS){
+        e0.append(el('h3', null, 'As abas de resumo ainda não existem no Cofre.'));
+        e0.append(el('p', null, 'Esta página não lê venda linha a linha de propósito. Ela lê as ' +
+          'abas Resumo_Mes, Resumo_Vendedor e Resumo_Dim, que o Apps Script calcula sobre a base ' +
+          'inteira — com todas as modalidades contando como venda.'));
+        var ol = el('ol','steps');
+        ['Abra o projeto do resumo no script.google.com.',
+         'Execute atualizarResumo() uma vez.',
+         'Execute instalarGatilho() para o resumo se refazer sozinho.',
+         'Recarregue esta página.'].forEach(function (x) { ol.append(el('li', null, x)); });
+        e0.append(ol);
+      } else {
+        e0.append(el('h3', null, 'Sem vendas neste mês.'));
+        e0.append(el('p', null, 'O resumo do Cofre não tem linha para ' + id +
+          '. Se isso não bate com a realidade, rode atualizarResumo() e recarregue.'));
+      }
+      c0.append(e0); d0.append(c0); p.append(d0);
+      return;
+    }
+
+    var idAnt = mesAnterior(id);
+    var ant = NUMEROS && NUMEROS[idAnt];
+    var tres = tresAnteriores(id);
+    var rot3 = rotuloMedia(tres);
+    var vs = function (atual, chave, fmt) { return ant ? variacao(atual, ant[chave], idAnt, fmt) : null; };
+    var cmp = { rotuloAtual: nomeCurto(id), rotuloRef: nomeCurto(idAnt),
+                rotuloRef2: rot3, mesesRef2: tres.length };
+
+    var d = el('details','dobra');
+    var s = el('summary');
+    var pct = n.meta ? Math.round((n.vendas / n.meta) * 100) : null;
+    s.append(el('span', 'flag' + (pct !== null && pct < 100 ? '' : ' ok'),
+      pct !== null ? pct + '% da meta' : 'números'));
+    var linha = el('div','resumo-linha');
+    linha.append(el('b', null, n.vendas + (n.meta ? ' de ' + n.meta : '')), el('span', null, 'vendas'));
+    linha.append(el('span', null, '· ' + brlCurto(n.vgv)));
+    linha.append(el('span', null, '· ritmo ' + nf(n.ritmo,2) + '/dia'));
+    if (ant){
+      var dv = n.vendas - ant.vendas;
+      linha.append(el('span','bar-m1', '· ' + (dv === 0 ? 'igual a '
+        : (dv > 0 ? '+' : '−') + Math.abs(dv) + ' vs ') + nomeCurto(idAnt)));
+    }
+    s.append(linha);
+    d.append(s);
+
+    var corpo = el('div','corpo');
+
+    if (n.modalidades.length > 1){
+      corpo.append(Object.assign(el('p','nota-fina'), { textContent:
+        'Toda venda conta. Perpétuo, Temporário e Reserva são jazigos do mesmo jeito — ' +
+        'o que muda entre elas é a modalidade: ' +
+        n.modalidades.map(function (m) { return m.rotulo.toLowerCase() + ' ' + m.n; }).join(' · ') + '.' }));
+    }
+
+    var tiles = el('div','tiles');
+    tiles.append(
+      tile('Vendas × meta', n.vendas + (n.meta ? ' / ' + n.meta : ''),
+           vs(n.vendas,'vendas') || (pct !== null ? pct + '% da meta' : 'sem meta'),
+           pct !== null && pct < 100 ? 'warn' : 'ok'),
+      tile('VGV', brlCurto(n.vgv), vs(n.vgv,'vgv', brlCurto) || 'todas as modalidades'),
+      tile('Ticket médio', brl(n.ticket), vs(n.ticket,'ticket', brl) || 'por venda'),
+      tile('Ritmo', nf(n.ritmo,2) + '/dia',
+           vs(n.ritmo,'ritmo', function (x) { return nf(x,2); }) ||
+           (n.du.ate + ' de ' + n.du.total + ' dias'))
+    );
+    corpo.append(tiles);
+
+    if (ant && n.corrente){
+      corpo.append(Object.assign(el('p','nota-fina'), { textContent:
+        'A comparação com ' + nomeCurto(idAnt) + ' é contra o mês inteiro. Com ' + n.du.ate + ' de ' +
+        n.du.total + ' dias corridos, a diferença ainda tem mês pela frente dentro dela — ' +
+        'quem responde "estamos indo bem?" é o ritmo por dia, não a diferença bruta.' +
+        (rot3 ? ' Nos gráficos, a terceira barra é a ' + rot3 + ' — ela tira o peso de um mês atípico.'
+              : ' A terceira barra (média dos anteriores) aparece quando houver pelo menos dois meses no resumo.') }));
+    } else if (!ant){
+      corpo.append(Object.assign(el('p','nota-fina'), { textContent:
+        'Sem ' + nomeCurto(idAnt) + ' no resumo do Cofre — não há mês anterior para comparar.' }));
+    }
+
+    if (n.corrente && n.ritmoNecessario !== null){
+      var c = el('div','card aviso'), l = el('div','linha-aviso');
+      var alcanca = n.ritmoNecessario <= n.ritmo * 1.15;
+      l.append(el('span','flag' + (alcanca ? ' ok' : ' crit'), alcanca ? 'no ritmo' : 'fora do ritmo'));
+      l.append(el('span', null, 'Faltam ' + n.faltam + ' vendas em ' + n.duRestantes +
+        (n.duRestantes === 1 ? ' dia' : ' dias') + ' — ' + nf(n.ritmoNecessario,2) +
+        ' por dia, contra ' + nf(n.ritmo,2) + ' até aqui.'));
+      c.append(l); corpo.append(c);
+    }
+
+    if (n.porVendedor.length){
+      var b1 = bloco('Placar por vendedor',
+        'Vendas no mês. A régua da casa é o último fazer pelo menos metade do primeiro.');
+      var c1 = el('div','card');
+      var topo = n.porVendedor[0].n, ultimo = n.porVendedor[n.porVendedor.length-1].n;
+      var antVend = {};
+      if (ant) ant.porVendedor.forEach(function (v) { antVend[v.quem] = v.n; });
+      var itens = n.porVendedor.map(function (v) {
+        return {
+          rotulo:v.quem, valor:v.n, vgv:v.vgv,
+          ref: ant ? (antVend[v.quem] === undefined ? 0 : antVend[v.quem]) : undefined,
+          ref2: tres.length ? mediaTres(tres, function (m) {
+            var a = m.porVendedor.filter(function (x) { return x.quem === v.quem; })[0];
+            return a ? a.n : 0;
+          }) : undefined
+        };
+      });
+      c1.append(barras(itens, Object.assign({}, cmp, {
+        max: Math.max.apply(null, [topo].concat(itens.map(function (i) {
+          return Math.max(i.ref || 0, i.ref2 || 0);
+        }))),
+        fmt: function (i) { return i.valor + '  ·  ' + brl(i.vgv); } })));
+      if (topo){
+        c1.append(Object.assign(el('p','nota-fina'), { textContent: ultimo >= topo/2
+          ? 'Dispersão dentro da régua: o último fez ' + nf((ultimo/topo)*100,0) + '% do primeiro.'
+          : 'Dispersão fora da régua: o último fez ' + nf((ultimo/topo)*100,0) +
+            '% do primeiro, contra os 50% combinados.' }));
+      }
+      b1.append(c1); corpo.append(b1);
+    }
+
+    var duas = el('div','duas');
+    var bq = bloco('Quinzenas', 'Onde o mês foi feito.');
+    var cq = el('div','card');
+    var q = [
+      { rotulo:'Dias 1 a 15', valor:n.q1, ref: ant ? ant.q1 : undefined,
+        ref2: tres.length ? mediaTres(tres, function (m) { return m.q1; }) : undefined },
+      { rotulo:'Dias 16 em diante', valor:n.q2, ref: ant ? ant.q2 : undefined,
+        ref2: tres.length ? mediaTres(tres, function (m) { return m.q2; }) : undefined }
+    ];
+    cq.append(barras(q, Object.assign({}, cmp, {
+      max: Math.max.apply(null, [n.q1, n.q2, 1].concat(q.map(function (x) {
+        return Math.max(x.ref || 0, x.ref2 || 0);
+      }))) })));
+    bq.append(cq); duas.append(bq);
+
+    if (n.modalidades.length){
+      var bm = bloco('Modalidade', 'Todas contam como venda; a quebra é informação, não filtro.');
+      var cm = el('div','card');
+      cm.append(barras(ant ? pareia(n.modalidades, ant.modalidades, tres, 'modalidades')
+                           : n.modalidades.map(function (x) { return { rotulo:x.rotulo, valor:x.n }; }),
+        Object.assign({}, cmp, { max: Math.max(n.vendas, ant ? ant.vendas : 0) })));
+      bm.append(cm); duas.append(bm);
+    }
+    corpo.append(duas);
+
+    if (n.formas.length){
+      var bf = bloco('Forma de pagamento', 'Vendas por forma.');
+      var cf = el('div','card');
+      cf.append(barras(ant ? pareia(n.formas.slice(0,6), ant.formas, tres, 'formas')
+                           : n.formas.slice(0,6).map(function (x) { return { rotulo:x.rotulo, valor:x.n }; }),
+        Object.assign({}, cmp, { max: Math.max(n.vendas, ant ? ant.vendas : 0) })));
+      bf.append(cf); corpo.append(bf);
+    }
+
+    if (n.origens.length){
+      var bo = bloco('Origem das vendas',
+        'Origem que não existe na lista padronizada é dado velho, não canal.');
+      var co = el('div','card');
+      co.append(barras(ant ? pareia(n.origens.slice(0,10), ant.origens, tres, 'origens')
+                           : n.origens.slice(0,10).map(function (x) { return { rotulo:x.rotulo, valor:x.n }; }),
+        Object.assign({}, cmp, { max: Math.max(n.vendas, ant ? ant.vendas : 0) })));
+      bo.append(co); corpo.append(bo);
+    }
+
+    if (n.atualizado){
+      corpo.append(Object.assign(el('p','nota-fina'), { textContent:
+        'Resumo do Cofre calculado sobre a base inteira em ' + n.atualizado + '.' }));
+    }
+
+    d.append(corpo);
+    p.append(d);
+  }
+
+  /* ── Camada II · o time ──────────────────────────────────────────────── */
+  function secaoTime(p, id){
+    var f = FEEDBACK && FEEDBACK[id];
+    p.append(camada('I', 'O que o time disse',
+      f ? f.respondentes + ' de ' + f.equipe + ' responderam' : 'formulário da retrospectiva'));
+
+    if (!f){
+      var e = el('div','empty');
+      e.append(el('h3', null, 'Nenhuma resposta para este mês.'));
+      e.append(el('p', null, 'O formulário da retrospectiva é enviado no privado de cada ' +
+        'vendedor — nunca no grupo, onde o primeiro a responder define o tom dos outros cinco.'));
+      p.append(e); return;
+    }
+
+    var parcial = !f.completo;
+    if (parcial && f.aguardando.length){
+      var c = el('div','card aviso'), l = el('div','linha-aviso');
+      l.append(el('span','flag','falta responder'));
+      l.append(el('span', null, f.aguardando.join(' · ')));
+      c.append(l); p.append(c);
+    }
+
+    if (f.perguntas.length){
+      var b = bloco('O que eles escreveram',
+        'Uma pergunta por vez, com o que todos responderam. Sem edição — é aqui que o número ganha explicação.');
+      var lista = el('div','perguntas');
+      f.perguntas.forEach(function (q, i) {
+        var d = el('details','dobra q');
+        if (i === 0) d.open = true;
+        var sm = el('summary');
+        sm.append(el('span','q-tema', q.tema));
+        var respondidas = q.respostas.filter(function (r) { return !r.vazia; }).length;
+        sm.append(el('span','q-conta', respondidas + (respondidas === 1 ? ' resposta' : ' respostas')));
+        d.append(sm);
+        var corpo = el('div','corpo');
+        var g = el('div','quotes');
+        q.respostas.forEach(function (r) {
+          var card = el('div','quote' + (r.vazia ? ' vazia' : ''));
+          card.append(Object.assign(el('p'), { textContent: r.vazia ? r.texto : '“' + r.texto + '”' }));
+          card.append(el('span','who', r.quem));
+          g.append(card);
+        });
+        corpo.append(g); d.append(corpo); lista.append(d);
+      });
+      b.append(lista);
+      /* Dito na tela, e não só no comentário: quem lê precisa saber que existe
+         uma resposta que ele NÃO está vendo, e por quê. Omissão silenciosa é o
+         que faz alguém achar que já leu tudo. */
+      b.append(Object.assign(el('p','nota-fina'), { textContent:
+        'Falta aqui uma pergunta: "algo que você não falaria numa reunião com todo mundo junto". ' +
+        'O formulário promete ao vendedor que aquilo fica entre ele e o Ricardo, e esta página é ' +
+        'aberta aos três da gestão — então a resposta nem sai do servidor. Ela se lê na planilha.' }));
+      p.append(b);
+    }
+
+    var somaComp = f.compromissos.reduce(function (a,c2) { return a + c2.numero; }, 0);
+    var semNum = f.compromissosSemNumero || [];
+    var metaProx = METAS[proximoMes(id)] || null;
+
+    /* O rodapé do cartão diz, nesta ordem de prioridade: quem respondeu com
+       frase em vez de número (o buraco menos visível), depois quantos ainda não
+       responderam, e só então a distância para a meta. */
+    var notaComp = semNum.length
+      ? semNum.length + (semNum.length === 1 ? ' resposta não veio como número'
+                                             : ' respostas não vieram como número')
+      : parcial ? 'parcial — faltam ' + f.aguardando.length + ' declarações'
+      : (metaProx && somaComp < metaProx ? 'faltam ' + (metaProx - somaComp) + ' para a meta'
+                                         : 'a soma fecha a meta');
+
+    var tiles = el('div','tiles');
+    tiles.append(
+      tile('Autoavaliação', nf(f.autoavaliacao) + ' / 5', parcial ? 'de quem já respondeu' : 'média do time'),
+      tile('Confiança no mês seguinte', nf(f.confianca) + ' / 5', parcial ? 'de quem já respondeu' : 'média do time'),
+      tile('Compromissos somados', somaComp + (metaProx ? ' / ' + metaProx : ''), notaComp,
+           (semNum.length || (metaProx && somaComp < metaProx)) ? 'warn' : 'ok')
+    );
+    p.append(tiles);
+
+    /* A autoavaliação ao lado do placar: é a comparação que o artefato existe
+       para fazer — quem se avaliou bem num mês em que produziu pouco, e o
+       contrário. Só aparece quando existem as duas coisas. */
+    var n = NUMEROS && NUMEROS[id];
+    if (n && n.porVendedor.length && f.autoavaliacao !== null){
+      p.append(Object.assign(el('p','nota-fina'), { textContent:
+        'A autoavaliação média do mês foi ' + nf(f.autoavaliacao,1) + ' de 5, e o mês fechou em ' +
+        n.vendas + (n.meta ? ' de ' + n.meta : '') + ' vendas. As duas leituras são do mesmo mês e ' +
+        'nem sempre andam juntas — quando não andam, é aí que a conversa começa.' }));
+    }
+
+    if (f.travas.length){
+      var bt = bloco('O que atrapalhou', parcial
+        ? 'Marcado por quem já respondeu. A régua das travas de casa (3 ou mais) só vale com o time inteiro.'
+        : 'Marcada por 3 ou mais, é trava de casa: vai para a reunião com dono e prazo. Marcada por 1, vira conversa individual.');
+      var ct = el('div','card');
+      ct.append(barras(f.travas.map(function (t) { return { rotulo:t.rotulo, valor:t.n }; }),
+        { max:f.respondentes, corte: parcial ? null : 3, rotuloCorte:'trava de casa' }));
+      bt.append(ct); p.append(bt);
+    }
+
+    var duas = el('div','duas');
+    if (f.leads.length){
+      var bl2 = bloco('Os leads que chegaram', 'Nota de 1 a 5. Abaixo de 3 é queixa formada.');
+      var cl2 = el('div','card');
+      cl2.append(barras(f.leads.map(function (l2) { return { rotulo:l2.rotulo, valor:l2.nota }; }),
+        { max:5, sufixo:' / 5' }));
+      bl2.append(cl2); duas.append(bl2);
+    }
+    if (f.perdas.length){
+      var bp = bloco('Motivo nº 1 de perda', 'Declarado pelo vendedor. Compare com os motivos do Facilita.');
+      var cp = el('div','card');
+      cp.append(barras(f.perdas.map(function (x) { return { rotulo:x.rotulo, valor:x.n }; }),
+        { max:f.respondentes }));
+      bp.append(cp); duas.append(bp);
+    }
+    if (duas.children.length) p.append(duas);
+
+    if (f.canais.length){
+      var bc = bloco('O que ajudou a vender',
+        'Nota de 1 a 5. O fundo da lista é onde a casa gasta esforço à toa.');
+      var cc = el('div','card');
+      cc.append(barras(f.canais.slice().sort(function (a,b2) { return b2.nota - a.nota; })
+        .map(function (x) { return { rotulo:x.rotulo, valor:x.nota }; }), { max:5, sufixo:' / 5' }));
+      bc.append(cc); p.append(bc);
+    }
+
+    if (f.compromissos.length || semNum.length){
+      var bk = bloco('Compromissos declarados', 'É isto que se cobra na retrospectiva seguinte.');
+      /* Quem respondeu com frase entra na TABELA, com a frase no lugar do
+         número e fora da soma. Some da aritmética é correto; sumir da lista de
+         gente não é — foi a mesma distinção da Esteira com as contas que não
+         são vendedor. */
+      var linhasComp = f.compromissos.map(function (c3) { return [c3.quem, c3.numero]; })
+        .concat(semNum.map(function (x) {
+          return [x.quem, x.texto.length > 90 ? x.texto.slice(0,87) + '…' : x.texto];
+        }))
+        .concat([[parcial ? 'Parcial' : 'Total', somaComp]]);
+      bk.append(tabela([{t:'Vendedor'},{t:'Compromisso',num:true}], linhasComp));
+      if (semNum.length){
+        bk.append(Object.assign(el('p','nota-fina'), { textContent:
+          'O total soma ' + f.compromissos.length +
+          (f.compromissos.length === 1 ? ' declaração' : ' declarações') + ' e deixa ' +
+          semNum.length + ' de fora: ' + semNum.map(function (x) { return x.quem; }).join(', ') +
+          ' respondeu em frase, não em número. Escolher um número dentro da frase seria ' +
+          'adivinhar — o total prefere ficar menor e dizer por quê.' }));
+      }
+      p.append(bk);
+    }
+  }
+
+  /* ── Camada III · a leitura, e IV · o plano — TEXTO SEM EDIÇÃO ─────────
+     No artefato isto era formulário, e o botão Salvar ficava embaixo. Aqui é
+     espelho: quem escreve é o Ricardo, no artefato. Área que fica vazia diz
+     "ainda não escrito" em vez de sumir — seção que some não deixa ninguém
+     perguntar por que ela não está lá. */
+  function campoLido(rotulo, texto){
+    var c = el('div','campo');
+    c.append(el('span','rot', rotulo));
+    if (texto){
+      c.append(el('p','leitura-lida', texto));
+    } else {
+      c.append(el('p','vazio-texto','Ainda não escrito.'));
+    }
+    return c;
+  }
+
+  function secaoLeitura(p, id){
+    var e = (LEITURA && LEITURA[id]) || null;
+    p.append(camada('II', 'A leitura do mês', 'escrita pelo Ricardo, na retrospectiva'));
+    var card = el('div','card');
+    var w = el('div','escrita');
+    w.append(
+      campoLido('O que aconteceu', e && e.aconteceu),
+      campoLido('Por que aconteceu', e && e.porque),
+      campoLido('O que fica de aprendizado', e && e.aprendi)
+    );
+    card.append(w); p.append(card);
+    if (!e){
+      p.append(Object.assign(el('p','nota-fina'), { textContent:
+        'A leitura de ' + nomeMes(id) + ' ainda não foi escrita. Ela é escrita no painel da ' +
+        'retrospectiva e colada na aba Leitura da planilha de respostas — esta página só mostra.' }));
+    }
+  }
+
+  function secaoPlano(p, id){
+    var e = (LEITURA && LEITURA[id]) || null;
+    var prox = proximoMes(id);
+    p.append(camada('III', 'O plano para ' + nomeMes(prox).toLowerCase(),
+      'sem dono e sem data, não é ação'));
+    var card = el('div','card');
+    var w = el('div','escrita');
+    w.append(campoLido('A aposta do mês', e && e.meta),
+             campoLido('As ações', e && e.acoes));
+    card.append(w); p.append(card);
+  }
+
+  function rodape(){
+    var n = el('div','note');
+    n.textContent = 'Os números vêm das abas Resumo_* do Cofre, calculadas sobre a base inteira ' +
+      'pelo Apps Script — esta página não lê venda linha a linha. Ritmo e projeção usam dias ' +
+      'corridos: o time vende no fim de semana. As respostas vêm da planilha do formulário, e a ' +
+      'leitura do mês, da aba Leitura dela. Esta página não escreve nada: ela é o espelho de ' +
+      'leitura da gestão, e quem escreve é o Ricardo, no painel da retrospectiva.';
+    return n;
+  }
+
+  /* ══════════════════════════════ navegação ══════════════════════════════ */
+  function mesesConhecidos(){
+    var s = {};
+    if (NUMEROS) Object.keys(NUMEROS).forEach(function (k) { s[k] = true; });
+    if (FEEDBACK) Object.keys(FEEDBACK).forEach(function (k) { s[k] = true; });
+    if (LEITURA) Object.keys(LEITURA).forEach(function (k) { s[k] = true; });
+    var hoje = new Date();
+    s[hoje.getFullYear() + '-' + String(hoje.getMonth()+1).padStart(2,'0')] = true;
+    return Object.keys(s).sort().reverse();
+  }
+
+  function renderMes(id){
+    var p = $('#painel');
+    p.innerHTML = '';
+    p.append(faixaFonte());
+    tarjas(p);
+
+    var pp = id.split('-').map(Number), ano = pp[0], mm = pp[1];
+    var hoje = new Date();
+    var corrente = (hoje.getFullYear() === ano && hoje.getMonth()+1 === mm);
+    var head = el('div','month-head');
+    head.append(el('span','eyebrow', corrente ? 'Mês em curso' : 'Mês fechado'));
+    head.append(el('h2', null, MESES_PT[mm-1] + ' de ' + ano));
+    head.append(el('p','sub', 'O número está aí em cima, dobrado. O que interessa é o resto: ' +
+      'o que o time viu, o que a gestão leu nisso, e o que muda no mês que vem.'));
+    p.append(head);
+
+    secaoNumeros(p, id);
+    secaoTime(p, id);
+    secaoLeitura(p, id);
+    secaoPlano(p, id);
+    p.append(rodape());
+  }
+
+  function renderSerie(){
+    var p = $('#painel');
+    p.innerHTML = '';
+    p.append(faixaFonte());
+    tarjas(p);
+    var head = el('div','month-head');
+    head.append(el('span','eyebrow','Comparação'));
+    head.append(el('h2', null, 'A série'));
+    head.append(el('p','sub','A leitura que separa mês ruim de problema estrutural.'));
+    p.append(head);
+
+    var ids = NUMEROS ? Object.keys(NUMEROS).sort() : [];
+    if (ids.length){
+      var d = el('details','dobra'); d.open = true;
+      var s = el('summary');
+      s.append(el('span','flag ok','vendas'));
+      s.append(el('div','resumo-linha', ids.length + ' meses no resumo do Cofre'));
+      d.append(s);
+      var corpo = el('div','corpo');
+      var linhas = ids.map(function (id) {
+        var n = NUMEROS[id];
+        return { rotulo: MESES_PT[n.mes-1].slice(0,3) + '/' + String(n.ano).slice(2),
+                 valor:n.vendas, meta:n.meta };
+      });
+      corpo.append(barras(linhas, {
+        max: Math.max.apply(null, linhas.map(function (l) { return Math.max(l.valor, l.meta||0); }).concat([1])),
+        fmt: function (i) { return i.valor + (i.meta ? ' / ' + i.meta : ''); } }));
+      d.append(corpo); p.append(d);
+    }
+
+    var comFb = mesesConhecidos().filter(function (id) { return FEEDBACK && FEEDBACK[id]; }).reverse();
+    if (comFb.length >= 2){
+      var cont = {};
+      comFb.forEach(function (id) {
+        FEEDBACK[id].travas.filter(function (t) { return t.n >= 3; })
+          .forEach(function (t) { cont[t.rotulo] = (cont[t.rotulo]||0)+1; });
+      });
+      var rec = Object.keys(cont).filter(function (k) { return cont[k] >= 2; })
+                      .map(function (k) { return { rotulo:k, valor:cont[k] }; })
+                      .sort(function (a,b) { return b.valor - a.valor; });
+      if (rec.length){
+        var b2 = bloco('Travas que se repetem',
+          'Marcada por 3+ pessoas em dois meses ou mais. Isto não é mês ruim — é arquitetura.');
+        var c2 = el('div','card');
+        c2.append(barras(rec, { max:comFb.length, sufixo:' meses', corte:2, rotuloCorte:'estrutural' }));
+        b2.append(c2); p.append(b2);
+      }
+    }
+
+    var b3 = bloco('Prometido contra entregue',
+      'O que o time prometeu num mês e o que a casa entregou no seguinte.');
+    var linhasT = mesesConhecidos().slice().reverse()
+      .filter(function (id) { return (FEEDBACK && FEEDBACK[id]) || (NUMEROS && NUMEROS[id]); })
+      .map(function (id) {
+        var f = FEEDBACK && FEEDBACK[id];
+        var n = NUMEROS && NUMEROS[id];
+        var prox = NUMEROS && NUMEROS[proximoMes(id)];
+        return [
+          MESES_PT[parseInt(id.split('-')[1],10)-1].slice(0,3) + '/' + id.split('-')[0].slice(2),
+          f ? f.respondentes + '/' + f.equipe : '—',
+          n ? n.vendas : '—',
+          METAS[id] || '—',
+          f && f.compromissos.length
+            ? f.compromissos.reduce(function (a,c3) { return a+c3.numero; },0) : '—',
+          prox ? prox.vendas : '—'
+        ];
+      });
+    b3.append(tabela([{t:'Mês'},{t:'Respostas',num:true},{t:'Vendas',num:true},{t:'Meta',num:true},
+                      {t:'Prometido p/ seguinte',num:true},{t:'Entregue no seguinte',num:true}], linhasT));
+    p.append(b3);
+
+    var b4 = bloco('O que ficou escrito', 'A aposta de cada mês, do punho do Ricardo.');
+    var g = el('div','quotes');
+    mesesConhecidos().forEach(function (id) {
+      var e = LEITURA && LEITURA[id];
+      if (!e || !e.meta) return;
+      var q = el('div','quote');
+      q.append(Object.assign(el('p'), { textContent:'“' + e.meta + '”' }));
+      q.append(el('span','who', MESES_PT[parseInt(id.split('-')[1],10)-1] + ' · a aposta'));
+      g.append(q);
+    });
+    if (!g.children.length){
+      g.append(Object.assign(el('p','vazio-texto'), { textContent:
+        'Nenhuma aposta escrita ainda. Elas aparecem aqui quando a aba Leitura da planilha de ' +
+        'respostas tiver linha para o mês.' }));
+    }
+    b4.append(g); p.append(b4);
+
+    p.append(rodape());
+  }
+
+  function pintar(){
+    var nav = $('#tabs');
+    var meses = mesesConhecidos();
+    if (ABA.tipo === 'mes' && (!ABA.id || meses.indexOf(ABA.id) < 0)) ABA = { tipo:'mes', id:meses[0] };
+
+    nav.innerHTML = '';
+    nav.append(el('span','eyebrow','Meses'));
+    meses.forEach(function (id) {
+      var temDado = (NUMEROS && NUMEROS[id]) || (FEEDBACK && FEEDBACK[id]) || (LEITURA && LEITURA[id]);
+      var b = el('button','tab' + (temDado ? ' has-data' : ''));
+      b.type = 'button'; b.setAttribute('role','tab');
+      b.setAttribute('aria-selected', ABA.tipo === 'mes' && ABA.id === id ? 'true' : 'false');
+      var pp = id.split('-');
+      b.append(el('span','dot'), el('span', null, MESES_PT[parseInt(pp[1],10)-1] + ' ' + pp[0]));
+      b.addEventListener('click', function () { ABA = { tipo:'mes', id:id }; pintar(); });
+      nav.append(b);
+    });
+    var s = el('button','tab');
+    s.type = 'button'; s.setAttribute('role','tab');
+    s.setAttribute('aria-selected', ABA.tipo === 'serie' ? 'true' : 'false');
+    s.append(el('span','dot'), el('span', null, 'A série'));
+    s.addEventListener('click', function () { ABA = { tipo:'serie' }; pintar(); });
+    nav.append(s);
+
+    if (ABA.tipo === 'serie') renderSerie(); else renderMes(ABA.id);
+  }
+
+  /* ══════════════════════════════ bloqueio ══════════════════════════════ */
+  function bloqueia(t, corpoHtml){
+    $('#tabs').innerHTML = '<span class="eyebrow">Meses</span>';
+    $('#painel').innerHTML = '<div class="tarja"><div class="t">' + esc(t) + '</div>' +
+                             corpoHtml + '</div>';
+  }
+
+  /* ══════════════════════════════ carga ══════════════════════════════ */
+  function carregar(){
+    var token = '';
+    try { token = localStorage.getItem(CHAVE_TOKEN) || ''; } catch (e) {}
+    if (!token) { abrirPortao(''); return; }
+    $('#painel').innerHTML = '<p class="nota-fina">Lendo o Cofre e as respostas do time…</p>';
+
+    comPrazo(API + '?app=retrospectiva&fn=dados&token=' + encodeURIComponent(token), 60000)
+      .then(function (r) {
+        if (!r || r.ok !== true){
+          var err = (r && r.error) || 'resposta sem dado';
+          if (/token/i.test(err)){
+            try { localStorage.removeItem(CHAVE_TOKEN); } catch (e) {}
+            abrirPortao('Token recusado. Confira e digite de novo.');
+            return;
+          }
+          bloqueia('O Cofre respondeu, mas sem dado.', '<p>' + esc(err) + '</p>');
+          return;
+        }
+        montar(r);
+      })
+      .catch(function (e) {
+        bloqueia('Não consegui falar com o Cofre.',
+          '<p>' + esc(e.message || e) + '</p><p>Nenhum número aparece enquanto isso: tela vazia é ' +
+          'melhor que tela desatualizada com cara de atual.</p>');
+      });
+  }
+
+  function montar(r){
+    /* GUARDA DE TRUNCAMENTO, igual à da Esteira. `truncado` AUSENTE é pior que
+       true: quer dizer que o Cofre serve uma implantação anterior a esta rota,
+       que entrega linhas sem dizer se são todas — e rota que não sabe dizer é
+       indistinguível de rota que cortou. Nos dois casos a página não desenha. */
+    if (typeof r.truncado === 'undefined'){
+      bloqueia('Esta página não vai desenhar: a rota não diz se cortou a resposta.',
+        '<p>O <code>?app=retrospectiva&amp;fn=dados</code> respondeu <b>sem o campo ' +
+        '<code>truncado</code></b>. O Cofre está servindo uma implantação anterior a 31/08.</p>' +
+        '<p><b>O conserto é republicar o Cofre</b> — Implantar ▸ Gerenciar implantações ▸ ✏️ ▸ ' +
+        'Nova versão, mantendo a URL. <code>clasp push</code> sozinho não publica.</p>');
+      return;
+    }
+    if (r.truncado === true){
+      var det = [];
+      ['meses','vendedores','dimensoes'].forEach(function (k) {
+        var b = r.resumo && r.resumo[k];
+        if (b && b.truncado) det.push('resumo.' + k + ': ' + b.n + ' de ' + b.total_aba);
+      });
+      if (r.respostas && r.respostas.truncado) det.push('respostas: ' + r.respostas.n + ' de ' + r.respostas.total_aba);
+      if (r.leitura && r.leitura.truncado) det.push('leitura: ' + r.leitura.n + ' de ' + r.leitura.total_aba);
+      bloqueia('Esta página não vai desenhar: a resposta veio cortada.',
+        '<p>' + esc(det.join(' · ') || 'a rota sinalizou corte') + '. Toda conta abaixo sairia ' +
+        'sobre um pedaço, <b>com cara de completa</b>.</p>' +
+        '<p>Aumente o teto em <code>Retrospectiva.gs</code> e republique.</p>');
+      return;
+    }
+
+    MS = typeof r.ms === 'number' ? r.ms : null;
+    CARIMBO = String(r.carimbo || '').trim();
+    HORAS = null;
+    if (CARIMBO){
+      var d = new Date(CARIMBO.replace(' ', 'T') + (/:\d{2}:\d{2}$/.test(CARIMBO) ? '' : ':00'));
+      if (!isNaN(d.getTime())) HORAS = Math.floor((Date.now() - d.getTime()) / 3600000);
+    }
+
+    AVISOS = [];
+    if (r.resumo && r.resumo.aviso) AVISOS.push(r.resumo.aviso);
+    /* O erro das respostas é AVISO e não bloqueio: quando a coluna reservada
+       não é reconhecida, a rota não serve resposta nenhuma — e o resto da
+       página (números, leitura, série) continua correto e útil. */
+    if (r.respostas && r.respostas.erro) AVISOS.push(r.respostas.erro);
+    if (r.leitura && r.leitura.erro) AVISOS.push(r.leitura.erro);
+    if (r.leitura && r.leitura.aviso) AVISOS.push(r.leitura.aviso);
+
+    NUMEROS = lerResumo(r.resumo);
+    FEEDBACK = lerFeedback(r.respostas);
+    LEITURA = lerLeitura(r.leitura);
+
+    pintar();
+  }
+
+  /* ══════════════════════════════ arranque ══════════════════════════════ */
+  var tem = '';
+  try { tem = localStorage.getItem(CHAVE_TOKEN) || ''; } catch (e) {}
+  if (tem) { fecharPortao(); carregar(); } else { abrirPortao(''); }
+})();
+</script>
+</body>
+</html>
