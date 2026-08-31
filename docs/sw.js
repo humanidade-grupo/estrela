@@ -1,6 +1,12 @@
 /* Painel Comercial — Parque da Saudade + Estrela Urbanidade
    Service worker: instalação PWA + reserva offline.
-   Atualizado em: 31/08/2026 — SÓ TEXTO na Esteira do Funil: rótulos, notas e
+   Atualizado em: 31/08/2026 (2ª do dia) — "De onde vem a carteira" ganha uma
+   ROSCA à direita do texto de leitura, com o total do mês e as três origens
+   SEPARADAS (própria · SATI · formulário). A tabela e as barras logo abaixo
+   continuam somando SATI + formulário numa coluna só ("Recebido"): são duas
+   perguntas diferentes — a rosca é "de onde veio o mês", a tabela é "que fatia
+   cada vendedor foi atrás". Só desenho; nenhuma rota, conta ou filtro mudou.
+   Antes, 31/08/2026 — SÓ TEXTO na Esteira do Funil: rótulos, notas e
    tarjas reescritos para quem abre a página sem contexto do projeto, com a
    explicação no ponto em que o número aparece e sem o vocabulário interno
    (foto/carimbo/censurado). Nenhuma conta, filtro ou rota mudou — mas o HTML
@@ -33,7 +39,7 @@
    abas: no Parque escolhem o mês da tela; na Estrela, o fim da janela de 12m.
    Estratégia: rede primeiro (pega versão nova quando online), cache como
    reserva offline. A cada deploy, bumpar a versão em CACHE. */
-const CACHE = 'painel-comercial-260831-7';
+const CACHE = 'painel-comercial-260831-8';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./'])).then(() => self.skipWaiting()));

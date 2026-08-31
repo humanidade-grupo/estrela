@@ -182,6 +182,36 @@ tr.orf td{border-top:2px solid var(--line); color:var(--ink-2); font-style:itali
 .leg{display:flex;gap:16px;align-items:center;font-size:12.5px;color:var(--ink-3);margin:2px 0 12px}
 .leg i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;
   vertical-align:-1px}
+
+/* "De onde vem a carteira": o texto de leitura e a rosca dos totais lado a lado.
+   A rosca responde uma pergunta que a tabela ao lado NAO responde — ela colapsa
+   SATI e formulario numa coluna so ("Recebido"), e a rosca separa as tres, que
+   sao exatamente as tres que o paragrafo ao lado nomeia. Por isso ela mora aqui
+   em cima, colada no texto, e nao junto das barras.
+   Sem breakpoint novo: flex-wrap + base de 420px no texto fazem a rosca descer
+   sozinha quando a coluna aperta. */
+.origem-topo{display:flex;flex-wrap:wrap;gap:20px 28px;align-items:flex-start;
+  margin-bottom:20px}
+.origem-topo .sec-note{margin:0;flex:1 1 420px;min-width:0}
+.rosca-cx{flex:0 1 auto;max-width:100%;display:flex;gap:18px;align-items:center;
+  background:var(--surface-2);border:1px solid var(--line-2);border-radius:14px;
+  padding:14px 18px}
+.rosca{position:relative;width:132px;height:132px;flex:0 0 132px}
+.rosca svg{display:block;width:132px;height:132px;transform:rotate(-90deg)}
+.rosca .mid{position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;line-height:1.1}
+.rosca .mid b{font-size:24px;font-weight:800;color:var(--ink);
+  font-variant-numeric:tabular-nums}
+.rosca .mid span{font-size:10px;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:700;margin-top:3px}
+.rosca-leg{display:flex;flex-direction:column;gap:9px;font-size:12.5px;min-width:0}
+.rosca-leg div{display:flex;align-items:center;gap:8px;white-space:nowrap}
+.rosca-leg i{width:10px;height:10px;border-radius:3px;flex:0 0 10px}
+.rosca-leg .k{color:var(--ink-2)}
+.rosca-leg .v{margin-left:auto;color:var(--ink);font-weight:700;
+  font-variant-numeric:tabular-nums}
+.rosca-leg .p{color:var(--ink-3);font-variant-numeric:tabular-nums;min-width:46px;
+  text-align:right}
 /* leitura da ficha */
 .leitura{margin:12px 14px 14px;padding:11px 13px;border-left:3px solid var(--line);
   background:rgba(255,255,255,.02);border-radius:0 6px 6px 0}
@@ -407,6 +437,7 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
 
     <section id="secOrigem">
       <div class="sec-head"><h2>De onde vem a carteira</h2></div>
+      <div class="origem-topo">
       <p class="sec-note">Para cada vendedor, os leads que <strong>entraram neste m&ecirc;s</strong>,
         separados por como chegaram. <strong>Pr&oacute;pria</strong> &eacute; o que ele mesmo cadastrou;
         <strong>SATI</strong> &eacute; o que a distribui&ccedil;&atilde;o autom&aacute;tica mandou;
@@ -417,6 +448,8 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
         ser quem vai atr&aacute;s, ou quem n&atilde;o est&aacute; recebendo da fila. As duas leituras se
         separam olhando a coluna SATI ao lado: baixa para todo mundo &eacute; m&ecirc;s fraco de
         capta&ccedil;&atilde;o autom&aacute;tica; baixa s&oacute; para um &eacute; composi&ccedil;&atilde;o de fila.</p>
+        <div id="origemRosca"></div>
+      </div>
       <p class="sec-note" id="origemAmostra"></p>
       <div id="origemBarras"></div>
       <div class="scroll"><table id="tabOrigem"></table></div>
@@ -689,6 +722,7 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
   function montarOrigem(r) {
     if (!r || r.ok !== true) {
       $('#origemAmostra').innerHTML = '';
+      $('#origemRosca').innerHTML = '';
       $('#origemBarras').innerHTML = '';
       $('#tabOrigem').innerHTML = '';
       $('#origemRodape').innerHTML = 'Sem dado de origem nesta carga' +
@@ -718,6 +752,51 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
       (tT < 40 ? ' <strong>Amostra pequena:</strong> no come\u00e7o do m\u00eas uma diferen\u00e7a de ' +
                  'dois ou tr\u00eas leads vira percentual grande. Espere a semana fechar antes de ' +
                  'concluir.' : '');
+
+    /* ---- rosca: o total do mes, as tres origens separadas ----
+       O time inteiro num numero so. Aqui SATI e formulario NAO se somam, ao
+       contrario da tabela e das barras abaixo: a pergunta desta figura e "de
+       onde veio o mes", e as tres portas do paragrafo ao lado sao coisas
+       diferentes de operar. Propria e SATI mantem as cores das barras
+       (#38bdf8 / #a78bfa) para a leitura atravessar as duas figuras.
+       Truque do raio: r = 15,9155 num viewBox de 42 da circunferencia 100 \u2014
+       o dasharray passa a ser o proprio percentual, sem conta de pi. */
+    var FATIAS = [
+      { k: 'Pr\u00f3pria',    v: tP, c: '#38bdf8' },
+      { k: 'SATI',         v: tS, c: '#a78bfa' },
+      { k: 'Formul\u00e1rio', v: tF, c: 'var(--ouro)' }
+    ];
+    if (!tT) {
+      $('#origemRosca').innerHTML = '';
+    } else {
+      var acc = 0;
+      var arcos = FATIAS.filter(function (f) { return f.v > 0; }).map(function (f) {
+        var frac = 100 * f.v / tT;
+        var s = '<circle cx="21" cy="21" r="15.9155" fill="none" stroke="' + f.c + '" ' +
+          'stroke-width="6" stroke-dasharray="' + frac.toFixed(3) + ' ' +
+          (100 - frac).toFixed(3) + '" stroke-dashoffset="' + (-acc).toFixed(3) + '">' +
+          '<title>' + esc(f.k) + ': ' + num(f.v) + ' (' + pct(f.v / tT) + ')</title></circle>';
+        acc += frac;
+        return s;
+      }).join('');
+      $('#origemRosca').innerHTML =
+        '<div class="rosca-cx">' +
+          '<div class="rosca">' +
+            '<svg viewBox="0 0 42 42" role="img" aria-label="Origem dos ' + num(tT) +
+              ' leads de ' + esc(nomeMes) + '">' +
+              '<circle cx="21" cy="21" r="15.9155" fill="none" stroke="var(--line)" ' +
+                'stroke-width="6"></circle>' + arcos +
+            '</svg>' +
+            '<div class="mid"><b>' + num(tT) + '</b><span>' + esc(nomeMes) + '</span></div>' +
+          '</div>' +
+          '<div class="rosca-leg">' + FATIAS.map(function (f) {
+            return '<div><i style="background:' + f.c + '"></i>' +
+              '<span class="k">' + esc(f.k) + '</span>' +
+              '<span class="v">' + num(f.v) + '</span>' +
+              '<span class="p">' + pct(f.v / tT) + '</span></div>';
+          }).join('') + '</div>' +
+        '</div>';
+    }
 
     var linha = function (v, cls) {
       var t = v.total || 0;
