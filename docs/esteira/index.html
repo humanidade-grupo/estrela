@@ -182,6 +182,15 @@ tr.orf td{border-top:2px solid var(--line); color:var(--ink-2); font-style:itali
 .leg{display:flex;gap:16px;align-items:center;font-size:12.5px;color:var(--ink-3);margin:2px 0 12px}
 .leg i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;
   vertical-align:-1px}
+/* leitura da ficha */
+.leitura{margin:12px 14px 14px;padding:11px 13px;border-left:3px solid var(--line);
+  background:rgba(255,255,255,.02);border-radius:0 6px 6px 0}
+.leitura .lh{font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;
+  color:var(--ink-2);margin-bottom:5px}
+.leitura p{margin:0;font-size:13px;line-height:1.55;color:var(--ink-2)}
+.leitura.a-crit{border-left-color:var(--crit)}
+.leitura.a-warn{border-left-color:var(--warn)}
+.leitura.a-ok{border-left-color:#34d399}
 
 /* ---------- cartões por vendedor ---------- */
 .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(390px,1fr)); gap:16px}
@@ -1123,6 +1132,94 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
         : ordemCards === 'fech' ? ((b.fech === null ? -1 : b.fech) - (a.fech === null ? -1 : a.fech))
         : b.ativa - a.ativa;
     });
+    /* ---- leitura de cada ficha ----
+       DETERMINISTICA E CALCULADA AQUI, de proposito. Nao e texto gerado: a
+       mesma carteira tem que produzir a mesma frase toda vez, porque esta
+       pagina e lida em conversa de cobranca — duas pessoas abrindo e vendo
+       leituras diferentes seria pior que nao ter leitura nenhuma.
+
+       Tres disciplinas herdadas do resto desta apuracao:
+       · COMPARATIVA, contra a MEDIANA do time visivel, nunca contra limiar
+         inventado. Mes fraco para todos deixa de virar acusacao individual.
+       · PISO DE AMOSTRA. Carteira pequena nao recebe diagnostico, recebe o
+         aviso de que e pequena — abaixo dele um caso vira "tendencia".
+       · FATO, NUNCA CAUSA (regra 10 do CLAUDE.md). A frase diz o que o numero
+         mostra e onde agir; nao diz se a pessoa esta desleixada, de ferias, de
+         atestado ou com carteira mal distribuida. As quatro dao o mesmo numero,
+         e so quem convive sabe qual e. */
+    function medArr(a) {
+      var x = a.slice().sort(function (m, n) { return m - n; });
+      if (!x.length) return 0;
+      return x.length % 2 ? x[(x.length - 1) / 2] : (x[x.length / 2 - 1] + x[x.length / 2]) / 2;
+    }
+
+    var PISO_FICHA = 5, PISO_DEC = 8;
+    var comCart = arr.filter(function (v) { return v.ativa >= PISO_FICHA; });
+    var CTX = {
+      s7: medArr(comCart.map(function (v) { return v.ativa ? v.p7 / v.ativa : 0; })),
+      fech: medArr(arr.filter(function (v) { return (v.ganha + v.perdida) >= PISO_DEC; })
+                      .map(function (v) { return v.fech; }))
+    };
+
+    function leituraFicha(v) {
+      if (v.ativa < PISO_FICHA) {
+        return { cls: '', t: 'Carteira pequena para leitura',
+          p: '<strong>' + v.ativa + '</strong> negocio(s) em jogo. Abaixo de ' + PISO_FICHA +
+             ' um caso so vira percentual grande — os numeros acima valem, a leitura nao.' };
+      }
+
+      var f = [], s7 = v.p7 / v.ativa, s30 = v.p30 / v.ativa;
+
+      /* Onde a parada se concentra: e o que vira tarefa de segunda-feira.
+         "36% parado" nao diz o que fazer; "9 dos 13 estao em Visita" diz. */
+      var pior = null;
+      ORD.forEach(function (id) {
+        var par = v.par[id];
+        if (par && par[3] && (!pior || par[3] > pior.p7)) {
+          pior = { id: id, mediana: par[1], max: par[2], p7: par[3] };
+        }
+      });
+
+      var cls = '', t;
+      if (s30 >= 0.25) { cls = 'a-crit'; t = 'Carteira envelhecendo'; }
+      else if (s7 >= 0.30 && s7 >= CTX.s7 * 1.4) { cls = 'a-warn'; t = 'Ritmo de toque abaixo do time'; }
+      else if (s7 <= CTX.s7 * 0.6) { cls = 'a-ok'; t = 'Carteira em dia'; }
+      else { t = 'Dentro do ritmo do time'; }
+
+      f.push('<strong>' + v.p7 + '</strong> dos <strong>' + v.ativa +
+             '</strong> em jogo estao sem toque ha mais de ' + DIAS_COB + ' dias (' + pct(s7) +
+             '), contra <strong>' + pct(CTX.s7) + '</strong> na mediana do time' +
+             (v.p30 ? ', e <strong>' + v.p30 + '</strong> ja passaram de ' + DIAS_VELHO + '.' : '.'));
+
+      if (pior && pior.p7 >= 2) {
+        var nome = ET[pior.id] ? ET[pior.id].n : 'Etapa ' + pior.id;
+        var junta = pior.max !== null && pior.mediana >= DIAS_COB && pior.max <= pior.mediana * 2;
+        f.push('A parada se concentra em <strong>' + esc(nome) + '</strong> (' + pior.p7 +
+               ' de ' + v.p7 + '), mediana de ' + pior.mediana + ' dia(s)' +
+               (pior.max === null ? '' : ' e maximo de ' + pior.max) + ' — ' +
+               (junta ? 'a fila parou junto, e isso e rotina a retomar, nao caso perdido.'
+                      : 'a fila anda e ha esquecido dentro dela; a conversa e um a um.'));
+      }
+
+      var dec = v.ganha + v.perdida;
+      if (dec >= PISO_DEC && v.fech !== null && CTX.fech) {
+        var d = v.fech - CTX.fech;
+        f.push('Fecha <strong>' + pct(v.fech) + '</strong> do que decide (' + v.ganha + ' de ' +
+               dec + '), ' + (Math.abs(d) < 0.05 ? 'em linha com' :
+                 d > 0 ? '<strong>acima</strong> de' : '<strong>abaixo</strong> de') +
+               ' os ' + pct(CTX.fech) + ' do time.');
+      } else if (dec) {
+        f.push('So <strong>' + dec + '</strong> negocio(s) decidido(s) — poucos para ler fechamento.');
+      }
+
+      if (v.perdida >= 4 && v.mot.length && v.mot[0][1] / v.perdida >= 0.4) {
+        f.push('A perda se concentra em <em>' + esc(v.mot[0][0]) + '</em> (' + v.mot[0][1] +
+               ' de ' + v.perdida + ').');
+      }
+
+      return { cls: cls, t: t, p: f.join(' ') };
+    }
+
     $('#cards').innerHTML = arr.map(function (v) {
       var ls = ORD.filter(function (id) { return v.par[id]; }).map(function (id) {
         var p = v.par[id], nome = ET[id] ? ET[id].n : 'Etapa ' + id;
@@ -1155,7 +1252,12 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
         '<tbody>' + (ls || '<tr><td class="l dim" colspan="6">nada na esteira ativa</td></tr>') +
         '</tbody></table></div>' +
         '<div class="motivos"><div class="mt">Por que perdeu · ' + v.perdida + ' perdidas</div>' +
-        (mot || '<div class="mrow dim">sem motivo registrado</div>') + '</div></div>';
+        (mot || '<div class="mrow dim">sem motivo registrado</div>') + '</div>' +
+        (function () {
+          var L = leituraFicha(v);
+          return '<div class="leitura ' + L.cls + '"><div class="lh">' + esc(L.t) +
+                 '</div><p>' + L.p + '</p></div>';
+        })() + '</div>';
     }).join('');
 
     /* ---- fila de cobrança ---- */
