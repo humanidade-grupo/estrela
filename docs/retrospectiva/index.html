@@ -356,7 +356,22 @@ section.block > header[hidden]{display:none}
   .duas, .quotes{gap:10px}
 }
 @media (prefers-reduced-motion: reduce){*{animation:none !important; transition:none !important}}
+
+/* Embutida no Painel (aba Retrospectiva, 01/09): o "voltar" some — o cabeçalho
+   do Painel é o caminho de volta. Aberta sozinha, nada muda. */
+html.embutido .rail-voltar{display:none !important}
+/* Sem isto a altura da moldura vira catraca: o pai iguala o iframe ao
+   conteúdo, o 100vh daqui vira essa altura, e o min-height nunca a devolve.
+   O trilho sticky também não faz sentido sem rolagem interna. */
+html.embutido body{min-height:0}
+html.embutido .shell{min-height:0}
+html.embutido .rail{height:auto; position:static}
 </style>
+<script>
+/* Antes do primeiro paint, para o voltar não piscar. Cross-origin no acesso a
+   top significa que HÁ um pai — embutido também. */
+try { if (window.top !== window.self) document.documentElement.classList.add('embutido'); } catch (e) { document.documentElement.classList.add('embutido'); }
+</script>
 </head>
 <body>
 

@@ -340,13 +340,17 @@ align-items:center;gap:3px;cursor:pointer;min-width:0}
        HTML, inertes: removê-los exigiria podar o render() em produção, e
        painel inalcançável é mais barato que regressão. -->
   <button class="tab" role="tab" aria-selected="true" data-p="pPSX" type="button">Executivo</button>
-  <!-- Abas-link (01/09): Esteira e Retrospectiva são telas próprias deste repo,
-       mesma origem e mesmo token — navegar é a integração. Perfil Cliente é o
-       artefato "Quem compra no Parque da Saudade" (foto de 28/08, estática por
-       natureza); Pocket é o app do vendedor. Os dois abrem em nova aba. -->
-  <a class="tab" href="./esteira/">Esteira</a>
-  <a class="tab" href="./retrospectiva/">Retrospectiva</a>
-  <a class="tab" href="https://claude.ai/code/artifact/2aa935f2-8c8f-42c2-b81e-994c812c0220" target="_blank" rel="noopener">Perfil Cliente<span class="ext">↗</span></a>
+  <!-- Esteira, Retrospectiva e Perfil Cliente rodam DENTRO do Painel desde
+       01/09 (2ª rodada do dia): molduras como a do Executivo, carregadas na
+       primeira abertura e mantidas vivas — trocar de aba não recarrega nada,
+       e o cabeçalho do Painel é o "voltar" permanente. O claude.ai recusa
+       embutir o artefato (frame-ancestors 'self'), então o Perfil mora em
+       ./perfil-cliente/ — cópia da foto de 28/08; o artefato 2aa935f2 fica
+       como o lugar onde o Perfil é REFEITO, não mais como a referência de
+       leitura (regra 8). Só o Pocket abre fora: é outro app, outro PWA. -->
+  <button class="tab" role="tab" aria-selected="false" data-p="pPSEsteira" type="button">Esteira</button>
+  <button class="tab" role="tab" aria-selected="false" data-p="pPSRetro" type="button">Retrospectiva</button>
+  <button class="tab" role="tab" aria-selected="false" data-p="pPSPerfil" type="button">Perfil Cliente</button>
   <button class="tab" role="tab" aria-selected="false" data-p="pPSDocs" type="button">Docs</button>
   <a class="tab" href="https://humanidade-grupo.github.io/pocket-nps/#home" target="_blank" rel="noopener">Pocket<span class="ext">↗</span></a>
 </div>
@@ -581,6 +585,26 @@ align-items:center;gap:3px;cursor:pointer;min-width:0}
   <iframe id="fExecPS" title="Visão executiva — Parque da Saudade" loading="lazy" style="width:100%;border:0;display:block;min-height:70vh"></iframe>
 </section>
 
+<!-- ============ ESTEIRA · RETROSPECTIVA · PERFIL (molduras) ============
+     Mesmo desenho da moldura do Executivo: a tela vive numa página própria e
+     entra aqui por iframe. O src só é atribuído na PRIMEIRA abertura da aba
+     (ligarMoldura) — depois disso a moldura fica viva e trocar de aba é só
+     mostrar/esconder: nada recarrega, nenhum "Aquecendo" de novo. A altura é
+     ajustada pelo pai lendo o documento da moldura (mesma origem), para a
+     página rolar como uma coisa só. As telas escondem o próprio "voltar"
+     quando embutidas (html.embutido) — o cabeçalho do Painel já é o caminho
+     de volta. Token: localStorage é por origem, a moldura enxerga o mesmo
+     hub_token_gestao do Painel. -->
+<section class="panel ps" id="pPSEsteira">
+  <iframe id="fEsteira" data-src="./esteira/" title="Esteira do Funil — Parque da Saudade" style="width:100%;border:0;display:block;min-height:70vh"></iframe>
+</section>
+<section class="panel ps" id="pPSRetro">
+  <iframe id="fRetro" data-src="./retrospectiva/" title="Retrospectiva do Time Comercial — Parque da Saudade" style="width:100%;border:0;display:block;min-height:70vh"></iframe>
+</section>
+<section class="panel ps" id="pPSPerfil">
+  <iframe id="fPerfil" data-src="./perfil-cliente/" title="Quem compra no Parque da Saudade" style="width:100%;border:0;display:block;min-height:70vh"></iframe>
+</section>
+
 <!-- ================= DOCS (Parque) =================
      Os materiais comerciais da pasta base-conhecimento, servidos DO DRIVE —
      o Drive é a fonte da verdade de PDF e planilha (regra de ouro do INFRA),
@@ -631,15 +655,15 @@ align-items:center;gap:3px;cursor:pointer;min-width:0}
   <button type="button" data-p="pPSX" aria-selected="true">
     <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
     <span>Executivo</span></button>
-  <a href="./esteira/">
+  <button type="button" data-p="pPSEsteira" aria-selected="false">
     <svg viewBox="0 0 24 24"><path d="M3 4h18l-7 8v6l-4 2v-8L3 4z"/></svg>
-    <span>Esteira</span></a>
-  <a href="./retrospectiva/">
+    <span>Esteira</span></button>
+  <button type="button" data-p="pPSRetro" aria-selected="false">
     <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18"/><path d="M8 2v4"/><path d="M16 2v4"/></svg>
-    <span>Retrospectiva</span></a>
-  <a href="https://claude.ai/code/artifact/2aa935f2-8c8f-42c2-b81e-994c812c0220" target="_blank" rel="noopener">
+    <span>Retrospectiva</span></button>
+  <button type="button" data-p="pPSPerfil" aria-selected="false">
     <svg viewBox="0 0 24 24"><path d="M16 20v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="3.5"/></svg>
-    <span>Perfil</span></a>
+    <span>Perfil</span></button>
   <button type="button" data-p="pPSDocs" aria-selected="false">
     <svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-6-6z"/><path d="M14 3v6h6"/></svg>
     <span>Docs</span></button>
@@ -1406,13 +1430,39 @@ const fN  = (n,d=0) => n.toLocaleString('pt-BR', {minimumFractionDigits:d, maxim
 const fMi = n => n>=1e6 ? fN(n/1e6,1).replace(',0','')+' mi' : (n>=1000 ? fN(n/1e3)+' mil' : fN(n));
 
 /* ---------- abas da metade PS ---------- */
-/* [data-p] de propósito: as abas-link (Esteira, Retrospectiva, Perfil, Pocket)
-   são <a> e navegam sozinhas — sem o filtro, o handler rodaria irParaPS(undefined)
-   e apagaria a tela no instante antes da navegação. */
+/* [data-p] de propósito: a aba-link (Pocket) é <a> e navega sozinha — sem o
+   filtro, o handler rodaria irParaPS(undefined) e apagaria a tela no instante
+   antes da navegação. */
+
+/* Moldura preguiçosa e viva: o src entra na primeira abertura da aba e nunca
+   sai — trocar de aba não recarrega a tela embutida. A altura vem do próprio
+   documento da moldura (mesma origem): o iframe cresce até o conteúdo e a
+   página rola como uma coisa só. Falhou o acesso (não deveria — mesma
+   origem)? fica o min-height do CSS, com rolagem interna. */
+function ligarMoldura(f){
+  if (!f) return;
+  if (f.dataset.src && !f.getAttribute('src')) f.src = f.dataset.src;
+  if (f.dataset.ligada) return;
+  f.dataset.ligada = '1';
+  f.addEventListener('load', function(){
+    try {
+      const doc = f.contentDocument;
+      const ajustar = function(){
+        try { f.style.height = Math.max(doc.documentElement.scrollHeight, 480) + 'px'; } catch(e){}
+      };
+      ajustar();
+      const ro = new ResizeObserver(ajustar);
+      ro.observe(doc.documentElement);
+      if (doc.body) ro.observe(doc.body);
+    } catch(e){ /* sem acesso: vale o min-height do CSS */ }
+  });
+}
 function irParaPS(pid){
   document.querySelectorAll('#tabsPS .tab[data-p]').forEach(x=>x.setAttribute('aria-selected', x.dataset.p===pid));
   document.querySelectorAll('#bnavPS button[data-p]').forEach(x=>x.setAttribute('aria-selected', x.dataset.p===pid));
   document.querySelectorAll('.panel.ps').forEach(p=>p.classList.toggle('on', p.id===pid));
+  const alvo = document.getElementById(pid);
+  if (alvo) ligarMoldura(alvo.querySelector('iframe[data-src]'));
   window.scrollTo({top:0});
 }
 document.querySelectorAll('#tabsPS .tab[data-p],#bnavPS button[data-p]').forEach(b=>b.onclick=()=>irParaPS(b.dataset.p));
@@ -2202,6 +2252,49 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
       if (recem) { subir(recem, false); return; }
     }
   } catch (e) {}
+
+  /* ARRANQUE PELO CACHE (01/09, pedido do Ricardo): quem já abriu o Painel
+     uma vez não espera o "Aquecendo" de novo. A tela sobe NA HORA com a
+     cópia local — o selo mostra o carimbo DO DADO, então a idade nunca é
+     escondida — e a busca no Cofre roda em segundo plano. Três desfechos:
+     carimbo igual → silêncio (o normal dentro da mesma hora de sincronização);
+     carimbo novo → o cache é atualizado e o selo oferece "Mostrar" (recarrega
+     do cache, instantâneo — redesenhar no lugar as ~900 linhas da Estrela
+     nunca foi seguro, ver o comentário do ligarRecarregar); token revogado →
+     portão. Falha de rede → o selo assume a linguagem de cópia local. */
+  var copia = doCache();
+  if (copia) {
+    // o piso de 1,4s da carga existe para busca de rede não parecer defeito;
+    // subindo do cache não há busca — a bola sai da frente sem espera
+    CARGA_T0 = Date.now() - CARGA_MIN;
+    subir(copia, false);
+    buscar(token).then(function (j) {
+      if (j && j.ok) {
+        try { localStorage.setItem(CHAVE_CACHE, JSON.stringify(j)); } catch (e) {}
+        var mudou = (j.atualizado_em !== copia.atualizado_em) ||
+          (((j.ps || {}).atualizado_em || '') !== (((copia.ps || {}).atualizado_em) || ''));
+        if (mudou) {
+          selo('Chegaram números novos do Cofre. ' +
+               '<a href="#" id="verNovo" style="color:inherit;font-weight:700;text-decoration:underline">Mostrar</a>');
+          var a = document.getElementById('verNovo');
+          if (a) a.onclick = function (ev) {
+            ev.preventDefault();
+            try { sessionStorage.setItem(MARCA_FRESCA, '1'); } catch (e) {}
+            location.reload();
+          };
+        }
+      } else if (tokenRuim(j)) {
+        localStorage.removeItem(CHAVE_TOKEN);
+        portao('O token deixou de valer. Digite o novo.');
+      }
+      // o token vale e o Cofre falhou: a tela fica como está — o carimbo do
+      // selo já diz de quando é o número
+    }).catch(function () {
+      CARIMBO.copia = true;
+      atualizarSelo(document.body.classList.contains('emp-ps') ? 'ps' : 'eu');
+    });
+    return;
+  }
 
   buscar(token).then(function (j) {
     if (j && j.ok) {

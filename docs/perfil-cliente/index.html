@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b1220">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32.png">
+<!-- ========================================================================
+  QUEM COMPRA NO PARQUE DA SAUDADE — o Perfil do Comprador (foto de 28/08/2026)
+
+  Esta página é CÓPIA do artefato 2aa935f2 do claude.ai, trazida para o repo
+  em 01/09/2026 porque o Painel passou a embutir o Perfil como aba e o
+  claude.ai recusa iframe de fora (frame-ancestors 'self'). Pela regra 8 do
+  CLAUDE.md, ESTA página é a referência de leitura; o artefato fica como o
+  lugar onde o Perfil é REFEITO (a receita é o doc "Perfil do Comprador —
+  como refazer.md"). Refez o Perfil no artefato? A cópia nova vem para cá no
+  mesmo passo — artefato e página divergentes é o defeito que a regra 8 existe
+  para impedir.
+
+  É FOTO, não painel vivo: os números são a extração de 28/08/2026 (carimbo no
+  rodapé da própria página) e só mudam quando o Perfil for refeito. Nenhum dado
+  pessoal identificável; agregados apenas — o mesmo conteúdo que já estava
+  público no link do artefato.
+
+  Embutida no Painel (html.embutido), esconde o próprio "voltar": o cabeçalho
+  do Painel é o caminho de volta. Aberta sozinha, o voltar aparece.
+  ======================================================================== -->
+<script>
+try { if (window.top !== window.self) document.documentElement.classList.add('embutido'); } catch (e) { document.documentElement.classList.add('embutido'); }
+</script>
+<style>
+.voltar-painel{display:inline-flex;align-items:center;gap:6px;margin:16px 0 0;
+  font:600 12.5px/1.2 -apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  color:#9fb2c8;text-decoration:none;border:1px solid rgba(255,255,255,.09);
+  background:rgba(255,255,255,.03);border-radius:999px;padding:6px 13px}
+.voltar-painel:hover{color:#eef4fa;border-color:rgba(255,255,255,.14)}
+html.embutido .voltar-painel{display:none}
+/* Sem isto a altura da moldura vira catraca: o pai iguala o iframe ao
+   conteúdo, o 100vh daqui vira essa altura, e o min-height nunca a devolve. */
+html.embutido body{min-height:0 !important}
+</style>
+<title>Quem compra no Parque da Saudade</title>
+</head>
+<body>
+<a class="voltar-painel" href="../" style="margin-left:16px">&larr; Painel Comercial</a>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Archivo:wght@400;500;600;700&display=swap">
+
+<style>
+/* ===================================================================
+   Padrao visual do Painel Comercial (painel-comercial/docs/index.html),
+   com o acento do Parque da Saudade. Tema escuro unico: o Painel nao
+   tem modo claro. Conteudo, numeros e logica desta pagina nao mudaram.
+   =================================================================== */
+:root{--bg:#0b1220;--card:rgba(255,255,255,.045);--card2:rgba(255,255,255,.03);
+--edge:rgba(255,255,255,.09);--edge2:rgba(255,255,255,.14);
+--text-1:#eef4fa;--text-2:#9fb2c8;--text-3:#64778f;
+--s1:#f2c744;--s1b:#f7d977;--s2:#b45309;--s3:#8b5cf6;
+--grid:rgba(255,255,255,.07);--surface-1:#121c2c;
+--chip-bg:rgba(255,255,255,.05);--chip-on:rgba(242,199,68,.2);--chip-on-tx:#f7d977;
+--ok:#4ade80;--warn:#fbbf24;--crit:#f87171;
+--warn-bg:rgba(217,119,6,.14);--warn-tx:#fbbf24;
+/* As series que o JS pede pelo nome. Nao renomear: os graficos passam
+   var(--c1) ... var(--c5) e var(--accent) como cor de barra. */
+--accent:var(--s1);
+--c1:var(--s1);--c2:var(--s2);--c3:var(--s3);--c4:var(--ok);--c5:var(--text-3)}
+
+*{box-sizing:border-box}
+html{color-scheme:dark}
+body{margin:0;color:var(--text-1);min-height:100vh;
+background:radial-gradient(1200px 600px at 80% -10%,#2b2412 0%,var(--bg) 55%) fixed;
+font:14px/1.5 -apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:22px 16px 60px}
+
+/* ---------- header ---------- */
+.masthead{padding:10px 0 24px;border-bottom:1px solid var(--edge)}
+.eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+color:var(--text-3);margin:0 0 14px}
+h1{font-size:clamp(26px,4.4vw,38px);font-weight:800;line-height:1.12;letter-spacing:-.01em;
+margin:0 0 16px;text-wrap:balance;color:var(--text-1)}
+.deck{font-size:15px;line-height:1.6;color:var(--text-2);max-width:64ch;margin:0 0 20px}
+.deck b{color:var(--text-1);font-weight:700}
+
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tile{background:var(--card);border:1px solid var(--edge);border-radius:16px;
+backdrop-filter:blur(8px);padding:12px 14px}
+.tile .k{font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+color:var(--text-3);margin:0 0 3px}
+.tile .v{font-size:22px;font-weight:800;line-height:1.15;font-variant-numeric:tabular-nums}
+.tile .v small{font-size:13px;font-weight:600;color:var(--text-2);letter-spacing:0}
+.tile .n{font-size:11.5px;color:var(--text-2);margin-top:2px}
+
+/* ---------- sections ---------- */
+section{padding:34px 0 6px;border-bottom:1px solid var(--edge)}
+section:last-of-type{border-bottom:none}
+h2{font-size:clamp(20px,2.6vw,26px);font-weight:800;line-height:1.18;letter-spacing:-.008em;
+margin:0 0 12px;text-wrap:balance;color:var(--text-1)}
+.lede{font-size:14px;color:var(--text-2);max-width:66ch;margin:0 0 22px}
+.lede b{color:var(--text-1);font-weight:700}
+p{max-width:66ch}
+
+.finding{background:var(--card);border:1px solid var(--edge);border-left:3px solid var(--s1);
+border-radius:18px;backdrop-filter:blur(8px);box-shadow:0 10px 34px rgba(0,0,0,.3);
+padding:14px 18px;margin:20px 0 0;font-size:14.5px;line-height:1.55;color:var(--text-1);
+max-width:none}
+.finding b{color:var(--s1b);font-weight:700}
+
+/* ---------- charts ---------- */
+figure{background:var(--card);border:1px solid var(--edge);border-radius:18px;
+backdrop-filter:blur(8px);box-shadow:0 10px 34px rgba(0,0,0,.3);padding:15px 17px;margin:0 0 14px}
+figcaption{font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+color:var(--text-3);padding-bottom:9px;margin-bottom:13px;border-bottom:1px solid var(--edge)}
+figcaption span{text-transform:none;letter-spacing:0;font-weight:400;color:var(--text-3)}
+
+.bars{display:flex;flex-direction:column;gap:9px}
+.bar{display:grid;grid-template-columns:var(--labelw,150px) 1fr auto;align-items:center;
+gap:14px;cursor:default}
+.bar .lab{font-size:12.5px;color:var(--text-2);text-align:right;line-height:1.25}
+.bar .lab b{font-weight:600;color:var(--text-3);font-variant-numeric:tabular-nums}
+.bar .track{position:relative;height:14px;background:rgba(255,255,255,.05);
+border-radius:7px;overflow:hidden}
+.bar .fill{position:absolute;inset:0 auto 0 0;border-radius:7px;background:var(--s1);
+transition:filter .15s}
+.bar:hover .fill{filter:brightness(1.12)}
+.bar .val{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;
+color:var(--text-1);min-width:56px}
+.bar .val em{font-style:normal;font-weight:500;color:var(--text-3);font-size:11.5px}
+
+.split{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(330px,100%),1fr));gap:14px}
+
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;margin:14px 0 0;font-size:12px;color:var(--text-2)}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;
+vertical-align:-1px}
+
+.dumb{display:flex;flex-direction:column;gap:2px}
+.dumb .row{display:grid;grid-template-columns:172px 1fr;align-items:center;gap:14px;
+padding:9px 0;border-bottom:1px solid var(--grid)}
+.dumb .row:last-child{border-bottom:none}
+.dumb .lab{font-size:12.5px;color:var(--text-2);text-align:right;line-height:1.25}
+.dumb .lab b{font-weight:600;color:var(--text-3);font-variant-numeric:tabular-nums}
+.dumb .scale{position:relative;height:22px}
+.dumb .dot{position:absolute;top:50%;width:13px;height:13px;margin:-6.5px 0 0 -6.5px;
+border-radius:50%;background:var(--s1);box-shadow:0 0 0 2px var(--bg)}
+.dumb .tag{position:absolute;top:50%;transform:translate(-50%,-50%);font-size:11.5px;
+font-weight:700;font-variant-numeric:tabular-nums;color:var(--text-1);margin-top:-17px;
+white-space:nowrap}
+.axis{display:flex;justify-content:space-between;font-size:10.5px;color:var(--text-3);
+font-variant-numeric:tabular-nums;margin-top:6px;padding-left:186px}
+
+details{margin-top:16px;border-top:1px solid var(--grid);padding-top:12px}
+summary{font-size:12.5px;font-weight:600;color:var(--text-3);cursor:pointer}
+summary:hover{color:var(--text-1)}
+summary:focus-visible{outline:2px solid var(--s1);outline-offset:3px;border-radius:4px}
+.tblwrap{max-height:420px;overflow:auto;margin-top:12px;border:1px solid var(--edge);
+border-radius:10px;background:var(--card2)}
+table{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums;
+min-width:320px}
+th{color:var(--text-3);text-transform:uppercase;font-size:10.5px;letter-spacing:.05em;
+font-weight:700;text-align:left;padding:7px 10px;border-bottom:1px solid var(--edge2);
+position:sticky;top:0;background:var(--surface-1);white-space:nowrap}
+td{padding:6px 10px;border-bottom:1px solid var(--grid);color:var(--text-1);
+text-align:left;white-space:nowrap}
+td.num,th.num{text-align:right}
+
+.note{font-size:11.5px;color:var(--text-3);max-width:68ch;margin-top:10px}
+
+/* ---------- footer ---------- */
+.method{margin-top:34px;padding:15px 18px;background:var(--card);border:1px solid var(--edge);
+border-radius:18px;backdrop-filter:blur(8px);box-shadow:0 10px 34px rgba(0,0,0,.3)}
+.method h3{font-size:14px;font-weight:800;margin:0 0 12px;color:var(--text-1)}
+.method ul{margin:0;padding-left:18px;color:var(--text-2);font-size:12.5px}
+.method li{margin-bottom:6px;max-width:72ch}
+.method b{color:var(--text-1)}
+.stamp{margin-top:18px;font-size:11.5px;color:var(--text-3);display:flex;flex-wrap:wrap;
+gap:6px 18px}
+
+#tt{position:fixed;z-index:50;pointer-events:none;opacity:0;transition:opacity .1s;
+background:#152134;color:var(--text-1);border:1px solid var(--edge2);border-radius:10px;
+padding:8px 10px;font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap;
+box-shadow:0 8px 26px rgba(0,0,0,.5)}
+
+/* Mesmo corte do Painel Comercial: 640px. */
+@media (max-width:640px){
+.wrap{padding:12px 10px 40px}
+.masthead{padding:6px 0 18px}
+h1{font-size:24px}
+.deck{font-size:14px}
+.tiles{grid-template-columns:repeat(2,1fr);gap:8px}
+.tile{padding:9px 11px}
+.tile .k{font-size:10px}
+.tile .v{font-size:17px}
+.tile .v small{font-size:11.5px}
+section{padding:24px 0 6px}
+h2{font-size:19px}
+figure,.finding,.method{padding:11px 12px}
+.bar{grid-template-columns:1fr;gap:5px}
+.bar .lab,.dumb .lab{text-align:left}
+.dumb .row{grid-template-columns:1fr;gap:4px}
+.axis{padding-left:0}
+.split{gap:8px}
+#tt{max-width:82vw;white-space:normal}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div id="tt" role="status" aria-live="off"></div>
+
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">Parque da Saudade · Base comercial · abril a agosto de 2026</p>
+  <h1>Quem compra no Parque da Saudade</h1>
+  <p class="deck">O retrato sai de <b>275 vendas</b> registradas entre 14 de abril e 28 de agosto de 2026 — todas as vendas do período, não uma amostra. É uma <b>mulher ou um homem em partes quase iguais, com 55 anos, morador de Juiz de Fora</b>, que contrata um jazigo perpétuo de cerca de <b>R$ 18,3 mil</b> e, em um terço dos casos, paga em <b>60 parcelas ou mais</b>.</p>
+
+  <div class="tiles">
+    <div class="tile"><p class="k">Vendas na base</p><div class="v">275</div><p class="n">14/04 a 28/08/2026 · inclui 2 cortesias</p></div>
+    <div class="tile"><p class="k">Idade mediana</p><div class="v">55<small> anos</small></div><p class="n">metade entre 47 e 66</p></div>
+    <div class="tile"><p class="k">Valor contratado mediano</p><div class="v">18,3<small> mil</small></div><p class="n">Perpétuo: 14,9 a 25,3 mil</p></div>
+    <div class="tile"><p class="k">Moram em Juiz de Fora</p><div class="v">96<small>%</small></div><p class="n">264 de 275</p></div>
+  </div>
+</header>
+
+<!-- ============ QUEM ============ -->
+<section>
+  <p class="eyebrow">Quem</p>
+  <h2>Meia-idade madura, e sem viés de gênero</h2>
+  <p class="lede">A carteira se concentra entre <b>50 e 69 anos</b> — 138 das 275 vendas, metade exata da base. Homens e mulheres compram em proporção praticamente igual, e a idade mediana dos dois é a mesma. <b>Não há um "público-alvo" por gênero a perseguir.</b></p>
+
+  <div class="split">
+    <figure>
+      <figcaption>Vendas por faixa de idade <span>· n = 274 (1 data de nascimento inválida)</span></figcaption>
+      <div class="bars" id="c-idade"></div>
+    </figure>
+
+    <figure>
+      <figcaption>Vendas por sexo <span>· inferido pelo primeiro nome</span></figcaption>
+      <div class="bars" id="c-sexo"></div>
+      <p class="note">O CRM não tem campo de sexo. A classificação vem do primeiro nome: 272 de 275 resolvidos, 3 em branco.</p>
+    </figure>
+  </div>
+
+  <details>
+    <summary>Ver os números em tabela</summary>
+    <div class="tblwrap"><table>
+      <thead><tr><th>Faixa etária</th><th class="num">Mulheres</th><th class="num">Homens</th><th class="num">Total</th></tr></thead>
+      <tbody id="t-sexoidade"></tbody>
+    </table></div>
+  </details>
+</section>
+
+<!-- ============ ONDE ============ -->
+<section>
+  <p class="eyebrow">Onde</p>
+  <h2>A cidade não separa nada. O bairro, quase também não</h2>
+  <p class="lede">Juiz de Fora responde por <b>96% das vendas</b> — cidade não é variável de corte. E o bairro, que seria o corte natural, está <b>pulverizado em 103 bairros distintos</b>: os dez maiores somam apenas 34% da base. <b>Não existe um bairro-âncora para concentrar mídia.</b></p>
+
+  <figure>
+    <figcaption>Os 12 bairros com mais vendas <span>· de 103 bairros na base</span></figcaption>
+    <div class="bars" id="c-bairro"></div>
+  </figure>
+
+  <div class="finding">O maior bairro da carteira, o Centro, tem <b>16 vendas em 275</b> — menos de 6%. Uma peça geolocalizada em qualquer bairro isolado alcança um público pequeno demais para se pagar: <b>a geografia aqui pede cidade inteira, não recorte.</b></div>
+</section>
+
+<!-- ============ O QUE ============ -->
+<section>
+  <p class="eyebrow">O que compra</p>
+  <h2>Um produto só, com preço estreito</h2>
+  <p class="lede">O <b>Perpétuo responde por 93,5%</b> das vendas, numa faixa de preço curta: <b>de R$ 14,9 mil a R$ 25,3 mil</b>, mediana R$ 18,3 mil. <b>Praticamente todo cliente compra a mesma coisa</b> — o que varia não é o produto, é o prazo. O Temporário e a Reserva são outros produtos, com outro preço e volume pequeno.</p>
+
+  <div class="split">
+    <figure>
+      <figcaption>Vendas por modalidade</figcaption>
+      <div class="bars" id="c-modal"></div>
+    </figure>
+    <figure>
+      <figcaption>Valor contratado mediano por modalidade</figcaption>
+      <div class="bars" id="c-ticket"></div>
+      <p class="note">O que o cliente contratou, já com desconto e antes dos juros do carnê — o total financiado chega a passar de R$ 26 mil em 73 parcelas. As duas cortesias de Temporário ficam fora: elas contam como venda, não como valor.</p>
+    </figure>
+  </div>
+
+  <div class="finding">O <b>Temporário não tem preço próprio no CRM</b>. O campo de valor de tabela dele carrega o preço do jazigo <i>perpétuo</i> — R$ 17,6 mil a R$ 25,3 mil — e o preço real aparece como um <b>&ldquo;desconto&rdquo; de 70% a 80%</b>. Não é desconto comercial: é a régua do produto. <b>Até julho o Temporário saía a 30% do perpétuo; em agosto passou a 20%.</b></div>
+
+  <details>
+    <summary>Ver as 9 vendas de Temporário, uma a uma</summary>
+    <div class="tblwrap"><table>
+      <thead><tr><th>Venda</th><th>Deal</th><th class="num">Tabela do perpétuo</th><th class="num">&ldquo;Desconto&rdquo;</th><th class="num">Contratado</th><th class="num">% do perpétuo</th></tr></thead>
+      <tbody id="t-temp"></tbody>
+    </table></div>
+    <p class="note">Os deals <b>4005</b> e <b>4956</b> são <b>cortesias</b> — jazigos doados. No CRM elas entram como 100% de desconto, o que produz R$ 0,01 no valor da venda. <b>Contam como venda e como cliente</b>, e ficam fora de todo cálculo de valor.</p>
+  </details>
+</section>
+
+<!-- ============ COMO PAGA ============ -->
+<section>
+  <p class="eyebrow">Como paga</p>
+  <h2>A idade decide o prazo</h2>
+  <p class="lede">Um terço da carteira financia em <b>60 parcelas ou mais</b>, e outro sexto paga <b>à vista</b>. Os dois grupos não são o mesmo cliente com humores diferentes: <b>são dez anos de diferença de idade.</b></p>
+
+  <figure>
+    <figcaption>Vendas por prazo de pagamento <span>· n = 275</span></figcaption>
+    <div class="bars" id="c-prazo"></div>
+  </figure>
+
+  <figure>
+    <figcaption>Idade mediana em cada prazo <span>· anos · entre parênteses, quantas vendas</span></figcaption>
+    <div class="dumb" id="c-idadeprazo"></div>
+    <div class="axis"><span>45</span><span>55</span><span>65</span></div>
+  </figure>
+
+  <div class="finding">Quem paga <b>à vista tem 62 anos</b> de mediana. Quem parcela em <b>60x ou mais tem 52</b>. A régua é contínua — a cada degrau de prazo a idade cai. <b>Prazo longo não é objeção de preço, é o cliente mais novo comprando cedo</b>, e ele já é um terço da carteira.</div>
+
+  <figure style="margin-top:34px">
+    <figcaption>Meio de pagamento <span>· 275 vendas · lido parcela a parcela</span></figcaption>
+    <div class="bars" id="c-meio"></div>
+    <p class="note"><b>Combinado</b> é a venda paga por <b>duas ou mais formas ao mesmo tempo</b> — em geral uma parte no ato num meio e o saldo em outro: cartão&nbsp;+&nbsp;PIX (20), boleto&nbsp;+&nbsp;PIX (18) e boleto&nbsp;+&nbsp;cartão (4). Débito e crédito na mesma venda contam como cartão, não como combinado.<br><br>
+    <b>Indefinido</b> não é uma forma de pagar: são as <b>15 vendas</b> em que nem o plano nem o carnê dizem por onde o dinheiro entrou. <b>Eram 61 até a página anterior</b> — ver abaixo.</p>
+
+    <div class="finding">O campo de forma de pagamento da venda deixava <b>61 vendas sem meio</b>. Mas o <b>carnê sabe</b>: no detalhe das 9.075 parcelas, o meio está preenchido em todas menos 122. Lendo por ali, <b>46 das 61 se resolvem</b> — 27 boleto, 19 cartão — e o vazio cai de <b>22% para 5,5%</b>. Onde as duas fontes existem, elas concordam em <b>170 de 170</b>: nenhuma divergência. <b>O dado nunca faltou; estava sendo lido no lugar errado.</b></div>
+
+    <details>
+      <summary>As 15 que sobram, e como zerar</summary>
+      <div class="tblwrap"><table>
+        <thead><tr><th>O que são</th><th class="num">Vendas</th><th>Como extinguir</th><th>Onde</th></tr></thead>
+        <tbody>
+          <tr><td>Plano <b>já nomeia o meio</b> (<i>Entrada + Boleto</i>, <i>Entrada + Cartão</i>, <i>Cartão</i>)</td><td class="num">7</td><td>o coletor não lê o nome do plano — passar a ler</td><td>importador</td></tr>
+          <tr><td>Plano <b>não nomeia</b> (<i>A vista</i>, <i>12x</i>)</td><td class="num">8</td><td>desdobrar a tabela em <i>A vista&nbsp;—&nbsp;PIX</i>, <i>A vista&nbsp;—&nbsp;Cartão</i>, <i>A vista&nbsp;—&nbsp;Dinheiro</i>, como <i>Entrada&nbsp;+&nbsp;Boleto</i> já é</td><td>Facilita</td></tr>
+        </tbody>
+      </table></div>
+      <p class="note">⚠️ <b>O buraco é novo e está crescendo.</b> Treze das 15 são de agosto, e as seis lançadas como <i>Única</i> começam em <b>14/08</b> — antes disso, venda à vista era registrada nomeando PIX ou cartão. Alguém mudou o jeito de lançar no meio do mês.<br><br>
+      Aparece também uma tabela de vendas duplicada por digitação: <b><i>Perpétuo - A vista.</i></b>, com ponto final. Mesma família do <i>CADASTO MANUAL</i> no campo Canal.</p>
+    </details>
+  </figure>
+</section>
+
+<!-- A seção "O que traz o cliente" (origem das vendas de agosto) foi REMOVIDA
+     em 01/09/2026, a pedido do Ricardo. -->
+
+<!-- ============ METODO ============ -->
+<div class="method">
+  <h3>Como ler estes números</h3>
+  <ul>
+    <li><b>A base é o universo, não uma amostra.</b> São as 275 vendas registradas no CRM entre 14/04 e 28/08/2026, unidas ao cadastro do cliente pelo identificador do negócio — cobertura de 100%, sem registro órfão e sem duplicado.</li>
+    <li><b>Sexo é inferido pelo primeiro nome</b>, porque o CRM não tem esse campo. Cobertura de 98,9%. Serve para dimensionar público; não é dado cadastral e não deve ser citado como tal.</li>
+    <li><b>Valor é o valor contratado</b> — a tabela já com o desconto aplicado, antes dos juros do carnê. Não é o total financiado, que em 73 parcelas passa de R$ 26 mil. <b>Para o Temporário, o campo de tabela do CRM traz o preço do perpétuo</b>, e o preço real do produto é 20% a 30% dele, lançado como desconto.</li>
+    <li><b>O meio de pagamento é lido no carnê, não no campo da venda.</b> O campo da venda mistura dois assuntos — às vezes nomeia o meio (PIX, boleto, cartão), às vezes só a estrutura do plano (<i>Mensal</i>, <i>Ato</i>, <i>Única</i>) —, e por isso <i>Única</i> e <i>PIX</i> não são duas modalidades: as duas são pagamento à vista, e a diferença é só se alguém anotou o meio. O detalhe das parcelas resolve: onde as duas fontes existem, concordam em 170 de 170.</li>
+    <li><b>Cortesias e doações contam como venda, nunca como valor.</b> Duas vendas do período são jazigos doados, registrados no CRM como 100% de desconto. Elas entram na contagem e no perfil do cliente; ficam fora de toda estatística de preço.</li>
+    <li><b>Todo valor e toda idade nesta página são medianas, não médias.</b> Numa base com cortesias e com condições muito diferentes de prazo, a média se desloca com meia dúzia de casos atípicos; a mediana descreve o cliente do meio, que é o que a reunião precisa.</li>
+    <li><b>Agosto está incompleto</b> — o mês foi lido até o dia 28, então o total de 52 ainda sobe.</li>
+  </ul>
+  <div class="stamp">
+    <span>Fonte: Cofre — Parque da Saudade, abas de vendas e cadastro</span>
+    <span>Extração: 28/08/2026</span>
+    <span>Nenhum dado pessoal identificável nesta página</span>
+  </div>
+</div>
+
+</div>
+
+<script>
+(function(){
+  const tt = document.getElementById('tt');
+  function bindTip(el, text){
+    el.addEventListener('mouseenter', e=>{ tt.textContent=text; tt.style.opacity='1'; });
+    el.addEventListener('mousemove', e=>{
+      const pad=14; let x=e.clientX+pad, y=e.clientY-30;
+      if(x+tt.offsetWidth>innerWidth-8) x=e.clientX-tt.offsetWidth-pad;
+      if(y<8) y=e.clientY+pad;
+      tt.style.left=x+'px'; tt.style.top=y+'px';
+    });
+    el.addEventListener('mouseleave', ()=>{ tt.style.opacity='0'; });
+  }
+
+  function bars(id, rows, opts){
+    opts = opts || {};
+    const host = document.getElementById(id);
+    const max = opts.max || Math.max.apply(null, rows.map(r=>r.v));
+    const total = rows.reduce((a,r)=>a+r.v,0);
+    if(opts.labelw) host.style.setProperty('--labelw', opts.labelw+'px');
+    rows.forEach(r=>{
+      const el = document.createElement('div'); el.className='bar';
+      const pct = total ? (r.v/total*100) : 0;
+      const shown = opts.fmt ? opts.fmt(r.v) : r.v;
+      const sub = opts.pct===false ? '' : ' <em>'+pct.toFixed(1).replace('.',',')+'%</em>';
+      el.innerHTML =
+        '<div class="lab">'+r.k+'</div>'+
+        '<div class="track"><div class="fill" style="width:'+(r.v/max*100)+'%;background:'+(r.c||'var(--accent)')+'"></div></div>'+
+        '<div class="val">'+shown+sub+'</div>';
+      bindTip(el, opts.tip ? opts.tip(r) : (r.k+': '+shown+' vendas ('+pct.toFixed(1).replace('.',',')+'%)'));
+      host.appendChild(el);
+    });
+  }
+
+  function dumb(id, rows, lo, hi, unit){
+    const host = document.getElementById(id);
+    rows.forEach(r=>{
+      const el = document.createElement('div'); el.className='row';
+      const p = Math.max(0, Math.min(100, (r.v-lo)/(hi-lo)*100));
+      el.innerHTML =
+        '<div class="lab">'+r.k+'</div>'+
+        '<div class="scale"><span class="tag" style="left:'+p+'%">'+String(r.v).replace('.',',')+unit+'</span>'+
+        '<span class="dot" style="left:'+p+'%;background:'+(r.c||'var(--accent)')+'"></span></div>';
+      bindTip(el, r.tip || (r.k+': '+String(r.v).replace('.',',')+unit));
+      host.appendChild(el);
+    });
+  }
+
+  /* ---- quem ---- */
+  bars('c-idade', [
+    {k:'até 29 anos', v:5}, {k:'30 a 39', v:27}, {k:'40 a 49', v:54},
+    {k:'50 a 59', v:80}, {k:'60 a 69', v:58}, {k:'70 a 79', v:38}, {k:'80 ou mais', v:12}
+  ], {labelw:96});
+
+  bars('c-sexo', [
+    {k:'Homens', v:142}, {k:'Mulheres', v:130}, {k:'Não identificado', v:3, c:'var(--c5)'}
+  ], {labelw:120});
+
+  const si = [['até 39 anos',14,16],['40 a 49',29,25],['50 a 59',39,41],['60 a 69',26,32],['70 ou mais',22,27]];
+  document.getElementById('t-sexoidade').innerHTML = si.map(r=>
+    '<tr><td>'+r[0]+'</td><td class="num">'+r[1]+'</td><td class="num">'+r[2]+'</td><td class="num">'+(r[1]+r[2])+'</td></tr>'
+  ).join('') + '<tr><td><b>Total</b></td><td class="num"><b>130</b></td><td class="num"><b>141</b></td><td class="num"><b>271</b></td></tr>';
+
+  /* ---- onde ---- */
+  bars('c-bairro', [
+    {k:'Centro',v:16},{k:'São Mateus',v:14},{k:'Bandeirantes',v:11},{k:'Bairu',v:10},
+    {k:'Progresso',v:9},{k:'São Pedro',v:8},{k:'Linhares',v:7},{k:'Benfica',v:6},
+    {k:'Barbosa Lage',v:6},{k:'Alto dos Passos',v:6},{k:'Santa Terezinha',v:5},{k:'Monte Castelo',v:5}
+  ], {labelw:132});
+
+  /* ---- o que ---- */
+  bars('c-modal', [{k:'Perpétuo',v:257},{k:'Temporário',v:9},{k:'Reserva',v:9}], {labelw:96});
+  bars('c-ticket', [
+    {k:'Perpétuo <b>(257)</b>',v:18299},{k:'Reserva <b>(9)</b>',v:12000},{k:'Temporário <b>(7)</b>',v:5700}
+  ], {labelw:118, pct:false, fmt:v=>'R$ '+(v/1000).toFixed(1).replace('.',',')+' mil',
+      tip:r=>'Mediana de R$ '+r.v.toLocaleString('pt-BR')});
+
+  /* ---- como paga ---- */
+  bars('c-prazo', [
+    {k:'À vista (1x)',v:46},{k:'2 a 12x',v:41},{k:'13 a 24x',v:77},
+    {k:'25 a 48x',v:20},{k:'60x ou mais',v:91}
+  ], {labelw:110});
+
+  dumb('c-idadeprazo', [
+    {k:'À vista (1x) <b>(46)</b>', v:62, tip:'À vista: idade mediana 62 anos · 46 vendas'},
+    {k:'2 a 12x <b>(41)</b>', v:60.5, tip:'2 a 12x: idade mediana 60,5 anos · 41 vendas'},
+    {k:'13 a 24x <b>(77)</b>', v:55, tip:'13 a 24x: idade mediana 55 anos · 77 vendas'},
+    {k:'25 a 48x <b>(20)</b>', v:52.5, tip:'25 a 48x: idade mediana 52,5 anos · 20 vendas'},
+    {k:'60x ou mais <b>(91)</b>', v:52, tip:'60x ou mais: idade mediana 52 anos · 91 vendas'}
+  ], 45, 65, ' anos');
+
+  bars('c-meio', [
+    {k:'Boleto',v:113},{k:'Cartão',v:67},{k:'Combinado',v:42},
+    {k:'PIX',v:38},{k:'Indefinido',v:15,c:'var(--c5)'}
+  ], {labelw:124, tip:r=>r.k==='Indefinido'
+        ? 'Indefinido: 15 vendas sem meio nem no plano nem no carnê (5,5%)'
+        : r.k+': '+r.v+' vendas ('+(r.v/275*100).toFixed(1).replace('.',',')+'%)'});
+
+  /* A seção de origem (agosto) saiu em 01/09/2026 — os dados e o desenho
+     foram removidos junto com o HTML dela. */
+
+  const tp = [
+    ['17/04',3764,22999,'70%',6900,'30%'],['07/05',3911,24999,'69,6%',7590,'30%'],
+    ['16/05',3974,22999,'81,7%',4200,'18%'],['20/05',4005,24999,'100%',0,'cortesia'],
+    ['03/07',4378,18999,'70%',5700,'30%'],['29/07',4633,18999,'70%',5700,'30%'],
+    ['18/08',4894,25299,'80%',5060,'20%'],['20/08',4956,25299,'100%',0,'cortesia'],
+    ['24/08',5081,17599,'80%',3520,'20%']
+  ];
+  document.getElementById('t-temp').innerHTML = tp.map(r=>
+    '<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td class="num">R$ '+r[2].toLocaleString('pt-BR')+'</td><td class="num">'+r[3]+
+    '</td><td class="num">'+(r[4]?('R$ '+r[4].toLocaleString('pt-BR')):'R$ 0,01')+'</td><td class="num">'+(r[5]==='cortesia'?'<b style="font-weight:600">cortesia</b>':r[5])+'</td></tr>'
+  ).join('');
+})();
+</script>
+</body></html>

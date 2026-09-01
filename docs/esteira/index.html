@@ -354,7 +354,22 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
   .tile .v{font-size:30px}
 }
 @media (prefers-reduced-motion: reduce){*{transition:none !important}}
+
+/* Embutida no Painel (aba Esteira, 01/09): o "voltar" some — o cabeçalho do
+   Painel é o caminho de volta — e a barra inferior perde a coluna dele.
+   Aberta sozinha (favorito, link direto), nada muda. */
+html.embutido .voltar{display:none !important}
+html.embutido .bnav{grid-template-columns:repeat(4,1fr)}
+html.embutido .bnav a[href="../"]{display:none !important}
+/* Sem isto a altura da moldura vira catraca: o pai iguala o iframe ao
+   conteúdo, o 100vh daqui vira essa altura, e o min-height nunca a devolve. */
+html.embutido body{min-height:0}
 </style>
+<script>
+/* Antes do primeiro paint, para o voltar não piscar. Cross-origin no acesso a
+   top significa que HÁ um pai — embutido também. */
+try { if (window.top !== window.self) document.documentElement.classList.add('embutido'); } catch (e) { document.documentElement.classList.add('embutido'); }
+</script>
 </head>
 <body>
 

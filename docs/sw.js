@@ -1,6 +1,19 @@
 /* Painel Comercial — Parque da Saudade + Estrela Urbanidade
    Service worker: instalação PWA + reserva offline.
-   Atualizado em: 01/09/2026 (2ª do dia) — AS ABAS MÊS E QUEBRAS DO PARQUE
+   Atualizado em: 01/09/2026 (3ª do dia) — NAVEGAÇÃO SEM RECARGA, pedido do
+   Ricardo em três partes: (1) Esteira, Retrospectiva e Perfil Cliente viram
+   MOLDURAS dentro do Painel (iframe como o Executivo, src na primeira
+   abertura, vivas depois — trocar de aba não recarrega nada); o claude.ai
+   recusa iframe (frame-ancestors 'self'), então o Perfil mora em
+   /perfil-cliente/, cópia da foto de 28/08 do artefato 2aa935f2, que passa a
+   ser o lugar onde o Perfil é REFEITO (regra 8). (2) ARRANQUE PELO CACHE:
+   quem já abriu uma vez sobe na hora com a cópia local e carimbo dela; a
+   busca roda em segundo plano e só oferece "Mostrar" se houver carimbo novo
+   — o "Aquecendo" ficou só para a primeira carga da vida do aparelho.
+   (3) As telas embutidas escondem o próprio "voltar" (html.embutido) — o
+   cabeçalho do Painel é o retorno permanente; abertas por link direto, o
+   voltar continua lá (Perfil ganhou o dele).
+   Antes, 01/09/2026 (2ª do dia) — AS ABAS MÊS E QUEBRAS DO PARQUE
    SAÍRAM, por decisão do Ricardo: o Executivo cobre a leitura do mês. Os
    painéis delas seguem no HTML, inertes (podar o render seria mais arriscado
    que deixá-los inalcançáveis). A barra inferior do Parque fica com 6 itens
@@ -70,7 +83,7 @@
    abas: no Parque escolhem o mês da tela; na Estrela, o fim da janela de 12m.
    Estratégia: rede primeiro (pega versão nova quando online), cache como
    reserva offline. A cada deploy, bumpar a versão em CACHE. */
-const CACHE = 'painel-comercial-260901-2';
+const CACHE = 'painel-comercial-260901-3';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./'])).then(() => self.skipWaiting()));
