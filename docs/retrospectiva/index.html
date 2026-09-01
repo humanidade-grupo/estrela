@@ -40,6 +40,14 @@
     · A ABA "SOBRE MIM" inteira — o feedback da Fábricia e do Rodrigo sobre a
       coordenação. A planilha da liderança não tem rota.
 
+  ═══ O QUE ESTA PÁGINA FAZ DIFERENTE DO ARTEFATO (regra 8) ═══
+  TUDO QUE É NOME DE VENDEDOR NASCE FECHADO. No artefato o Placar por vendedor
+  fica sempre à mostra e a primeira pergunta abre sozinha; aqui os dois são
+  acordeão fechado (31/08). O motivo é o leitor: o artefato é do Ricardo
+  sozinho, esta página é dos três da gestão. Quem abre vê o mês — vendas, VGV,
+  ticket, ritmo — e escolhe abrir a comparação individual. Quem "corrigir" isto
+  de volta para o protótipo está desfazendo a decisão, não um esquecimento.
+
   ═══ MECÂNICA (copiada da Esteira do Funil, que é o padrão da casa) ═══
   Token `hub_token_gestao` no localStorage, o mesmo do Painel — quem já usa não
   digita nada. Sem token, nenhum número aparece. O carimbo exibido é o da FOTO
@@ -261,6 +269,9 @@ td.num, th.num{text-align:right}
 .q-conta{font-size:10.5px; letter-spacing:.06em; font-weight:700;
          text-transform:uppercase; color:var(--text-3)}
 .dobra.q .corpo{padding:16px}
+/* O Placar por vendedor usa este mesmo acordeão discreto, mas fica solto dentro
+   do corpo do mês — e por isso recupera a margem que o .q zera para a lista. */
+.dobra.q.solta{margin-bottom:26px}
 .dobra .corpo > .nota-fina:first-child{margin:0 0 16px}
 
 .empty{border:1px dashed var(--edge2); border-radius:18px; background:var(--card);
@@ -1144,9 +1155,19 @@ section.block > header[hidden]{display:none}
       c.append(l); corpo.append(c);
     }
 
+    /* Nasce fechado, como as perguntas. O placar é a parte da página que expõe
+       nome de gente lado a lado — quem abre a tela vê primeiro o mês, e escolhe
+       abrir a comparação individual. */
     if (n.porVendedor.length){
-      var b1 = bloco('Placar por vendedor',
-        'Vendas no mês. A régua da casa é o último fazer pelo menos metade do primeiro.');
+      var b1 = el('details','dobra q solta');
+      var sm1 = el('summary');
+      sm1.append(el('span','q-tema','Placar por vendedor'));
+      sm1.append(el('span','q-conta', n.porVendedor.length +
+        (n.porVendedor.length === 1 ? ' vendedor' : ' vendedores')));
+      b1.append(sm1);
+      var corpo1 = el('div','corpo');
+      corpo1.append(Object.assign(el('p','nota-fina'), { textContent:
+        'Vendas no mês. A régua da casa é o último fazer pelo menos metade do primeiro.' }));
       var c1 = el('div','card');
       var topo = n.porVendedor[0].n, ultimo = n.porVendedor[n.porVendedor.length-1].n;
       var antVend = {};
@@ -1172,7 +1193,7 @@ section.block > header[hidden]{display:none}
           : 'Dispersão fora da régua: o último fez ' + nf((ultimo/topo)*100,0) +
             '% do primeiro, contra os 50% combinados.' }));
       }
-      b1.append(c1); corpo.append(b1);
+      corpo1.append(c1); b1.append(corpo1); corpo.append(b1);
     }
 
     var duas = el('div','duas');
@@ -1254,9 +1275,8 @@ section.block > header[hidden]{display:none}
       var b = bloco('O que eles escreveram',
         'Uma pergunta por vez, com o que todos responderam. Sem edição — é aqui que o número ganha explicação.');
       var lista = el('div','perguntas');
-      f.perguntas.forEach(function (q, i) {
+      f.perguntas.forEach(function (q) {
         var d = el('details','dobra q');
-        if (i === 0) d.open = true;
         var sm = el('summary');
         sm.append(el('span','q-tema', q.tema));
         var respondidas = q.respostas.filter(function (r) { return !r.vazia; }).length;
