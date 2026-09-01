@@ -1,6 +1,13 @@
 /* Painel Comercial — Parque da Saudade + Estrela Urbanidade
    Service worker: instalação PWA + reserva offline.
-   Atualizado em: 01/09/2026 (7ª do dia) — "DE ONDE VEM A CARTEIRA" DEIXA DE
+   Atualizado em: 01/09/2026 (8ª do dia) — "DE ONDE VEM A CARTEIRA" OBEDECE
+   AO FILTRO DE VENDEDORES do topo (mostrava o time inteiro fosse qual fosse
+   a seleção): a resposta da rota fica guardada e cada renderTudo() re-monta
+   a seção sobre ela; a linha "sem dono ativo" fica fora do filtro de
+   propósito — é alerta sobre quem não está na lista de seleção. E as CORES
+   viraram as do PARQUE (Própria = dourado; o ciano #38bdf8 era herança do
+   lado Estrela; Formulário na rosca vai de dourado para o laranja #b45309).
+   Antes, 01/09/2026 (7ª do dia) — "DE ONDE VEM A CARTEIRA" DEIXA DE
    ZERAR NA VIRADA DO MÊS: o recorte da rota ?app=origem virou a CARTEIRA
    VIVA inteira (funil menos Venda Ganha/Perdida, a régua da esteira ativa)
    — decisão do Ricardo revertendo a de 31/08, depois de a seção amanhecer
@@ -111,7 +118,7 @@
    abas: no Parque escolhem o mês da tela; na Estrela, o fim da janela de 12m.
    Estratégia: rede primeiro (pega versão nova quando online), cache como
    reserva offline. A cada deploy, bumpar a versão em CACHE. */
-const CACHE = 'painel-comercial-260901-7';
+const CACHE = 'painel-comercial-260901-8';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./'])).then(() => self.skipWaiting()));

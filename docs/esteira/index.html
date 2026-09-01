@@ -176,7 +176,9 @@ tr.orf td{border-top:2px solid var(--line); color:var(--ink-2); font-style:itali
   margin:4px 0 2px}
 .barras .bl{font-size:13px;color:var(--ink-2);white-space:nowrap}
 .barras .bt{height:17px;display:flex;border-radius:4px;overflow:hidden;background:var(--line)}
-.barras .bp{background:#38bdf8}
+/* Cores do PARQUE (01/09, pedido do Ricardo): o ciano era herança do lado
+   Estrela do Painel. Própria = o dourado da casa; Recebido segue roxo. */
+.barras .bp{background:var(--ouro)}
 .barras .br{background:#a78bfa}
 .barras .bv{font-size:12.5px;color:var(--ink-3);white-space:nowrap;font-variant-numeric:tabular-nums}
 .leg{display:flex;gap:16px;align-items:center;font-size:12.5px;color:var(--ink-3);margin:2px 0 12px}
@@ -770,6 +772,21 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
     }
 
     var V = (r.vendedores || []).filter(function (x) { return ehVendedor(x.vendedor); });
+
+    /* OBEDECE AO FILTRO DE VENDEDORES DO TOPO (01/09, pedido do Ricardo — a
+       seção mostrava o time inteiro fosse qual fosse a seleção). O nome aqui
+       é o completo do CRM, o mesmo dos VENDS, então o casamento é por nome
+       inteiro. As duas rotas correm em paralelo: se esta chegar antes de a
+       lista principal montar (VENDS vazio), não há filtro para obedecer — e
+       o renderTudo() re-renderiza esta seção assim que houver. A linha "sem
+       dono ativo" fica FORA do filtro de propósito: é alerta sobre quem não
+       está na lista de seleção, não uma linha de vendedor. */
+    if (VENDS.length) {
+      var selNome = {};
+      VENDS.forEach(function (v) { if (sel.has(v.curto)) selNome[v.nome] = true; });
+      V = V.filter(function (x) { return selNome[x.vendedor]; });
+    }
+
     var O = r.semDonoAtivo || { total: 0, nomes: [] };
     var som = function (k) {
       return V.reduce(function (a, v) { return a + (v[k] || 0); }, 0) + (O[k] || 0);
@@ -785,13 +802,16 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
     var NOMES = ['', 'janeiro', 'fevereiro', 'mar\u00e7o', 'abril', 'maio', 'junho', 'julho',
                  'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
     var recorteCarteira = r.recorte === 'carteira';
+    var filtrado = VENDS.length && sel.size < VENDS.length;
     var nomeMes;
     if (recorteCarteira) {
       nomeMes = 'carteira';
       $('#origemAmostra').innerHTML =
-        'A carteira viva de hoje \u2014 <strong>' + num(tT) + '</strong> lead(s) no funil inteiro, ' +
-        'de abril at\u00e9 agora. Venda Ganha e Venda Perdida ficam de fora' +
-        (r.historico ? ' (' + num(r.historico) + ' negociada(s), que s\u00e3o hist\u00f3rico)' : '') +
+        'A carteira viva de hoje \u2014 <strong>' + num(tT) + '</strong> lead(s) ' +
+        (filtrado ? 'dos vendedores selecionados no filtro l\u00e1 de cima'
+                  : 'no funil inteiro') +
+        ', de abril at\u00e9 agora. Venda Ganha e Venda Perdida ficam de fora' +
+        (r.historico && !filtrado ? ' (' + num(r.historico) + ' negociada(s), que s\u00e3o hist\u00f3rico)' : '') +
         ': a pergunta aqui \u00e9 de onde veio o estoque que o time tem na m\u00e3o.';
     } else {
       var mes = (r.mes || '').split('-');
@@ -809,13 +829,14 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
        contrario da tabela e das barras abaixo: a pergunta desta figura e "de
        onde veio o mes", e as tres portas do paragrafo ao lado sao coisas
        diferentes de operar. Propria e SATI mantem as cores das barras
-       (#38bdf8 / #a78bfa) para a leitura atravessar as duas figuras.
+       (dourado / #a78bfa) para a leitura atravessar as duas figuras —
+       paleta do PARQUE desde 01/09; o ciano era heranca do lado Estrela.
        Truque do raio: r = 15,9155 num viewBox de 42 da circunferencia 100 \u2014
        o dasharray passa a ser o proprio percentual, sem conta de pi. */
     var FATIAS = [
-      { k: 'Pr\u00f3pria',    v: tP, c: '#38bdf8' },
+      { k: 'Pr\u00f3pria',    v: tP, c: 'var(--ouro)' },
       { k: 'SATI',         v: tS, c: '#a78bfa' },
-      { k: 'Formul\u00e1rio', v: tF, c: 'var(--ouro)' }
+      { k: 'Formul\u00e1rio', v: tF, c: '#b45309' }
     ];
     if (!tT) {
       $('#origemRosca').innerHTML = '';
@@ -882,7 +903,7 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
        diferente de 100% de 60. */
     var comAlgo = V.filter(function (v) { return (v.total || 0) > 0; });
     $('#origemBarras').innerHTML = !comAlgo.length ? '' :
-      '<div class="leg"><span><i style="background:#38bdf8"></i>Pr\u00f3pria</span>' +
+      '<div class="leg"><span><i style="background:var(--ouro)"></i>Pr\u00f3pria</span>' +
       '<span><i style="background:#a78bfa"></i>Recebido (SATI + formul\u00e1rio)</span></div>' +
       '<div class="barras">' + comAlgo.map(function (v) {
         var pr = v.propria || 0, re = (v.sati || 0) + (v.formulario || 0), t = pr + re;
@@ -923,9 +944,12 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
     return col.indexOf(p[0].toLowerCase()) >= 0 ? p[0] + ' ' + p[1] : p[0];
   }
 
+  /* A resposta fica guardada para a seção acompanhar o filtro de vendedores:
+     cada renderTudo() re-monta a seção sobre ela — sem nova ida à rota. */
+  var ORIGEM_R = null;
   function carregarOrigem(token) {
     comPrazo(API + '?app=origem&fn=dados&token=' + encodeURIComponent(token), 30000)
-      .then(montarOrigem)
+      .then(function (r) { ORIGEM_R = r; montarOrigem(r); })
       .catch(function (e) { montarOrigem({ ok: false, erro: e.message || String(e) }); });
   }
 
@@ -1165,6 +1189,9 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
 
   // ================================================================ render
   function renderTudo() {
+    /* a seção de origem acompanha o mesmo filtro — re-montada da resposta
+       guardada, sem nova ida à rota */
+    if (ORIGEM_R && ORIGEM_R.ok) montarOrigem(ORIGEM_R);
     var V = ativos();
     Array.prototype.forEach.call($('#vends').querySelectorAll('.vsel'), function (l) {
       l.setAttribute('data-on', l.querySelector('input').checked ? 1 : 0);
