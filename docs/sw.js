@@ -1,6 +1,15 @@
 /* Painel Comercial — Parque da Saudade + Estrela Urbanidade
    Service worker: instalação PWA + reserva offline.
-   Atualizado em: 31/08/2026 (4ª do dia) — NASCE A RETROSPECTIVA DO TIME
+   Atualizado em: 01/09/2026 — O MENU DO PARQUE VIRA O ÍNDICE DO ECOSSISTEMA:
+   as abas ganham Esteira e Retrospectiva (links para as telas do próprio repo),
+   Perfil Cliente (o artefato "Quem compra no Parque da Saudade", nova aba),
+   Docs (painel novo com os downloads da base-conhecimento, servidos do Drive)
+   e Pocket (o app do vendedor, nova aba). No celular a barra inferior do
+   Parque passa a DUAS FILAS de 4. E a metade da ESTRELA deixa de cravar a
+   janela de 12 meses no código (era jul/25–jun/26 fixo): Dashboard, ranking,
+   sparkline, série mensal e síntese agora terminam no último mês com venda na
+   base — era isso que fazia o Dashboard discordar do Executivo.
+   Antes, 31/08/2026 (4ª do dia) — NASCE A RETROSPECTIVA DO TIME
    COMERCIAL em /retrospectiva/, tela de GESTÃO do Parque que lê
    ?app=retrospectiva&fn=dados. Ela é o ESPELHO DE LEITURA do artefato
    `2df469ed` do claude.ai, e não o substitui: no artefato o Ricardo escreve a
@@ -56,7 +65,7 @@
    abas: no Parque escolhem o mês da tela; na Estrela, o fim da janela de 12m.
    Estratégia: rede primeiro (pega versão nova quando online), cache como
    reserva offline. A cada deploy, bumpar a versão em CACHE. */
-const CACHE = 'painel-comercial-260831-11';
+const CACHE = 'painel-comercial-260901-1';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./'])).then(() => self.skipWaiting()));

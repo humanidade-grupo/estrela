@@ -1053,12 +1053,15 @@ section.block > header[hidden]{display:none}
     });
   }
 
-  /* ── Camada I · números, recolhidos ───────────────────────────────────── */
+  /* ── Camada I · números ──────────────────────────────────────────────────
+     Toda dobra desta página NASCE ABERTA desde 01/09/2026, por decisão do
+     Ricardo: a tela é de leitura de reunião, e dado recolhido é dado que a
+     metade da sala não abre. O <details> fica pelo resto — dá para recolher. */
   function secaoNumeros(p, id){
     var n = NUMEROS && NUMEROS[id];
 
     if (!n){
-      var d0 = el('details','dobra');
+      var d0 = el('details','dobra'); d0.open = true;
       var s0 = el('summary');
       s0.append(el('span','flag crit','sem número'));
       s0.append(el('span','resumo-linha', NUMEROS
@@ -1094,7 +1097,7 @@ section.block > header[hidden]{display:none}
     var cmp = { rotuloAtual: nomeCurto(id), rotuloRef: nomeCurto(idAnt),
                 rotuloRef2: rot3, mesesRef2: tres.length };
 
-    var d = el('details','dobra');
+    var d = el('details','dobra'); d.open = true;
     var s = el('summary');
     var pct = n.meta ? Math.round((n.vendas / n.meta) * 100) : null;
     s.append(el('span', 'flag' + (pct !== null && pct < 100 ? '' : ' ok'),
@@ -1155,11 +1158,11 @@ section.block > header[hidden]{display:none}
       c.append(l); corpo.append(c);
     }
 
-    /* Nasce fechado, como as perguntas. O placar é a parte da página que expõe
-       nome de gente lado a lado — quem abre a tela vê primeiro o mês, e escolhe
-       abrir a comparação individual. */
+    /* Nascia fechado para quem abre a tela ver primeiro o mês e escolher abrir
+       a comparação individual. Desde 01/09/2026 nasce ABERTO, como tudo aqui —
+       decisão do Ricardo: numa tela de reunião, o recolhido não é lido. */
     if (n.porVendedor.length){
-      var b1 = el('details','dobra q solta');
+      var b1 = el('details','dobra q solta'); b1.open = true;
       var sm1 = el('summary');
       sm1.append(el('span','q-tema','Placar por vendedor'));
       sm1.append(el('span','q-conta', n.porVendedor.length +
@@ -1276,7 +1279,7 @@ section.block > header[hidden]{display:none}
         'Uma pergunta por vez, com o que todos responderam. Sem edição — é aqui que o número ganha explicação.');
       var lista = el('div','perguntas');
       f.perguntas.forEach(function (q) {
-        var d = el('details','dobra q');
+        var d = el('details','dobra q'); d.open = true;
         var sm = el('summary');
         sm.append(el('span','q-tema', q.tema));
         var respondidas = q.respostas.filter(function (r) { return !r.vazia; }).length;

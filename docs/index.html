@@ -30,10 +30,15 @@ font:14px/1.5 -apple-system,"Segoe UI",Roboto,Arial,sans-serif}
 header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
 h1{font-size:20px;margin:0;letter-spacing:.01em}
 .brand{height:32px;width:auto;opacity:.95}
-.tabs{display:flex;gap:4px;border-bottom:1px solid var(--edge);margin:8px 0 16px}
+.tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--edge);margin:8px 0 16px}
 .tab{border:none;background:none;color:var(--text-3);padding:9px 14px;font-size:14px;
 cursor:pointer;border-bottom:2px solid transparent;font-weight:600}
 .tab[aria-selected="true"]{color:var(--s1b);border-bottom-color:var(--s1)}
+/* Abas que são LINK, não painel: Esteira e Retrospectiva navegam para as telas
+   próprias (mesma origem, mesmo token); Perfil e Pocket abrem fora. Mesmo
+   visual das abas de painel de propósito — para quem usa, é tudo aba. */
+a.tab{text-decoration:none;display:inline-block}
+.tab .ext{font-size:11px;opacity:.7;margin-left:3px}
 .panel{display:none}.panel.on{display:block}
 .filters{display:flex;flex-wrap:wrap;gap:13px 22px;align-items:flex-start;
 background:var(--card);border:1px solid var(--edge);border-radius:16px;
@@ -130,13 +135,16 @@ display:none;grid-template-columns:repeat(4,1fr)}
 /* CADA barra inferior crava a propria contagem de colunas — a da Estrela aqui,
    a do Parque em #bnavPS mais abaixo. Errar a conta nao quebra nada visivel no
    desktop (a barra so aparece no celular): o botao a mais cai numa segunda fila
-   e o rodape dobra de altura. Somou ou tirou aba? acerte a contagem NAS DUAS. */
+   e o rodape dobra de altura. Somou ou tirou aba? acerte a contagem NAS DUAS.
+   A do Parque tem DUAS FILAS DE PROPOSITO desde 01/09 (8 itens em 4 colunas) —
+   e por isso o padding-bottom do body na media query e maior na emp-ps. */
 #bnav{grid-template-columns:repeat(5,1fr)}
-.bnav button{border:none;background:none;color:var(--text-3);font:inherit;cursor:pointer;
+.bnav button,.bnav a{border:none;background:none;color:var(--text-3);font:inherit;cursor:pointer;
+text-decoration:none;
 display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;border-radius:10px}
-.bnav button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;
+.bnav button svg,.bnav a svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;
 stroke-linecap:round;stroke-linejoin:round}
-.bnav button span{font-size:10px;font-weight:600}
+.bnav button span,.bnav a span{font-size:10px;font-weight:600}
 .bnav button[aria-selected="true"]{color:var(--s1b)}
 @media (max-width:640px){
 .wrap{padding:12px 10px 40px}
@@ -145,6 +153,8 @@ h1{font-size:17px}
 .tabs{display:none}
 .bnav{display:grid}
 body{padding-bottom:64px}
+/* a barra do Parque tem duas filas (8 itens em 4 colunas) — reservar o dobro */
+body.emp-ps{padding-bottom:116px}
 .filters{gap:10px 14px;padding:10px 11px}
 .fgroup{min-width:0}
 .chip{padding:4px 9px;font-size:12px}
@@ -226,7 +236,8 @@ body.emp-eu #bnavPS,body.emp-eu #tabsPS{display:none !important}
 body.emp-ps #bnav,body.emp-ps #tabsEU{display:none !important}
 body.emp-ps .panel:not(.ps){display:none !important}
 body.emp-eu .panel.ps{display:none !important}
-#bnavPS{grid-template-columns:repeat(3,1fr)}
+/* 8 itens em 4 colunas = duas filas, de proposito (ver o comentario do .bnav) */
+#bnavPS{grid-template-columns:repeat(4,1fr)}
 
 /* Barra de estoque da M-19 — discreta, na linha do seletor, à direita junto
    do botão Atualizar (o margin-left:auto do .btnrec empurra os dois).
@@ -327,6 +338,15 @@ align-items:center;gap:3px;cursor:pointer;min-width:0}
   <button class="tab" role="tab" aria-selected="false" data-p="pPS1" type="button">Mês</button>
   <button class="tab" role="tab" aria-selected="false" data-p="pPS2" type="button">Quebras</button>
   <button class="tab" role="tab" aria-selected="true" data-p="pPSX" type="button">Executivo</button>
+  <!-- Abas-link (01/09): Esteira e Retrospectiva são telas próprias deste repo,
+       mesma origem e mesmo token — navegar é a integração. Perfil Cliente é o
+       artefato "Quem compra no Parque da Saudade" (foto de 28/08, estática por
+       natureza); Pocket é o app do vendedor. Os dois abrem em nova aba. -->
+  <a class="tab" href="./esteira/">Esteira</a>
+  <a class="tab" href="./retrospectiva/">Retrospectiva</a>
+  <a class="tab" href="https://claude.ai/code/artifact/2aa935f2-8c8f-42c2-b81e-994c812c0220" target="_blank" rel="noopener">Perfil Cliente<span class="ext">↗</span></a>
+  <button class="tab" role="tab" aria-selected="false" data-p="pPSDocs" type="button">Docs</button>
+  <a class="tab" href="https://humanidade-grupo.github.io/pocket-nps/#home" target="_blank" rel="noopener">Pocket<span class="ext">↗</span></a>
 </div>
 
 <div class="tabs" id="tabsEU" role="tablist">
@@ -339,7 +359,8 @@ align-items:center;gap:3px;cursor:pointer;min-width:0}
 
 <!-- ================= DASHBOARD ================= -->
 <section class="panel" id="pDash">
-  <p class="dashsub">Últimos 12 meses (jul/25–jun/26) × estoque à venda · foto 01/07/2026 + informados jun/26</p>
+  <!-- o período é preenchido no renderDash(), derivado do último mês com venda no Cofre -->
+  <p class="dashsub">Últimos 12 meses × estoque à venda · estoque: foto 01/07/2026 + informados jun/26</p>
   <div class="hero">
     <div class="card">
       <div class="klabel">VGV vendido — 12 meses</div>
@@ -558,6 +579,50 @@ align-items:center;gap:3px;cursor:pointer;min-width:0}
   <iframe id="fExecPS" title="Visão executiva — Parque da Saudade" loading="lazy" style="width:100%;border:0;display:block;min-height:70vh"></iframe>
 </section>
 
+<!-- ================= DOCS (Parque) =================
+     Os materiais comerciais da pasta base-conhecimento, servidos DO DRIVE —
+     o Drive é a fonte da verdade de PDF e planilha (regra de ouro do INFRA),
+     e a pasta já é "qualquer pessoa com o link". Aqui só moram os links.
+     ⚠️ Os IDs abaixo valem enquanto cada arquivo for SUBSTITUÍDO no lugar
+     (Gerenciar versões / substituir). Apagar e subir de novo troca o ID e
+     quebra o link — regerou uma peça? confira o ID aqui no mesmo passo. -->
+<section class="panel ps" id="pPSDocs">
+  <div class="card">
+    <h3>Documentos comerciais — Parque da Saudade</h3>
+    <p class="note">A família inteira nasce do Playbook de Vendas (edição v2.3, de 01/09/2026) e mora no
+    Drive — estes links baixam sempre a versão que está lá.
+    <a href="https://drive.google.com/drive/folders/1TTSpqGiFhnCKfTZ9WDrrJvSrs4DbZhDB" target="_blank" rel="noopener" style="color:var(--s1b)">Abrir a pasta no Drive ↗</a></p>
+    <div class="tblbox"><table>
+      <thead><tr><th>Documento</th><th>O que é</th><th></th></tr></thead>
+      <tbody>
+        <tr><td><b>Manual do Vendedor</b> <span class="muted">PDF · 33 pág.</span></td>
+          <td>Método, descoberta, visita, objeções, fechamento, protocolo de luto, linha vermelha</td>
+          <td><a href="https://drive.google.com/uc?export=download&amp;id=1OMWYn8N3-8bgPv-eMGvKqrZNKL7ATeA5" style="color:var(--s1b)">baixar</a></td></tr>
+        <tr><td><b>Cartão de Bolso</b> <span class="muted">PDF · A4 frente e verso</span></td>
+          <td>Objeções, linha vermelha, luto e as nove perguntas — para a mão do vendedor</td>
+          <td><a href="https://drive.google.com/uc?export=download&amp;id=1XgiopSTVIFUeqZDj7YqfghQr-VT8U1KU" style="color:var(--s1b)">baixar</a></td></tr>
+        <tr><td><b>Playbook de Vendas</b> <span class="muted">Markdown</span></td>
+          <td>A fonte da verdade do discurso comercial — todas as outras peças derivam dele</td>
+          <td><a href="https://drive.google.com/uc?export=download&amp;id=1WbKZwIRibogaKYi4QgR-H4xFE1H8cvTc" style="color:var(--s1b)">baixar</a></td></tr>
+        <tr><td><b>Treinamento 1 — O Parque e o Produto</b> <span class="muted">PPTX · 23 slides</span></td>
+          <td>O Parque, a Jornada do Acolhimento, os quatro produtos, condições e a trava de uso</td>
+          <td><a href="https://drive.google.com/uc?export=download&amp;id=148tousJCXYo44wZ203eLtgjwKdBwxJSa" style="color:var(--s1b)">baixar</a></td></tr>
+        <tr><td><b>Treinamento 2 — As Ferramentas</b> <span class="muted">PPTX · 17 slides</span></td>
+          <td>Pocket tela a tela, Facilita, funil, fila de backoffice e origem do lead</td>
+          <td><a href="https://drive.google.com/uc?export=download&amp;id=1e5eMrcXQHITLBvPQ7PWmXHffqpQ5W3z1" style="color:var(--s1b)">baixar</a></td></tr>
+        <tr><td><b>Treinamento 3 — O Método</b> <span class="muted">PPTX · 21 slides</span></td>
+          <td>Método, checklist, objeções, necessidade imediata, linha vermelha</td>
+          <td><a href="https://drive.google.com/uc?export=download&amp;id=1SmmAW7k-YU0q3tHNiSlUF_A4B2uM8Z8x" style="color:var(--s1b)">baixar</a></td></tr>
+        <tr><td><b>Deck da empresa (revisado)</b> <span class="muted">PPTX · 19 slides</span></td>
+          <td>TREINAMENTO_VENDAS_NPS sem os slides 2 e 3 — material de terceiro; não é fonte de número</td>
+          <td><a href="https://drive.google.com/uc?export=download&amp;id=1uMXWe_64K7hcQ6gvxigFCvysJ1grDLVt" style="color:var(--s1b)">baixar</a></td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">Preço, parcela, estoque e meta não entram em documento nenhum — tudo isso é volátil
+    e mora no Pocket e neste Painel.</p>
+  </div>
+</section>
+
 </div>
 
 <nav class="bnav" id="bnavPS">
@@ -570,6 +635,21 @@ align-items:center;gap:3px;cursor:pointer;min-width:0}
   <button type="button" data-p="pPSX" aria-selected="true">
     <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
     <span>Executivo</span></button>
+  <a href="./esteira/">
+    <svg viewBox="0 0 24 24"><path d="M3 4h18l-7 8v6l-4 2v-8L3 4z"/></svg>
+    <span>Esteira</span></a>
+  <a href="./retrospectiva/">
+    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18"/><path d="M8 2v4"/><path d="M16 2v4"/></svg>
+    <span>Retrospectiva</span></a>
+  <a href="https://claude.ai/code/artifact/2aa935f2-8c8f-42c2-b81e-994c812c0220" target="_blank" rel="noopener">
+    <svg viewBox="0 0 24 24"><path d="M16 20v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="3.5"/></svg>
+    <span>Perfil</span></a>
+  <button type="button" data-p="pPSDocs" aria-selected="false">
+    <svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-6-6z"/><path d="M14 3v6h6"/></svg>
+    <span>Docs</span></button>
+  <a href="https://humanidade-grupo.github.io/pocket-nps/#home" target="_blank" rel="noopener">
+    <svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>
+    <span>Pocket</span></a>
 </nav>
 
 <nav class="bnav" id="bnav">
@@ -597,6 +677,20 @@ const DATA = window.__DADOS__;
 const E = DATA.estoque, V = DATA.vendas;
 const $ = s => document.querySelector(s);
 
+/* ---------- janela de 12 meses — DERIVADA DO DADO (01/09/2026) ----------
+   Até 31/08 a janela era cravada no código (202507–202606). O dado da Estrela
+   chega vivo do Cofre a cada hora, e uma venda de jul/26 em diante simplesmente
+   sumia do Dashboard, do ranking e da síntese — enquanto a aba Executivo, de
+   janela móvel, a mostrava. Número que não bate entre abas é pior que número
+   velho. A janela agora termina no último mês COM VENDA na base. */
+const YM_FIM = V.length ? V.reduce((a,v)=>Math.max(a,v.ym), 0) : 202606;
+const ymMenos = (ym,n)=>{let a=Math.floor(ym/100), m=ym%100-n; while(m<=0){m+=12;a--;} return a*100+m;};
+const YM_INI = ymMenos(YM_FIM, 11);
+const MZ=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const rotYm = ym => MZ[ym%100-1]+'/'+String(Math.floor(ym/100)).slice(2);
+const ROT12 = rotYm(YM_INI)+'–'+rotYm(YM_FIM);
+const K_V12 = 'Vendas 12m ('+ROT12+')';
+
 /* ---------- formatação pt-BR ---------- */
 const fR$ = n => n.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
 const fN = (n,d=0) => n.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -606,12 +700,15 @@ const fMi = n => n>=1e6 ? fN(n/1e6,1).replace(',0','')+' mi' : fN(n/1e3)+' mil';
 try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>renderAll());}catch(e){}
 
 /* ---------- abas ---------- */
+/* Só elementos com data-p são aba de painel — as abas-link (a.tab, 01/09)
+   navegam sozinhas e não podem cair neste handler: irPara(undefined)
+   apagaria a seleção e esconderia todos os painéis antes de a página trocar. */
 function irPara(pid){
-  document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x.dataset.p===pid));
+  document.querySelectorAll('.tab[data-p]').forEach(x=>x.setAttribute('aria-selected',x.dataset.p===pid));
   document.querySelectorAll('#bnav button').forEach(x=>x.setAttribute('aria-selected',x.dataset.p===pid));
   document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.id===pid));
   window.scrollTo({top:0});}
-document.querySelectorAll('.tab,#bnav button').forEach(b=>b.onclick=()=>irPara(b.dataset.p));
+document.querySelectorAll('.tab[data-p],#bnav button').forEach(b=>b.onclick=()=>irPara(b.dataset.p));
 
 /* ---------- filtros genéricos (multi-seleção) ---------- */
 
@@ -982,8 +1079,8 @@ function drawPrzChart(L){
 function drawVenChart(L,sel){
   const box=$(sel||'#chVen');box.innerHTML='';
   const meses=[];
-  for(let a=2025;a<=2026;a++)for(let m=1;m<=12;m++){
-    if(a===2026&&m>6)break;meses.push(a*100+m);}
+  for(let a=2025;a<=Math.floor(YM_FIM/100);a++)for(let m=1;m<=12;m++){
+    if(a*100+m>YM_FIM)break;meses.push(a*100+m);}
   const agg=meses.map(ym=>{const g=L.filter(v=>v.ym===ym);
     return {ym,n:g.length,vgv:g.reduce((s,v)=>s+v.vgv,0),
       lb:['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'][ym%100-1]+'/'+String(Math.floor(ym/100)).slice(2)};});
@@ -1072,7 +1169,7 @@ const HELP={
  'R$/m² de tabela':'VGV de tabela ÷ área total dos lotes filtrados. É o preço médio por m² que a tabela atual está pedindo pelo estoque.',
  '+ Fase 2 (não lançada)':'Lotes do Vale ainda não lançados à venda. Não entram no estoque à venda nem nos indicadores acima — são a reserva de valor do empreendimento.',
  'Fase 2 (não lançada)':'Lotes do Vale ainda não lançados à venda. Não entram no estoque à venda nem nos indicadores acima — são a reserva de valor do empreendimento.',
- 'Vendas 12m (jul/25–jun/26)':'Nº de vendas e VGV somado do empreendimento nos últimos 12 meses. Sem recorte de propriedade: o arquivo de vendas não informa de quem era o lote vendido, então é o ritmo do empreendimento inteiro.',
+ [K_V12]:'Nº de vendas e VGV somado do empreendimento nos últimos 12 meses ('+ROT12+', o último mês com venda na base). Sem recorte de propriedade: o arquivo de vendas não informa de quem era o lote vendido, então é o ritmo do empreendimento inteiro.',
  'R$/m² realizado 12m':'O que o mercado pagou de fato por m² nas vendas dos últimos 12 meses (VGV vendido ÷ área vendida), já com os descontos embutidos.',
  'Tabela vs realizado':'Quanto o R$/m² de tabela está acima (+) ou abaixo (−) do realizado. Gap alto significa tabela fora do preço que o mercado paga — ou desconto alto virando regra na mesa de negociação.',
  'Meses de estoque (ritmo 12m)':'Lotes à venda ÷ ritmo mensal (vendas 12m ÷ 12). É quanto tempo o estoque filtrado levaria para virar mantendo o ritmo de vendas do último ano.',
@@ -1085,7 +1182,7 @@ function renderSin(){
     const st=ES.filter(l=>l.emp===e&&l.fase!=='Fase 2');
     const stEU=st.reduce((a,l)=>a+l.veu,0),stVT=st.reduce((a,l)=>a+l.vt,0),
           stAr=st.reduce((a,l)=>a+l.area,0);
-    const v12=V.filter(v=>v.emp===e&&v.ym>=202507&&v.ym<=202606);
+    const v12=V.filter(v=>v.emp===e&&v.ym>=YM_INI&&v.ym<=YM_FIM);
     const vN=v12.length,vS=v12.reduce((a,v)=>a+v.vgv,0);
     const vA=v12.filter(v=>v.area),vAr=vA.reduce((a,v)=>a+v.area,0),vSA=vA.reduce((a,v)=>a+v.vgv,0);
     const ritmo=vN/12;
@@ -1121,7 +1218,7 @@ function renderSin(){
       }
     }
     const hr=document.createElement('hr');card.appendChild(hr);
-    rw('Vendas 12m (jul/25–jun/26)',vN?fN(vN)+' · '+fR$(vS):'0');
+    rw(K_V12,vN?fN(vN)+' · '+fR$(vS):'0');
     rw('R$/m² realizado 12m',vAr?fR$(vSA/vAr)+'/m²':'—');
     if(st.length&&vAr&&stAr){
       const gap=(stVT/stAr)/(vSA/vAr)-1;
@@ -1137,8 +1234,10 @@ function renderSin(){
 
 /* ================= DASHBOARD ================= */
 function renderDash(){
-  /* --- agregados 12m (jul/25–jun/26) --- */
-  const v12=V.filter(v=>v.ym>=202507&&v.ym<=202606);
+  /* --- agregados 12m — janela derivada do dado (ver YM_INI/YM_FIM no topo) --- */
+  const sub=document.querySelector('#pDash .dashsub');
+  if(sub)sub.textContent='Últimos 12 meses ('+ROT12+') × estoque à venda · estoque: foto 01/07/2026 + informados jun/26';
+  const v12=V.filter(v=>v.ym>=YM_INI&&v.ym<=YM_FIM);
   const n12=v12.length, vgv12=v12.reduce((a,v)=>a+v.vgv,0);
   const s25=V.filter(v=>v.ym>=202501&&v.ym<=202506);
   const s26=V.filter(v=>v.ym>=202601&&v.ym<=202606);
@@ -1163,9 +1262,9 @@ function renderDash(){
     (dv>=0?'+':'−')+fN(Math.abs(dv*100),0)+'% em VGV</b>&nbsp;·&nbsp;<b class="'+
     cl(s26.length-s25.length)+'">'+fN(s26.length)+' vs '+fN(s25.length)+' vendas</b>';
 
-  /* --- sparkline jan/25–jun/26 --- */
-  const yms=[];for(let a=2025;a<=2026;a++)for(let m=1;m<=12;m++){
-    const ym=a*100+m;if(ym>=202501&&ym<=202606)yms.push(ym);}
+  /* --- sparkline jan/25 até o último mês com venda --- */
+  const yms=[];for(let a=2025;a<=Math.floor(YM_FIM/100);a++)for(let m=1;m<=12;m++){
+    const ym=a*100+m;if(ym>=202501&&ym<=YM_FIM)yms.push(ym);}
   const mens={};V.forEach(v=>mens[v.ym]=(mens[v.ym]||0)+v.vgv);
   const serie=yms.map(ym=>mens[ym]||0), mx=Math.max(...serie,1);
   const px=i=>8+i*(544/(serie.length-1)), py=v=>110-(v/mx)*92;
@@ -1311,13 +1410,16 @@ const fN  = (n,d=0) => n.toLocaleString('pt-BR', {minimumFractionDigits:d, maxim
 const fMi = n => n>=1e6 ? fN(n/1e6,1).replace(',0','')+' mi' : (n>=1000 ? fN(n/1e3)+' mil' : fN(n));
 
 /* ---------- abas da metade PS ---------- */
+/* [data-p] de propósito: as abas-link (Esteira, Retrospectiva, Perfil, Pocket)
+   são <a> e navegam sozinhas — sem o filtro, o handler rodaria irParaPS(undefined)
+   e apagaria a tela no instante antes da navegação. */
 function irParaPS(pid){
-  document.querySelectorAll('#tabsPS .tab').forEach(x=>x.setAttribute('aria-selected', x.dataset.p===pid));
-  document.querySelectorAll('#bnavPS button').forEach(x=>x.setAttribute('aria-selected', x.dataset.p===pid));
+  document.querySelectorAll('#tabsPS .tab[data-p]').forEach(x=>x.setAttribute('aria-selected', x.dataset.p===pid));
+  document.querySelectorAll('#bnavPS button[data-p]').forEach(x=>x.setAttribute('aria-selected', x.dataset.p===pid));
   document.querySelectorAll('.panel.ps').forEach(p=>p.classList.toggle('on', p.id===pid));
   window.scrollTo({top:0});
 }
-document.querySelectorAll('#tabsPS .tab,#bnavPS button').forEach(b=>b.onclick=()=>irParaPS(b.dataset.p));
+document.querySelectorAll('#tabsPS .tab[data-p],#bnavPS button[data-p]').forEach(b=>b.onclick=()=>irParaPS(b.dataset.p));
 window.__psIrPara = irParaPS;
 
 /* ---------- dias úteis ----------
