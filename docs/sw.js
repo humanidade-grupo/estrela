@@ -1,6 +1,11 @@
 /* Painel Comercial — Parque da Saudade + Estrela Urbanidade
    Service worker: instalação PWA + reserva offline.
-   Atualizado em: 01/09/2026 — O MENU DO PARQUE VIRA O ÍNDICE DO ECOSSISTEMA:
+   Atualizado em: 01/09/2026 (2ª do dia) — AS ABAS MÊS E QUEBRAS DO PARQUE
+   SAÍRAM, por decisão do Ricardo: o Executivo cobre a leitura do mês. Os
+   painéis delas seguem no HTML, inertes (podar o render seria mais arriscado
+   que deixá-los inalcançáveis). A barra inferior do Parque fica com 6 itens
+   em 3 colunas, duas filas.
+   Antes, 01/09/2026 — O MENU DO PARQUE VIRA O ÍNDICE DO ECOSSISTEMA:
    as abas ganham Esteira e Retrospectiva (links para as telas do próprio repo),
    Perfil Cliente (o artefato "Quem compra no Parque da Saudade", nova aba),
    Docs (painel novo com os downloads da base-conhecimento, servidos do Drive)
@@ -65,7 +70,7 @@
    abas: no Parque escolhem o mês da tela; na Estrela, o fim da janela de 12m.
    Estratégia: rede primeiro (pega versão nova quando online), cache como
    reserva offline. A cada deploy, bumpar a versão em CACHE. */
-const CACHE = 'painel-comercial-260901-1';
+const CACHE = 'painel-comercial-260901-2';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./'])).then(() => self.skipWaiting()));

@@ -136,7 +136,7 @@ display:none;grid-template-columns:repeat(4,1fr)}
    a do Parque em #bnavPS mais abaixo. Errar a conta nao quebra nada visivel no
    desktop (a barra so aparece no celular): o botao a mais cai numa segunda fila
    e o rodape dobra de altura. Somou ou tirou aba? acerte a contagem NAS DUAS.
-   A do Parque tem DUAS FILAS DE PROPOSITO desde 01/09 (8 itens em 4 colunas) —
+   A do Parque tem DUAS FILAS DE PROPOSITO desde 01/09 (6 itens em 3 colunas) —
    e por isso o padding-bottom do body na media query e maior na emp-ps. */
 #bnav{grid-template-columns:repeat(5,1fr)}
 .bnav button,.bnav a{border:none;background:none;color:var(--text-3);font:inherit;cursor:pointer;
@@ -236,8 +236,8 @@ body.emp-eu #bnavPS,body.emp-eu #tabsPS{display:none !important}
 body.emp-ps #bnav,body.emp-ps #tabsEU{display:none !important}
 body.emp-ps .panel:not(.ps){display:none !important}
 body.emp-eu .panel.ps{display:none !important}
-/* 8 itens em 4 colunas = duas filas, de proposito (ver o comentario do .bnav) */
-#bnavPS{grid-template-columns:repeat(4,1fr)}
+/* 6 itens em 3 colunas = duas filas, de proposito (ver o comentario do .bnav) */
+#bnavPS{grid-template-columns:repeat(3,1fr)}
 
 /* Barra de estoque da M-19 — discreta, na linha do seletor, à direita junto
    do botão Atualizar (o margin-left:auto do .btnrec empurra os dois).
@@ -335,8 +335,10 @@ align-items:center;gap:3px;cursor:pointer;min-width:0}
 <!-- A aba Executivo é a porta de entrada das DUAS metades desde 29/08 —
      por isso ela nasce selecionada aqui e é o destino do trocarEmpresa(). -->
 <div class="tabs" id="tabsPS" role="tablist">
-  <button class="tab" role="tab" aria-selected="false" data-p="pPS1" type="button">Mês</button>
-  <button class="tab" role="tab" aria-selected="false" data-p="pPS2" type="button">Quebras</button>
+  <!-- As abas Mês e Quebras SAÍRAM em 01/09, por decisão do Ricardo — o
+       Executivo cobre a leitura do mês. Os painéis pPS1/pPS2 continuam no
+       HTML, inertes: removê-los exigiria podar o render() em produção, e
+       painel inalcançável é mais barato que regressão. -->
   <button class="tab" role="tab" aria-selected="true" data-p="pPSX" type="button">Executivo</button>
   <!-- Abas-link (01/09): Esteira e Retrospectiva são telas próprias deste repo,
        mesma origem e mesmo token — navegar é a integração. Perfil Cliente é o
@@ -626,12 +628,6 @@ align-items:center;gap:3px;cursor:pointer;min-width:0}
 </div>
 
 <nav class="bnav" id="bnavPS">
-  <button type="button" data-p="pPS1" aria-selected="false">
-    <svg viewBox="0 0 24 24"><path d="M3 20h18"/><path d="M7 20v-6"/><path d="M12 20V6"/><path d="M17 20v-9"/></svg>
-    <span>Mês</span></button>
-  <button type="button" data-p="pPS2" aria-selected="false">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6.4 6.4"/></svg>
-    <span>Quebras</span></button>
   <button type="button" data-p="pPSX" aria-selected="true">
     <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
     <span>Executivo</span></button>
