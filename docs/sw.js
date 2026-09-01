@@ -1,6 +1,13 @@
 /* Painel Comercial — Parque da Saudade + Estrela Urbanidade
    Service worker: instalação PWA + reserva offline.
-   Atualizado em: 01/09/2026 (8ª do dia) — "DE ONDE VEM A CARTEIRA" OBEDECE
+   Atualizado em: 01/09/2026 (9ª do dia) — O CIANO SAIU DA ESTEIRA POR
+   INTEIRO: o --accent da página ainda era o #0e9fc4 da metade Estrela
+   (herdado na travessia do artefato) e pintava o "Parque da Saudade ·
+   Funil de vendas", as barras da esteira ativa, a matriz, os botões de
+   ordenar, o filtro de vendedores e o portão. Agora --accent = dourado
+   #f2c744 (o mesmo --ouro), com os textos de apoio em #f7d977 e o texto
+   dos botões em #241c04.
+   Antes, 01/09/2026 (8ª do dia) — "DE ONDE VEM A CARTEIRA" OBEDECE
    AO FILTRO DE VENDEDORES do topo (mostrava o time inteiro fosse qual fosse
    a seleção): a resposta da rota fica guardada e cada renderTudo() re-monta
    a seção sobre ela; a linha "sem dono ativo" fica fora do filtro de
@@ -118,7 +125,7 @@
    abas: no Parque escolhem o mês da tela; na Estrela, o fim da janela de 12m.
    Estratégia: rede primeiro (pega versão nova quando online), cache como
    reserva offline. A cada deploy, bumpar a versão em CACHE. */
-const CACHE = 'painel-comercial-260901-8';
+const CACHE = 'painel-comercial-260901-9';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./'])).then(() => self.skipWaiting()));
