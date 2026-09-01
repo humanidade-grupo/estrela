@@ -1,6 +1,12 @@
 /* Painel Comercial — Parque da Saudade + Estrela Urbanidade
    Service worker: instalação PWA + reserva offline.
-   Atualizado em: 01/09/2026 (3ª do dia) — NAVEGAÇÃO SEM RECARGA, pedido do
+   Atualizado em: 01/09/2026 (4ª do dia) — MASTHEAD NOVO: o cabeçalho virou
+   cartão com selo GRUPO HUMANIDADE, título grande com "Comercial" no acento,
+   halo radial e fio de acento no pé — tudo nas variáveis que a tela já usa,
+   então troca de tom junto com a empresa (ciano na Estrela, dourado no
+   Parque) sem JS. O portão de token diz "Humanidade" no lugar de "Estrela
+   Urbanidade", e o <title> virou "Painel Comercial — Grupo Humanidade".
+   Antes, 01/09/2026 (3ª do dia) — NAVEGAÇÃO SEM RECARGA, pedido do
    Ricardo em três partes: (1) Esteira, Retrospectiva e Perfil Cliente viram
    MOLDURAS dentro do Painel (iframe como o Executivo, src na primeira
    abertura, vivas depois — trocar de aba não recarrega nada); o claude.ai
@@ -83,7 +89,7 @@
    abas: no Parque escolhem o mês da tela; na Estrela, o fim da janela de 12m.
    Estratégia: rede primeiro (pega versão nova quando online), cache como
    reserva offline. A cada deploy, bumpar a versão em CACHE. */
-const CACHE = 'painel-comercial-260901-3';
+const CACHE = 'painel-comercial-260901-4';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./'])).then(() => self.skipWaiting()));
