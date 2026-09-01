@@ -1,6 +1,12 @@
 /* Painel Comercial — Parque da Saudade + Estrela Urbanidade
    Service worker: instalação PWA + reserva offline.
-   Atualizado em: 01/09/2026 (4ª do dia) — MASTHEAD NOVO: o cabeçalho virou
+   Atualizado em: 01/09/2026 (5ª do dia) — RETROSPECTIVA SÓ COM A BARRA DO
+   MÊS: as barras extras de M-1 e da média de 3 meses saíram de todos os
+   gráficos, por decisão do Ricardo — a comparação fica nos chips (que já
+   dizem valor e diferença) e a legenda de três barras morreu junto. A escala
+   não mudou: o max continua considerando as referências, então a barra do
+   mês tem o mesmo comprimento de antes.
+   Antes, 01/09/2026 (4ª do dia) — MASTHEAD NOVO: o cabeçalho virou
    cartão com selo GRUPO HUMANIDADE, título grande com "Comercial" no acento,
    halo radial e fio de acento no pé — tudo nas variáveis que a tela já usa,
    então troca de tom junto com a empresa (ciano na Estrela, dourado no
@@ -89,7 +95,7 @@
    abas: no Parque escolhem o mês da tela; na Estrela, o fim da janela de 12m.
    Estratégia: rede primeiro (pega versão nova quando online), cache como
    reserva offline. A cada deploy, bumpar a versão em CACHE. */
-const CACHE = 'painel-comercial-260901-4';
+const CACHE = 'painel-comercial-260901-5';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./'])).then(() => self.skipWaiting()));

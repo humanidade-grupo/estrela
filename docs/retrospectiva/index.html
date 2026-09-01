@@ -914,10 +914,13 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
     t.append(tb); wrap.append(t); return wrap;
   }
 
-  /* Um item pode trazer `ref`: o valor do mesmo recorte no mês anterior. Ele
-     vira uma SEGUNDA BARRA, mais fina e em tom recessivo, logo abaixo da do mês
-     atual — as duas na mesma escala, para a comparação se ler sem contar
-     número. `ref2` é a média dos anteriores, e é a terceira. */
+  /* Um item pode trazer `ref` (o mesmo recorte no mês anterior) e `ref2`
+     (a média dos três anteriores). Até 01/09 cada um virava uma barra extra,
+     mais fina, sob a do mês — três trilhas por item. POR DECISÃO DO RICARDO
+     (01/09) as barras extras SAÍRAM: fica só a barra do mês vigente, e a
+     comparação mora nos chips (M-1 e média), que já dizem valor e diferença.
+     A escala (max) continua considerando ref/ref2 de propósito: o comprimento
+     da barra do mês não muda com a remoção — só o ruído visual sai. */
   function barras(itens, o){
     o = Object.assign({ max:null, sufixo:'', corte:null, rotuloCorte:'', fmt:null,
                         rotuloRef:'M-1', rotuloRef2:null, mesesRef2:0, rotuloAtual:'atual' }, o||{});
@@ -964,25 +967,15 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
         if (comRef)  chips.append(ficha('', o.rotuloRef, i.ref, i.valor));
         if (comRef2) chips.append(ficha('ref2', o.rotuloRef2, i.ref2, i.valor));
         row.append(chips);
-        var par = el('div','bar-par');
-        par.append(trilha(i.valor, acima ? 'warn' : ''));
-        if (comRef) par.append(trilha(i.ref, 'ref'));
-        if (comRef2) par.append(trilha(i.ref2, 'ref2'));
-        row.append(par);
-      } else {
-        row.append(trilha(i.valor, acima ? 'warn' : ''));
       }
+      /* uma trilha só — a do mês vigente; M-1 e média vivem nos chips acima */
+      row.append(trilha(i.valor, acima ? 'warn' : ''));
       w.append(row);
     });
 
-    if (temRef){
-      var lg = el('div','legenda-m1');
-      lg.append(el('i'), el('span', null, o.rotuloAtual + ' — este mês'));
-      lg.append(el('i','ref'), el('span', null, o.rotuloRef + ' — mês anterior'));
-      if (o.rotuloRef2) lg.append(el('i','ref2'),
-        el('span', null, 'média — ' + o.mesesRef2 + ' meses anteriores'));
-      w.append(lg);
-    }
+    /* A legenda de três barras morreu junto com as barras extras (01/09):
+       os chips carregam o próprio rótulo, não há mais o que legendar. */
+    void temRef;
     return w;
   }
 
