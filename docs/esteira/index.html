@@ -456,16 +456,18 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
     <section id="secOrigem">
       <div class="sec-head"><h2>De onde vem a carteira</h2></div>
       <div class="origem-topo">
-      <p class="sec-note">Para cada vendedor, os leads que <strong>entraram neste m&ecirc;s</strong>,
-        separados por como chegaram. <strong>Pr&oacute;pria</strong> &eacute; o que ele mesmo cadastrou;
+      <p class="sec-note">Para cada vendedor, <strong>a carteira que ele tem na m&atilde;o hoje</strong> —
+        todo lead vivo do funil, de abril at&eacute; agora (Venda Ganha e Venda Perdida ficam de fora:
+        s&atilde;o hist&oacute;rico) —,
+        separada por como cada lead chegou. <strong>Pr&oacute;pria</strong> &eacute; o que ele mesmo cadastrou;
         <strong>SATI</strong> &eacute; o que a distribui&ccedil;&atilde;o autom&aacute;tica mandou;
         <strong>Formul&aacute;rio</strong> &eacute; o formul&aacute;rio do Facilita. Quem separa as tr&ecirc;s
         &eacute; o pr&oacute;prio sistema, no momento em que o registro nasce &mdash; ningu&eacute;m digita isso,
         ent&atilde;o n&atilde;o h&aacute; o que combinar com a equipe. <strong>Como ler:</strong> um
         <em>% pr&oacute;prio</em> alto n&atilde;o &eacute; m&eacute;rito nem dem&eacute;rito sozinho &mdash; pode
         ser quem vai atr&aacute;s, ou quem n&atilde;o est&aacute; recebendo da fila. As duas leituras se
-        separam olhando a coluna SATI ao lado: baixa para todo mundo &eacute; m&ecirc;s fraco de
-        capta&ccedil;&atilde;o autom&aacute;tica; baixa s&oacute; para um &eacute; composi&ccedil;&atilde;o de fila.</p>
+        separam olhando a coluna SATI ao lado: baixa para todo mundo &eacute; capta&ccedil;&atilde;o
+        autom&aacute;tica fraca; baixa s&oacute; para um &eacute; composi&ccedil;&atilde;o de fila.</p>
         <div id="origemRosca"></div>
       </div>
       <p class="sec-note" id="origemAmostra"></p>
@@ -775,19 +777,32 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
     var tP = som('propria'), tS = som('sati'), tF = som('formulario');
     var tT = tP + tS + tF;
 
-    /* O TAMANHO DA AMOSTRA, DITO NA CARA. Recorte mensal no dia 3 sao poucas
-       dezenas de leads no time inteiro; sem esta linha, tres leads viram
-       tendencia na cabeca de quem le. */
-    var mes = (r.mes || '').split('-');
+    /* O RECORTE, DITO NA CARA. Desde 01/09 a rota manda a CARTEIRA VIVA
+       inteira (recorte:'carteira') \u2014 todo o funil menos Venda Ganha e
+       Perdida, que sao historico. O ramo do mes fica como rede: se a tela
+       nova encontrar a rota antiga (deploy do GAS ainda propagando), o texto
+       continua dizendo a verdade sobre o numero que mostra. */
     var NOMES = ['', 'janeiro', 'fevereiro', 'mar\u00e7o', 'abril', 'maio', 'junho', 'julho',
                  'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
-    var nomeMes = NOMES[Number(mes[1])] || r.mes;
-    $('#origemAmostra').innerHTML =
-      '<strong>' + esc(nomeMes) + '</strong>, dias 1 a ' + r.dia + ' \u2014 <strong>' + num(tT) +
-      '</strong> lead(s) no time inteiro.' +
-      (tT < 40 ? ' <strong>Amostra pequena:</strong> no come\u00e7o do m\u00eas uma diferen\u00e7a de ' +
-                 'dois ou tr\u00eas leads vira percentual grande. Espere a semana fechar antes de ' +
-                 'concluir.' : '');
+    var recorteCarteira = r.recorte === 'carteira';
+    var nomeMes;
+    if (recorteCarteira) {
+      nomeMes = 'carteira';
+      $('#origemAmostra').innerHTML =
+        'A carteira viva de hoje \u2014 <strong>' + num(tT) + '</strong> lead(s) no funil inteiro, ' +
+        'de abril at\u00e9 agora. Venda Ganha e Venda Perdida ficam de fora' +
+        (r.historico ? ' (' + num(r.historico) + ' negociada(s), que s\u00e3o hist\u00f3rico)' : '') +
+        ': a pergunta aqui \u00e9 de onde veio o estoque que o time tem na m\u00e3o.';
+    } else {
+      var mes = (r.mes || '').split('-');
+      nomeMes = NOMES[Number(mes[1])] || r.mes;
+      $('#origemAmostra').innerHTML =
+        '<strong>' + esc(nomeMes) + '</strong>, dias 1 a ' + r.dia + ' \u2014 <strong>' + num(tT) +
+        '</strong> lead(s) no time inteiro.' +
+        (tT < 40 ? ' <strong>Amostra pequena:</strong> no come\u00e7o do m\u00eas uma diferen\u00e7a de ' +
+                   'dois ou tr\u00eas leads vira percentual grande. Espere a semana fechar antes de ' +
+                   'concluir.' : '');
+    }
 
     /* ---- rosca: o total do mes, as tres origens separadas ----
        O time inteiro num numero so. Aqui SATI e formulario NAO se somam, ao
@@ -819,7 +834,7 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
         '<div class="rosca-cx">' +
           '<div class="rosca">' +
             '<svg viewBox="0 0 42 42" role="img" aria-label="Origem dos ' + num(tT) +
-              ' leads de ' + esc(nomeMes) + '">' +
+              ' leads ' + (recorteCarteira ? 'da carteira' : 'de ' + esc(nomeMes)) + '">' +
               '<circle cx="21" cy="21" r="15.9155" fill="none" stroke="var(--line)" ' +
                 'stroke-width="6"></circle>' + arcos +
             '</svg>' +

@@ -1,6 +1,13 @@
 /* Painel Comercial — Parque da Saudade + Estrela Urbanidade
    Service worker: instalação PWA + reserva offline.
-   Atualizado em: 01/09/2026 (6ª do dia) — REVISÃO MOBILE, três consertos
+   Atualizado em: 01/09/2026 (7ª do dia) — "DE ONDE VEM A CARTEIRA" DEIXA DE
+   ZERAR NA VIRADA DO MÊS: o recorte da rota ?app=origem virou a CARTEIRA
+   VIVA inteira (funil menos Venda Ganha/Perdida, a régua da esteira ativa)
+   — decisão do Ricardo revertendo a de 31/08, depois de a seção amanhecer
+   dia 1º dizendo "setembro, 0 leads". Rota na @32; a tela reescreve os
+   textos (carteira, não mês) e mantém o ramo antigo como rede enquanto o
+   deploy do GAS propaga.
+   Antes, 01/09/2026 (6ª do dia) — REVISÃO MOBILE, três consertos
    medidos a 375px: o selo do rodapé subiu 4px na metade PS (encostava na
    primeira fila da barra de duas filas); o botão do chat subiu na emp-ps
    (estava DEITADO EM CIMA do selo — cobria justamente o aviso de dado
@@ -104,7 +111,7 @@
    abas: no Parque escolhem o mês da tela; na Estrela, o fim da janela de 12m.
    Estratégia: rede primeiro (pega versão nova quando online), cache como
    reserva offline. A cada deploy, bumpar a versão em CACHE. */
-const CACHE = 'painel-comercial-260901-6';
+const CACHE = 'painel-comercial-260901-7';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./'])).then(() => self.skipWaiting()));
