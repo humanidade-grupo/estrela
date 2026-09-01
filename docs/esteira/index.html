@@ -356,14 +356,17 @@ button.seg:focus-visible, a:focus-visible, .vsel input:focus-visible + .box{
 @media (prefers-reduced-motion: reduce){*{transition:none !important}}
 
 /* Embutida no Painel (aba Esteira, 01/09): o "voltar" some — o cabeçalho do
-   Painel é o caminho de volta — e a barra inferior perde a coluna dele.
-   Aberta sozinha (favorito, link direto), nada muda. */
+   Painel é o caminho de volta — e a BARRA INFERIOR INTEIRA some (revisão
+   mobile de 01/09): dentro da moldura o position:fixed dela gruda no pé do
+   iframe (que é a página inteira, não a janela), os atalhos de âncora não
+   rolam nada porque quem rola é o pai, e ela ainda brigaria com a barra do
+   próprio Painel. Aberta sozinha (favorito, link direto), nada muda. */
 html.embutido .voltar{display:none !important}
-html.embutido .bnav{grid-template-columns:repeat(4,1fr)}
-html.embutido .bnav a[href="../"]{display:none !important}
+html.embutido .bnav{display:none !important}
 /* Sem isto a altura da moldura vira catraca: o pai iguala o iframe ao
-   conteúdo, o 100vh daqui vira essa altura, e o min-height nunca a devolve. */
-html.embutido body{min-height:0}
+   conteúdo, o 100vh daqui vira essa altura, e o min-height nunca a devolve.
+   E o padding-bottom que reservava lugar para a barra vai junto com ela. */
+html.embutido body{min-height:0;padding-bottom:0 !important}
 </style>
 <script>
 /* Antes do primeiro paint, para o voltar não piscar. Cross-origin no acesso a

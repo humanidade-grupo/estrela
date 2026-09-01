@@ -1,6 +1,15 @@
 /* Painel Comercial — Parque da Saudade + Estrela Urbanidade
    Service worker: instalação PWA + reserva offline.
-   Atualizado em: 01/09/2026 (5ª do dia) — RETROSPECTIVA SÓ COM A BARRA DO
+   Atualizado em: 01/09/2026 (6ª do dia) — REVISÃO MOBILE, três consertos
+   medidos a 375px: o selo do rodapé subiu 4px na metade PS (encostava na
+   primeira fila da barra de duas filas); o botão do chat subiu na emp-ps
+   (estava DEITADO EM CIMA do selo — cobria justamente o aviso de dado
+   velho); e a Esteira EMBUTIDA perdeu a barra inferior interna inteira
+   (fixed dentro de moldura auto-altura gruda no pé do conteúdo, as âncoras
+   não rolam nada e ela brigava com a barra do próprio Painel — aberta por
+   link direto ela continua igual). Sem estouro horizontal em nenhuma tela
+   (pai, Executivo, Perfil, Retrospectiva conferidos por medida).
+   Antes, 01/09/2026 (5ª do dia) — RETROSPECTIVA SÓ COM A BARRA DO
    MÊS: as barras extras de M-1 e da média de 3 meses saíram de todos os
    gráficos, por decisão do Ricardo — a comparação fica nos chips (que já
    dizem valor e diferença) e a legenda de três barras morreu junto. A escala
@@ -95,7 +104,7 @@
    abas: no Parque escolhem o mês da tela; na Estrela, o fim da janela de 12m.
    Estratégia: rede primeiro (pega versão nova quando online), cache como
    reserva offline. A cada deploy, bumpar a versão em CACHE. */
-const CACHE = 'painel-comercial-260901-5';
+const CACHE = 'painel-comercial-260901-6';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./'])).then(() => self.skipWaiting()));

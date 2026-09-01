@@ -126,11 +126,17 @@
     /* Dois móveis fixos disputam o rodapé: o #selo do carimbo do Cofre (34px, e
        62px acima da barra no celular) e a .bnav de abas (~59px + área segura).
        O botão sobe acima dos dois — cobrir o carimbo seria esconder justamente
-       o aviso de "dado velho". */
+       o aviso de "dado velho".
+       Desde 01/09 a barra do PARQUE tem DUAS filas (~111px) e o selo mora a
+       112px do pé — na emp-ps o botão sobe mais, senão ele deita em cima do
+       carimbo (foi visto cobrindo o selo na revisão mobile). */
     '@media(max-width:640px){',
     '  .eu-chat-bt{bottom:calc(106px + env(safe-area-inset-bottom))}',
     '  .eu-chat{bottom:calc(170px + env(safe-area-inset-bottom));',
     '    max-height:calc(100vh - 240px)}',
+    '  body.emp-ps .eu-chat-bt{bottom:calc(154px + env(safe-area-inset-bottom))}',
+    '  body.emp-ps .eu-chat{bottom:calc(216px + env(safe-area-inset-bottom));',
+    '    max-height:calc(100vh - 280px)}',
     '}'
   ].join('\n');
 

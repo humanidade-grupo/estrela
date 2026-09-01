@@ -1814,9 +1814,10 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
   @media(max-width:640px){body.tem-selo{padding-bottom:96px}
     #selo{bottom:62px}
     /* a barra do Parque tem DUAS filas (01/09) — o selo sobe junto, senão
-       ele deita em cima da primeira fila de botões */
-    body.emp-ps #selo{bottom:108px}
-    body.emp-ps.tem-selo{padding-bottom:150px}}
+       ele deita em cima da primeira fila de botões (medida real da barra:
+       111px; 112 deixa 1px de folga) */
+    body.emp-ps #selo{bottom:112px}
+    body.emp-ps.tem-selo{padding-bottom:154px}}
 </style>
 
 <div id="carga">
