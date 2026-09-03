@@ -129,6 +129,22 @@
   .statuschip.good{color:#2fbf4f;background:rgba(12,163,12,.12)}
   .statuschip.crit{color:#e46a6a;background:rgba(208,59,59,.12)}
 
+  /* ---------- meta em blocos ----------
+     Faixa horizontal de checkpoints. `flex:1 1 150px` faz os 3 decêndios
+     ocuparem a largura toda e as 5 semanas quebrarem sozinhas no celular. */
+  .blocos{display:flex;gap:10px;flex-wrap:wrap}
+  .bloco{flex:1 1 150px;background:var(--card2);border:1px solid var(--edge);border-radius:12px;padding:11px 12px}
+  .bloco.curso{border-color:var(--accent)}
+  .bloco.futuro{opacity:.62}
+  .bloco .per{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+  .bloco .n{font-size:24px;font-weight:650;margin:3px 0 1px;font-variant-numeric:tabular-nums}
+  .bloco .n small{font-size:13px;color:var(--ink2);font-weight:500}
+  .bloco .bar{height:6px;border-radius:4px;background:var(--grid);overflow:hidden;margin:7px 0 6px}
+  .bloco .bar i{display:block;height:100%;background:var(--accent);border-radius:4px}
+  .bloco .bar i.ok{background:#2fbf4f}
+  .bloco .bar i.ruim{background:#e46a6a}
+  .bloco .st{font-size:11px;color:var(--ink2)}
+
   table.placar{width:100%;border-collapse:collapse;font-size:12.5px}
   table.placar td,table.placar th{padding:7px 8px;text-align:left}
   table.placar th{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;
@@ -317,6 +333,58 @@ function ymLabel(ym) { var a = Math.floor(ym / 100), m = ym % 100; return MES_AB
 function ymShift(ym, n) { var a = Math.floor(ym / 100), m = ym % 100 - 1 + n; return (a + Math.floor(m / 12)) * 100 + (((m % 12) + 12) % 12) + 1; }
 function diasNoMes(ym) { return new Date(Math.floor(ym / 100), ym % 100, 0).getDate(); }
 
+/* Blocos da meta: o mês partido em checkpoints. 'd10' = decêndios (3 blocos
+   num mês de 30), 'sem' = semanas corridas a partir do dia 1. */
+var BLOCOS = { modo: 'd10' };
+
+/* ---- séries acumuladas: o termômetro e a projeção liam a MESMA coisa por
+   dois caminhos diferentes, e foi assim que 90 e 70 acabaram na mesma tela
+   sem ninguém conseguir dizer por quê. Agora as duas contas saem daqui. ---- */
+
+/* acumulado dia a dia de um mês, sempre com 31 posições: mês de 30 repete o
+   dia 30 na posição 31, senão a faixa despencaria no último dia por motivo
+   de calendário, não de venda. `vale` diz o que somar — 1 por venda (contagem)
+   ou o valor dela. */
+function acumMes(V, ymX, vale) {
+  var pd = {}, nd = diasNoMes(ymX), out = [], acc = 0, d, i;
+  for (i = 0; i < V.length; i++) {
+    if (V[i].ym !== ymX) continue;
+    d = Number(String(V[i].data).slice(8, 10));
+    if (d >= 1 && d <= 31) pd[d] = (pd[d] || 0) + vale(V[i]);
+  }
+  for (d = 1; d <= nd; d++) { acc += (pd[d] || 0); out.push(acc); }
+  while (out.length < 31) out.push(out[out.length - 1]);
+  return out;
+}
+function umaVenda() { return 1; }
+
+/* meses de referência: completos, desde TERMO_INICIO, anteriores ao exibido.
+   A lista se monta sozinha a cada mês que fecha. */
+function mesesRef(V, ym) {
+  var ys = [], i;
+  for (i = 0; i < V.length; i++)
+    if (V[i].ym >= TERMO_INICIO && V[i].ym < ym && ys.indexOf(V[i].ym) < 0) ys.push(V[i].ym);
+  return ys.sort(function (a, b) { return a - b; });
+}
+
+function medianaDe(a) {
+  if (!a.length) return 0;
+  var s = a.slice().sort(function (x, y) { return x - y; }), m = s.length >> 1;
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+
+/* perfil: fração do total do mês já feita até cada dia, na mediana dos meses
+   de referência — "no dia 15 costuma-se ter 42% do mês feito". É o que diz
+   quanto do mês o dia de hoje já decidiu, e portanto quanta fé a projeção
+   merece. */
+function perfilMediano(acums) {
+  var out = [], p;
+  for (p = 0; p < 31; p++) out.push(medianaDe(acums.map(function (a) {
+    var t = a[30]; return t > 0 ? a[p] / t : 0;
+  })));
+  return out;
+}
+
 /* tooltips compartilhados */
 var tip = $('#tip');
 function bindTips(root) {
@@ -430,18 +498,65 @@ window.__renderPS = function (dados, ymSel) {
   var descPond = faceMes > 0 ? (1 - vgvMes / faceMes) * 100 : null; // %
   var vgvAntMesmoDia = soma(doAnt.filter(function (v) { return Number(String(v.data).slice(8, 10)) <= diaRef; }), function (v) { return v.venda; });
 
-  /* ritmos e projeção — só para o mês corrente */
-  var ritmoMes = diaRef > 0 ? total / diaRef : 0;
+  /* ================== ritmos e projeção — só no mês corrente ==============
+     Até 02/09 este bloco produzia UM número (`prov`) e uma faixa que, do dia 1
+     ao 14, era garantidamente um PONTO: `d14ini` vale 1 enquanto diaRef<=14, e
+     aí o "ritmo dos últimos 14 dias" É o ritmo do mês — piso === teto === prov.
+     O cone exibia certeza exatamente quando a incerteza é máxima. Pior: o
+     Termômetro, no card ao lado, projetava o mesmo fechamento por OUTRO método
+     e mostrava outro número, sem que nada na tela dissesse que eram dois
+     métodos. Em 02/09 a tela deu 90 aqui e 70 lá, com 6 vendas em 2 dias.
+
+     Agora: o número grande é o RITMO CORRIDO (o que há hoje, mantida a média
+     até o fim do mês) · a faixa é o espalhamento dos métodos disponíveis, e
+     por isso só colapsa quando eles concordam de verdade · e o card diz quanto
+     do mês o dia de hoje costuma decidir, que é a medida honesta de quanta fé
+     a projeção merece.
+     -------------------------------------------------------------------- */
+  var acumAtual = acumMes(V, ym, umaVenda);
+  var totalAteHoje = acumAtual[Math.min(diaRef, nDias) - 1] || 0;
+  var adiantadas = total - totalAteHoje;   /* venda datada à frente de hoje */
+
+  var ritmoMes = diaRef > 0 ? totalAteHoje / diaRef : 0;
   var d14ini = Math.max(1, diaRef - 13), n14 = 0;
   for (var dd = d14ini; dd <= diaRef; dd++) n14 += (porDia[dd] || 0);
   var ritmo14 = n14 / Math.max(1, diaRef - d14ini + 1);
-  var rMin = Math.min(ritmoMes, ritmo14), rMax = Math.max(ritmoMes, ritmo14);
   var restam = nDias - diaRef;
-  var piso = Math.round(total + rMin * restam);
-  var teto = Math.round(total + rMax * restam);
-  var prov = Math.round(total + (rMin + rMax) / 2 * restam);
+
+  var refYms = mesesRef(V, ym);
+  var refAcum = refYms.map(function (y) { return acumMes(V, y, umaVenda); });
+  var refLab = refYms.length ? ymLabel(refYms[0]) + '–' + ymLabel(refYms[refYms.length - 1]) : '';
+  var refFech = refAcum.map(function (a) { return a[30]; });
+  var perfilN = refAcum.length ? perfilMediano(refAcum) : null;
+  var fracDia = perfilN ? perfilN[Math.min(diaRef, nDias) - 1] : null;
+
+  /* (1) ritmo corrido — a média de hoje mantida até o fim do mês */
+  var projCorrido = mesCorrente ? Math.round(totalAteHoje + ritmoMes * restam) : null;
+  /* (2) ritmo dos últimos 14 dias — só existe depois do dia 14; antes disso
+         ele é, por construção, o mesmo número do (1), e entrar na faixa como
+         se fosse método independente é o que fabricava a falsa precisão */
+  var proj14 = (mesCorrente && diaRef > 14) ? Math.round(totalAteHoje + ritmo14 * restam) : null;
+  /* (3) curva histórica — o mesmo acumulado, se o resto do mês seguir o perfil
+         mediano dos meses de referência. É a conta do Termômetro. */
+  var projHist = (mesCorrente && fracDia > 0 && totalAteHoje > 0) ? Math.round(totalAteHoje / fracDia) : null;
+
+  var cand = [];
+  if (projCorrido !== null) cand.push(projCorrido);
+  if (proj14 !== null) cand.push(proj14);
+  if (projHist !== null) cand.push(projHist);
+  var prov = projCorrido;
+  var piso = cand.length ? Math.min.apply(null, cand) : null;
+  var teto = cand.length ? Math.max.apply(null, cand) : null;
+
   var esperado = metaOf ? metaOf * diaRef / nDias : null;
   var necessario = (metaOf && restam > 0) ? Math.max(0, metaOf - total) / restam : null;
+
+  /* quanta fé a projeção merece = quanto do mês costuma estar decidido aqui.
+     Sem histórico, cai no calendário puro (dia ÷ dias do mês). */
+  var fracFe = fracDia != null ? fracDia : diaRef / nDias;
+  var confN = fracFe >= .6 ? 'good' : (fracFe >= .25 ? 'warn' : 'crit');
+  var confTxt = { good: '● projeção firme', warn: '▲ projeção ainda mole',
+                  crit: '● cedo demais — trate como palpite' }[confN];
 
   var stMes = 'good';
   if (metaOf && esperado) stMes = total >= esperado ? 'good' : (total >= esperado * 0.7 ? 'warn' : 'crit');
@@ -460,13 +575,31 @@ window.__renderPS = function (dados, ymSel) {
 
   g.appendChild(el(
     '<div class="card s4"><h3>Projeção de fechamento</h3>' +
-    '<div class="why">' + (mesCorrente ? 'piso = ritmo do mês inteiro · teto = ritmo dos últimos 14 dias' : 'mês fechado — sem projeção') + '</div>' +
+    '<div class="why">' + (mesCorrente
+      ? 'ritmo corrido: as ' + fN(totalAteHoje) + ' vendas até o dia ' + diaRef + ', mantida a média até o dia ' + nDias
+      : 'mês fechado — sem projeção') + '</div>' +
     (mesCorrente
       ? '<div class="tile"><div class="val">' + fN(prov) + ' <small>jazigos</small></div>' +
-        '<div class="delta flat">piso <b style="color:var(--ink)">' + fN(piso) + '</b> · teto <b style="color:var(--ink)">' + fN(teto) + '</b>' +
+        '<div class="delta flat">' + fN(ritmoMes, 1) + ' vendas/dia' +
+        (piso !== teto ? ' · faixa <b style="color:var(--ink)">' + fN(piso) + '</b>–<b style="color:var(--ink)">' + fN(teto) + '</b>' : '') +
         (metaOf ? ' <span class="vs">· meta ' + metaOf + '</span>' : '') + '</div></div><div id="psCone"></div>' +
+        '<div style="margin-top:10px"><span class="statuschip ' + confN + '">' + confTxt + '</span></div>' +
+        '<div class="why" style="margin:8px 0 0">Dia ' + diaRef + ' de ' + nDias + '.' +
+          (fracDia != null
+            ? ' Nesta altura ' + esc(refLab) + ' tinham <b>' + fPct(fracDia * 100, 0) + '</b> do mês feito' +
+              (refFech.length ? ', e fecharam entre <b>' + fN(Math.min.apply(null, refFech)) +
+               '</b> e <b>' + fN(Math.max.apply(null, refFech)) + '</b>' : '') + '.'
+            : '') +
+          ' <b>Quanto mais dias passam, mais a projeção encosta na tendência real</b> — hoje ela se apoia em ' +
+          fN(diaRef) + ' dia' + (diaRef > 1 ? 's' : '') + '.</div>' +
+        (projHist !== null && projHist !== prov
+          ? '<div style="font-size:11.5px;color:var(--ink2);margin-top:8px">Pela <b style="color:var(--ink)">curva histórica</b> daria <b style="color:var(--ink)">' +
+            fN(projHist) + '</b> — o mesmo acumulado, se o resto do mês seguir o perfil mediano de ' + esc(refLab) +
+            '. É o número que o Termômetro projeta ao lado: outra conta, não outra verdade.</div>' : '') +
         (necessario !== null ? '<div style="font-size:11.5px;color:var(--ink2);margin-top:8px">Para bater a meta: <b style="color:var(--ink)">' +
-          fN(necessario, 1) + ' vendas/dia</b> — ritmo do mês: ' + fN(ritmoMes, 1) + '</div>' : '')
+          fN(necessario, 1) + ' vendas/dia</b> — ritmo do mês: ' + fN(ritmoMes, 1) + '</div>' : '') +
+        (adiantadas > 0 ? '<div style="font-size:11.5px;color:var(--warn);margin-top:8px">⚠ ' + fN(adiantadas) +
+          ' venda(s) do mês com data à frente do dia ' + diaRef + ' — fora da conta do ritmo.</div>' : '')
       : '<div class="tile"><div class="val">' + fN(total) + ' <small>jazigos</small></div>' +
         '<div class="delta flat">resultado final do mês' + (metaOf ? ' · ' + fPct(total / metaOf * 100, 0) + ' da meta' : '') + '</div></div>') +
     '</div>'));
@@ -511,6 +644,21 @@ window.__renderPS = function (dados, ymSel) {
   var cPlacar = el('<div class="card s8"><h3>Placar por vendedor</h3><div class="why">risca cheia = esperado até hoje · tracejada = meta individual (Config)</div><table class="placar" id="psPlacar"></table></div>');
   g.appendChild(cPlacar);
 
+  /* -------- meta em blocos --------
+     Pedido do Ricardo em 02/09: a meta do mês quebrada em checkpoints, para
+     ninguém descobrir no dia 28 que o mês já era. A meta de cada bloco é
+     proporcional aos dias dele, calculada por acumulado e diferença — assim os
+     blocos somam EXATAMENTE a meta, coisa que "23 por semana" não faz: 23×4=92
+     num mês que tem 4,3 semanas, e a conta some com o resto. */
+  var cBlocos = el('<div class="card s12"><h3>Meta em blocos — ' + esc(ymLabel(ym)) + '</h3>' +
+    '<div class="why">a meta do mês partida em checkpoints · meta do bloco = meta ÷ ' + nDias +
+      ' dias × dias do bloco, e por isso os blocos somam a meta cheia</div>' +
+    '<div class="termobar"><div class="seg" role="group" aria-label="Tamanho do bloco">' +
+      '<button id="blD" type="button">10 dias</button>' +
+      '<button id="blS" type="button">semana</button></div></div>' +
+    '<div id="psBlocos"></div></div>');
+  g.appendChild(cBlocos);
+
   /* -------- mix -------- */
   g.appendChild(el('<div class="sect"><h2>Mix da venda — ' + esc(ymLabel(ym)) + '</h2><div class="ln"></div><span class="tag">canal · modalidade · pagamento</span></div>'));
   var cCanal = el('<div class="card s4"><h3>Canal de venda</h3><div class="why">participação nas ' + fN(total) + ' vendas do mês</div><div id="psCanal"></div></div>');
@@ -554,23 +702,129 @@ window.__renderPS = function (dados, ymSel) {
     $('#psGauge').appendChild(svg); bindTips(svg);
   })();
 
-  /* cone de projeção */
+  /* cone de projeção — a barriga só existe quando os métodos discordam.
+     Quando piso === teto não há faixa nenhuma para desenhar, e desenhar um
+     triângulo de altura zero com dois rótulos iguais é o que fazia a tela
+     parecer precisa no dia 2. */
   (function () {
-    if (!mesCorrente) return;
+    if (!mesCorrente || prov === null) return;
     var w = 300, h = 62, svg = S(w, h), x0 = 8, x1 = w - 40;
-    var topo = Math.max(teto, metaOf || 0, total) || 1;
+    var faixa = piso !== teto;
+    var topo = Math.max(teto || 0, metaOf || 0, totalAteHoje) || 1;
     var y = function (v) { return 50 - (v / topo) * 40; };
     var xh = x0 + (diaRef / nDias) * (x1 - x0);
-    N('path', { d: 'M' + xh + ' ' + y(total) + ' L' + x1 + ' ' + y(teto) + ' L' + x1 + ' ' + y(piso) + ' Z', fill: C.accent, opacity: .14 }, svg);
+    if (faixa) N('path', { d: 'M' + xh + ' ' + y(totalAteHoje) + ' L' + x1 + ' ' + y(teto) + ' L' + x1 + ' ' + y(piso) + ' Z', fill: C.accent, opacity: .14 }, svg);
     N('line', { x1: x0, y1: y(0), x2: x1, y2: y(0), stroke: C.axis }, svg);
-    N('path', { d: 'M' + x0 + ' ' + y(0) + ' L' + xh + ' ' + y(total), stroke: C.accent, 'stroke-width': 2, fill: 'none', 'stroke-linecap': 'round' }, svg);
-    N('path', { d: 'M' + xh + ' ' + y(total) + ' L' + x1 + ' ' + y(prov), stroke: C.accent, 'stroke-width': 2, 'stroke-dasharray': '1 5', 'stroke-linecap': 'round', fill: 'none' }, svg);
-    N('circle', { cx: xh, cy: y(total), r: 4, fill: C.accent, stroke: C.card, 'stroke-width': 2 }, svg);
+    N('path', { d: 'M' + x0 + ' ' + y(0) + ' L' + xh + ' ' + y(totalAteHoje), stroke: C.accent, 'stroke-width': 2, fill: 'none', 'stroke-linecap': 'round' }, svg);
+    N('path', { d: 'M' + xh + ' ' + y(totalAteHoje) + ' L' + x1 + ' ' + y(prov), stroke: C.accent, 'stroke-width': 2, 'stroke-dasharray': '1 5', 'stroke-linecap': 'round', fill: 'none' }, svg);
+    N('circle', { cx: xh, cy: y(totalAteHoje), r: 4, fill: C.accent, stroke: C.card, 'stroke-width': 2 }, svg);
     T(x1 + 4, y(prov) + 3, fN(prov), 'val-t', 'start', svg);
-    T(x1 + 4, y(teto) + 1, fN(teto), 'axis-t', 'start', svg);
-    T(x1 + 4, y(piso) + 9, fN(piso), 'axis-t', 'start', svg);
+    if (faixa) {
+      T(x1 + 4, y(teto) + 1, fN(teto), 'axis-t', 'start', svg);
+      T(x1 + 4, y(piso) + 9, fN(piso), 'axis-t', 'start', svg);
+    }
     T(x0, h - 2, '1/' + ymLabel(ym).split('/')[0], 'axis-t', 'start', svg); T(x1, h - 2, String(nDias), 'axis-t', 'end', svg);
     $('#psCone').appendChild(svg);
+  })();
+
+  /* ================= meta em blocos =================
+     Três decêndios ou cinco semanas, conforme o botão. O bloco em curso é
+     comparado contra a fatia dele que já passou, não contra a meta inteira —
+     cobrar 30 no dia 2 do decêndio seria mentir para o vendedor do mesmo jeito
+     que projetar 90 no dia 2 do mês mentia para a gestão. */
+  (function () {
+    var alvo = $('#psBlocos');
+    if (!alvo) return;
+
+    /* o rabo do mês entra no bloco anterior em vez de virar bloco próprio:
+       um mês de 31 dias em decêndios geraria um "dias 31–31" com meta 3, e um
+       mês de 30 em semanas, um "dias 29–30" com meta 6 — checkpoint que ninguém
+       consegue cumprir nem interpretar. Com a fusão, set/26 dá exatamente as 4
+       semanas que o Ricardo tinha em mente. */
+    function faixas(tam) {
+      var out = [], ini = 1, f;
+      while (ini <= nDias) { f = Math.min(ini + tam - 1, nDias); out.push({ a: ini, b: f }); ini = f + 1; }
+      if (out.length > 1) {
+        var ult = out[out.length - 1];
+        if (ult.b - ult.a + 1 < tam / 2) { out[out.length - 2].b = ult.b; out.pop(); }
+      }
+      return out;
+    }
+
+    function desenhar() {
+      var bs = faixas(BLOCOS.modo === 'sem' ? 7 : 10), acumMeta = 0, feitoAte = 0, metaAte = 0;
+
+      bs.forEach(function (b) {
+        var ate = metaOf ? Math.round(metaOf * b.b / nDias) : null;
+        b.meta = (ate === null) ? null : ate - acumMeta;
+        if (ate !== null) acumMeta = ate;
+        b.feito = 0;
+        for (var d = b.a; d <= b.b; d++) b.feito += (porDia[d] || 0);
+        b.dias = b.b - b.a + 1;
+        b.estado = !mesCorrente ? 'fechado'
+          : (b.b < diaRef ? 'fechado' : (b.a <= diaRef ? 'curso' : 'futuro'));
+        if (b.estado !== 'futuro') {
+          feitoAte += b.feito;
+          if (b.meta !== null) {
+            var diasCorridos = b.estado === 'curso' ? (diaRef - b.a + 1) : b.dias;
+            metaAte += b.meta * diasCorridos / b.dias;
+          }
+        }
+      });
+
+      var html = '<div class="blocos">';
+      bs.forEach(function (b) {
+        var per = 'dias ' + b.a + '–' + b.b;
+        var st = '', cls = '', larg = 0;
+        if (b.meta === null) {
+          st = b.estado === 'futuro' ? 'a fazer' : (b.feito === 1 ? '1 venda' : fN(b.feito) + ' vendas');
+        } else if (b.estado === 'fechado') {
+          larg = Math.min(100, b.meta > 0 ? b.feito / b.meta * 100 : 100);
+          cls = b.feito >= b.meta ? 'ok' : 'ruim';
+          st = b.feito >= b.meta ? '✔ bateu' + (b.feito > b.meta ? ' (+' + fN(b.feito - b.meta) + ')' : '')
+                                 : '✖ faltaram ' + fN(b.meta - b.feito);
+        } else if (b.estado === 'curso') {
+          var corridos = diaRef - b.a + 1, faltamD = b.b - diaRef;
+          var esp = b.meta * corridos / b.dias;
+          larg = Math.min(100, b.meta > 0 ? b.feito / b.meta * 100 : 0);
+          cls = b.feito >= esp ? 'ok' : '';
+          st = (b.feito >= esp ? '● no ritmo do bloco' : '▲ abaixo — esperado ' + fN(esp, 0) + ' no dia ' + diaRef) +
+               (faltamD > 0 ? ' · faltam ' + fN(Math.max(0, b.meta - b.feito)) + ' em ' + faltamD + ' dia' + (faltamD > 1 ? 's' : '') : '');
+        } else {
+          st = 'a fazer';
+        }
+        html += '<div class="bloco ' + b.estado + '">' +
+          '<div class="per">' + per + (b.estado === 'curso' ? ' · em curso' : '') + '</div>' +
+          '<div class="n">' + fN(b.feito) + (b.meta === null ? '' : ' <small>/ ' + fN(b.meta) + '</small>') + '</div>' +
+          (b.meta === null ? '' : '<div class="bar"><i class="' + cls + '" style="width:' + larg.toFixed(1) + '%"></i></div>') +
+          '<div class="st">' + st + '</div></div>';
+      });
+      html += '</div>';
+
+      if (!metaOf) {
+        html += '<div class="why" style="margin:11px 0 0">' + esc(ymLabel(ym)) +
+          ' está <b>sem meta oficial</b> na Config do Cofre — os blocos mostram só o realizado. ' +
+          'Com a meta preenchida, cada bloco ganha alvo e status.</div>';
+      } else {
+        var saldo = feitoAte - metaAte;
+        html += '<div class="why" style="margin:11px 0 0">Até o dia ' + (mesCorrente ? diaRef : nDias) +
+          ': <b>' + fN(feitoAte) + '</b> feitos contra <b>' + fN(metaAte, 0) + '</b> de meta proporcional — saldo <b style="color:' +
+          (saldo >= 0 ? '#2fbf4f' : '#e46a6a') + '">' + (saldo >= 0 ? '+' : '−') + fN(Math.abs(saldo), 0) + '</b>. ' +
+          'Meta cheia do mês: <b>' + fN(metaOf) + '</b>' + (meta.desafio ? ' · desafio ' + fN(meta.desafio) : '') + '.</div>';
+      }
+      alvo.innerHTML = html;
+    }
+
+    function marca() {
+      var a = $('#blD'), b = $('#blS');
+      if (a) a.setAttribute('aria-selected', BLOCOS.modo === 'd10');
+      if (b) b.setAttribute('aria-selected', BLOCOS.modo === 'sem');
+    }
+    var bD = $('#blD'), bS = $('#blS');
+    if (bD) bD.onclick = function () { BLOCOS.modo = 'd10'; marca(); desenhar(); };
+    if (bS) bS.onclick = function () { BLOCOS.modo = 'sem'; marca(); desenhar(); };
+    marca();
+    desenhar();
   })();
 
   /* ================= termômetro do mês =================
@@ -589,11 +843,6 @@ window.__renderPS = function (dados, ymSel) {
     var alvo = $('#psCurva');
     if (!alvo) return;
 
-    function mediana(a) {
-      if (!a.length) return 0;
-      var s = a.slice().sort(function (x, y) { return x - y; }), m = s.length >> 1;
-      return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
-    }
     function topoBonito(v) {
       if (!(v > 0)) return 1;
       var p = Math.pow(10, Math.floor(Math.log10(v))), e = [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10];
@@ -609,27 +858,10 @@ window.__renderPS = function (dados, ymSel) {
       var vale = function (v) { return medida === 'n' ? 1 : Number(v.venda || 0); };
       var fmt = function (x) { return medida === 'n' ? fN(x, 0) : fBRL(x); };
 
-      /* acumulado dia a dia de um mês. Mês de 30 dias repete o dia 30 na
-         posição 31: sem isso a faixa despencaria no último dia por motivo de
-         calendário, não de venda. */
-      function acumDe(ymX) {
-        var pd = {}, nd = diasNoMes(ymX), out = [], acc = 0, d, i;
-        for (i = 0; i < V.length; i++) {
-          if (V[i].ym !== ymX) continue;
-          d = Number(String(V[i].data).slice(8, 10));
-          if (d >= 1 && d <= 31) pd[d] = (pd[d] || 0) + vale(V[i]);
-        }
-        for (d = 1; d <= nd; d++) { acc += (pd[d] || 0); out.push(acc); }
-        while (out.length < DIAS) out.push(out[out.length - 1]);
-        return out;
-      }
+      /* mesma série que a Projeção de fechamento usa (acumMes/mesesRef, no
+         topo do arquivo). Aqui `vale` muda com o botão Vendas × Valor. */
+      function acumDe(ymX) { return acumMes(V, ymX, vale); }
 
-      var refYms = [], i2;
-      for (i2 = 0; i2 < V.length; i2++) {
-        var yy = V[i2].ym;
-        if (yy >= TERMO_INICIO && yy < ym && refYms.indexOf(yy) < 0) refYms.push(yy);
-      }
-      refYms.sort(function (a, b) { return a - b; });
       var refs = refYms.map(function (y) { return { ym: y, label: ymLabel(y), acum: acumDe(y) }; });
       var faixaLab = refs.length ? refs[0].label + '–' + refs[refs.length - 1].label : '';
 
@@ -646,22 +878,15 @@ window.__renderPS = function (dados, ymSel) {
           var col = refs.map(function (r) { return r.acum[d0]; });
           env.min.push(Math.min.apply(null, col));
           env.max.push(Math.max.apply(null, col));
-          env.med.push(mediana(col));
+          env.med.push(medianaDe(col));
         }
       }
 
       /* perfil: fração do total do mês já feita até cada dia, na mediana dos
-         meses de referência — "no dia 15 costuma-se ter 42% do mês feito" */
-      var perfil = null, p0;
-      if (refs.length) {
-        perfil = [];
-        for (p0 = 0; p0 < DIAS; p0++) {
-          perfil.push(mediana(refs.map(function (r) {
-            var t = r.acum[DIAS - 1];
-            return t > 0 ? r.acum[p0] / t : 0;
-          })));
-        }
-      }
+         meses de referência — "no dia 15 costuma-se ter 42% do mês feito".
+         O card de Projeção usa o MESMO perfil (na contagem) para dizer quanta
+         fé a projeção merece. */
+      var perfil = refs.length ? perfilMediano(refs.map(function (r) { return r.acum; })) : null;
 
       /* projeção: só no mês em curso e só se há de onde projetar. Assume que
          o resto do mês se comporta como a mediana histórica — não sabe de
@@ -924,7 +1149,7 @@ window.__renderPS = function (dados, ymSel) {
       var cx = 44 + i * slot + slot / 2;
       if (o.proj && o.proj > o.v) {
         var rp = N('rect', { x: cx - bw / 2, y: y(o.proj), width: bw, height: y(o.v) - y(o.proj), rx: 4, fill: C.accent, opacity: .28 }, svg);
-        rp.dataset.tip = '<b>Projeção: ' + fN(o.proj) + '</b><br><span>ritmo atual projetado</span>';
+        rp.dataset.tip = '<b>Projeção: ' + fN(o.proj) + '</b><br><span>ritmo corrido — mesma conta do card Projeção de fechamento</span>';
         T(cx, y(o.proj) - 5, 'proj. ' + fN(o.proj), 'axis-t', 'middle', svg);
       }
       var b = N('rect', { x: cx - bw / 2, y: y(o.v), width: bw, height: Math.max(y(0) - y(o.v), 2), fill: C.accent }, svg);
