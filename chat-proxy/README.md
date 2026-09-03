@@ -106,7 +106,31 @@ cd chat-proxy && wrangler secret put PAINEL_TOKEN
 ```
 
 O log do Worker imprime `AUTH FALHOU` com o tamanho e um hash truncado dos dois
-lados, o suficiente para ver que divergem sem expor o valor.
+lados, o suficiente para ver que divergem sem expor o valor. Ler esse log e' o
+primeiro passo, nao o ultimo: `wrangler tail estrela-painel-chat` numa janela,
+uma requisicao na outra, e o `tamanhoEsperado` responde sozinho o que esta
+errado.
+
+**Cuidado com o `|`.** O `secret put` le do stdin quando nao ha terminal, e
+`Get-Content token.txt | wrangler secret put` grava o token **mais uma quebra de
+linha** — 29 caracteres onde o Cofre exige 28. O Worker compara com `!==`, sem
+`trim`, entao o 401 continua identico e o `AUTH FALHOU` denuncia: `tamanhoRecebido`
+28, `tamanhoEsperado` 29. Aconteceu em 02/09/2026 e custou uma rodada inteira.
+
+Colar a mao no prompt do `secret put` nao tem esse problema. Para gravar sem
+digitar nada — script, ou token que ja esta em arquivo — use o `bulk`, que le
+JSON e nao mexe no valor:
+
+```bash
+cd chat-proxy && wrangler secret bulk segredos.json
+```
+
+com `{"PAINEL_TOKEN": "<o token do Cofre>"}` dentro. **Apague o arquivo depois** —
+ele e' o segredo em texto claro, e nada nesta pasta deve chegar ao repositorio.
+
+**A prova de que pegou** e' uma requisicao com o token novo e corpo `{}`: passa
+pela autenticacao e para no `400 Campo "tabela" ausente`. Um `400` significa
+token aceito; e' o teste que nao gasta chamada de API.
 
 O `CONSERTAR-CHAT.cmd` na raiz **não conserta mais isto sozinho**: ele chamava
 `build/rotacionar-token.ps1`, que reenviava o token aleatório do cofre DPAPI

@@ -28,3 +28,7 @@ __pycache__/
 
 # Cofre de segredos (DPAPI) — mora fora do repo, mas nunca versionar
 *.sec
+
+# JSON do `wrangler secret bulk` — e o token em texto claro. Ver chat-proxy/README.md
+segredos.json
+chat-proxy/segredos.json
