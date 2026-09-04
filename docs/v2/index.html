@@ -70,6 +70,10 @@
         border:1px solid var(--edge);border-radius:16px;padding:16px 18px;position:relative;min-width:0}
   .card h3{font-size:12px;font-weight:600;color:var(--ink2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px}
   .card .why{font-size:11.5px;color:var(--muted);margin-bottom:10px}
+  .card .why.rodape{margin:8px 0 0}
+  .anuncio-falta{margin-top:6px;font-size:11.5px;line-height:1.5;color:var(--warn);background:var(--warnbg);
+    border-radius:6px;padding:6px 8px}
+  .anuncio-falta b{font-weight:700}
   .s12{grid-column:span 12}.s8{grid-column:span 8}.s7{grid-column:span 7}.s6{grid-column:span 6}
   .s5{grid-column:span 5}.s4{grid-column:span 4}.s3{grid-column:span 3}
   @media(max-width:980px){.s8,.s7,.s6,.s5,.s4,.s3{grid-column:span 12}}
@@ -1232,6 +1236,45 @@ window.__renderPS = function (dados, ymSel) {
 
   /* quebras */
   quebraCard($('#psCanal'), topN(grupo(doMes, function (v) { return v.canal || 'Não informado'; }), 4), total, 'vendas');
+
+  /* Origem anunciada (04/09): a partir de set/26 o `canal` vem do Anúncio de
+     Venda do Pocket quando ele existe (Anuncio.gs, no Cofre). A venda SEM
+     anúncio fica com a origem do CRM e é sinalizada aqui — é o que o Ricardo
+     corrige na Anuncios_Venda. Antes do corte a rota não conta nada e o bloco
+     não aparece; o `am` é "AAAA-MM", o `desde` é "AAAA-MM-DD". */
+  (function () {
+    var oa = dados.origem_anuncio;
+    if (!oa || !oa.desde || am < String(oa.desde).slice(0, 7)) return;
+    var com = 0, sem = [];
+    doMes.forEach(function (v) {
+      if (v.origem_fonte === 'anuncio') com++;
+      else if (v.origem_fonte === 'sem') sem.push(v);
+    });
+    var cont = $('#psCanal');
+    var rod = document.createElement('div');
+    rod.className = 'why rodape';
+    rod.textContent = com + ' de ' + fN(total) + ' com a origem anunciada no Pocket';
+    cont.appendChild(rod);
+    if (sem.length) {
+      sem.sort(function (a, b) { return a.data < b.data ? 1 : a.data > b.data ? -1 : 0; });
+      var w = document.createElement('div');
+      w.className = 'anuncio-falta';
+      w.innerHTML = '<b>⚠️ ' + sem.length + ' sem anúncio</b> — origem do CRM; corrigir na Anuncios_Venda: ' +
+        sem.map(function (v) {
+          var d = String(v.data || '');
+          return esc(v.quadra + '-' + v.jazigo) + ' · ' + esc(v.vendedor) +
+                 (d.length >= 10 ? ' · ' + d.slice(8, 10) + '/' + d.slice(5, 7) : '');
+        }).join(' · ');
+      cont.appendChild(w);
+    }
+    var avisos = (oa.avisos || []).filter(function (a) { return String(a).indexOf(' · ' + am + '-') >= 0; });
+    if (avisos.length) {
+      var w2 = document.createElement('div');
+      w2.className = 'anuncio-falta';
+      w2.innerHTML = '<b>conferir</b> — ' + avisos.map(esc).join('<br>');
+      cont.appendChild(w2);
+    }
+  })();
   quebraCard($('#psModal'), topN(grupo(doMes, function (v) { return v.modalidade || 'Não informado'; }), 4), total, 'vendas');
   quebraCard($('#psCond'), topN(grupo(doMes, function (v) { return v.cond || 'Não informado'; }), 4), total, 'vendas');
   quebraCard($('#psForma'), topN(grupo(doMes, function (v) { return v.forma || 'Não informado'; }), 4), total, 'vendas');

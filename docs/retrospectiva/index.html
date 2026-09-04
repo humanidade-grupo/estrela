@@ -275,6 +275,7 @@ tr.alerta td:first-child{box-shadow:inset 3px 0 0 var(--warn)}
 td.neg{color:var(--warn)}
 .derivado{font-style:italic; color:var(--text-2)}
 .aviso-icone{cursor:help; margin-right:4px}
+.origem-detalhe{color:var(--text-3)}
 .vend-total{display:flex; gap:14px; flex-wrap:wrap; align-items:baseline; padding:12px 16px;
             border:1px solid var(--edge); border-radius:14px; background:var(--card);
             font-size:13px; color:var(--text-2); font-variant-numeric:tabular-nums}
@@ -538,6 +539,7 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
   var VENDAS_CARIMBO = '';   // quando o importador do CRM rodou pela última vez
   var VENDAS_ERRO = null;    // a rota devolveu o bloco, mas sem linha e com motivo
   var ROTA_SEM_VENDAS = false; // a rota nem trouxe o bloco: implantação anterior a 03/09
+  var ORIGEM_ANUNCIO = null;   // bloco vendas.origem_anuncio da rota (04/09)
 
   /* ═════════════════════════════ utilidades ═════════════════════════════ */
   var $ = function (s) { return document.querySelector(s); };
@@ -983,7 +985,8 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
     var cab = bloco.colunas, c = {};
     ['Data da Venda','Quadra','Jazigo','Vendedor','Cliente','Modalidade','Valor Face',
      'Valor Venda','Nº Parcelas','Fluxo de Pagamento','Forma Pagamento','Condição Pagamento',
-     'Origem','Canal','Deal ID','Meio Pgto','Meio origem'].forEach(function (nome) {
+     'Origem','Canal','Deal ID','Meio Pgto','Meio origem',
+     'Origem fonte','Origem detalhe','Chegou'].forEach(function (nome) {
       c[nome] = cab.indexOf(nome);
     });
     if (c['Data da Venda'] < 0 || c['Vendedor'] < 0 || c['Valor Venda'] < 0 || c['Modalidade'] < 0) return null;
@@ -1065,6 +1068,12 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
       condicao: cond, origem: String(g(l,'Origem')).trim() || '—',
       canal: String(g(l,'Canal')).trim(), deal: g(l,'Deal ID'),
       meio: String(g(l,'Meio Pgto')).trim(), meioOrigem: String(g(l,'Meio origem')).trim(),
+      /* 04/09: a rota troca a Origem pela anunciada no Pocket a partir de
+         set/26 e diz de onde veio (anuncio · crm · sem). `sem` = venda sem
+         anúncio, sinalizada no extrato e no gráfico para o Ricardo corrigir. */
+      origemFonte: String(g(l,'Origem fonte')).trim(),
+      origemDetalhe: String(g(l,'Origem detalhe')).trim(),
+      chegou: String(g(l,'Chegou')).trim(),
       prazoTexto: prazoTexto, prazoDerivado: derivado, avista: avista,
       aliquota: aliquota, valor: valor,
       alPrazo: alPrazo, alDesc: alDesc, alRegua: alRegua
@@ -1473,12 +1482,30 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
     }
 
     if (n.origens.length){
-      var bo = bloco('Origem das vendas',
-        'Origem que não existe na lista padronizada é dado velho, não canal.');
+      var bo = bloco('Origem das vendas', n.origemDasLinhas
+        ? 'Deste mês em diante a origem é a anunciada pelo vendedor no Pocket; antes, a do CRM. ' +
+          'Origem que não existe na lista padronizada é dado velho, não canal.'
+        : 'Origem que não existe na lista padronizada é dado velho, não canal.');
       var co = el('div','card');
       co.append(barras(ant ? pareia(n.origens.slice(0,10), ant.origens, tres, 'origens')
                            : n.origens.slice(0,10).map(function (x) { return { rotulo:x.rotulo, valor:x.n }; }),
         Object.assign({}, cmp, { max: Math.max(n.vendas, ant ? ant.vendas : 0) })));
+      if (n.origemDasLinhas){
+        var total = n.comAnuncio + (n.semAnuncio ? n.semAnuncio.length : 0);
+        co.append(Object.assign(el('p','nota-fina'), { textContent:
+          n.comAnuncio + ' de ' + total + ' com a origem anunciada no Pocket.' }));
+        if (n.semAnuncio && n.semAnuncio.length){
+          var pa = el('p','nota-fina');
+          pa.append(el('b', null, '⚠️ ' + n.semAnuncio.length + (n.semAnuncio.length === 1 ? ' venda' : ' vendas') +
+                                  ' sem anúncio'));
+          pa.append(document.createTextNode(' — origem do CRM; corrigir na Anuncios_Venda: ' +
+            n.semAnuncio.map(function (x) {
+              var d = String(x.data || '');
+              return x.jazigo + ' · ' + x.vendedor + (d.length >= 10 ? ' · ' + d.slice(8,10) + '/' + d.slice(5,7) : '');
+            }).join(' · ')));
+          co.append(pa);
+        }
+      }
       bo.append(co); corpo.append(bo);
     }
 
@@ -1651,7 +1678,16 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
       } else tdM.textContent = x.meio;
       r.append(tdM);
 
-      r.append(el('td', null, x.origem));
+      var tdO = el('td');
+      if (x.origemFonte === 'sem'){
+        var i4 = el('span','aviso-icone','⚠️');
+        i4.title = 'Venda sem anúncio no Pocket — a origem é a do CRM. Corrigir na Anuncios_Venda.';
+        tdO.append(i4);
+      }
+      tdO.append(document.createTextNode(x.origem));
+      if (x.origemDetalhe) tdO.append(Object.assign(el('span','origem-detalhe', ' · ' + x.origemDetalhe),
+                                                    { title:'detalhe do anúncio' }));
+      r.append(tdO);
 
       var tdA = el('td','num');
       if (x.alRegua.length){ var i3 = el('span','aviso-icone','⚠️'); i3.title = x.alRegua.join('\n'); tdA.append(i3); }
@@ -1700,7 +1736,7 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
   }
 
   function montarPlanilha(X, id, calc){
-    var aoa = [EXTRATO_COLUNAS.slice()];
+    var aoa = [EXTRATO_COLUNAS.concat(['Origem detalhe', 'Origem fonte', 'Chegou'])];
     calc.porVendedor.forEach(function (v) {
       aoa.push([v.quem + ' — ' + v.n + (v.n === 1 ? ' venda' : ' vendas')]);
       v.linhas.forEach(function (x) {
@@ -1710,9 +1746,10 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
           x.desconto === null ? '' : x.desconto,
           (x.alPrazo.length ? '⚠️ ' : '') + x.prazoTexto,
           x.meio || '—',
-          x.origem,
+          (x.origemFonte === 'sem' ? '⚠️ ' : '') + x.origem,
           x.aliquota === null ? '' : x.aliquota,
-          x.valor
+          x.valor,
+          x.origemDetalhe || '', x.origemFonte || '', x.chegou || ''
         ]);
       });
       aoa.push(['Subtotal ' + v.quem, '', '', '', v.base, v.desconto, '', '', '', '', v.valor]);
@@ -1728,7 +1765,8 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
       var pr = X.utils.encode_cell({ r:r, c:9 });
       if (ws[pr] && ws[pr].t === 'n') ws[pr].z = '0.0%';
     }
-    ws['!cols'] = [{wch:36},{wch:12},{wch:11},{wch:9},{wch:15},{wch:14},{wch:12},{wch:18},{wch:20},{wch:11},{wch:13}];
+    ws['!cols'] = [{wch:36},{wch:12},{wch:11},{wch:9},{wch:15},{wch:14},{wch:12},{wch:18},{wch:20},{wch:11},{wch:13},
+                   {wch:22},{wch:12},{wch:26}];
     var wb = X.utils.book_new();
     X.utils.book_append_sheet(wb, ws, 'Comissões');
     var pp = id.split('-');
@@ -2209,6 +2247,29 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
     FEEDBACK = lerFeedback(r.respostas);
     LEITURA = lerLeitura(r.leitura);
     VENDAS = (r.vendas && !r.vendas.erro) ? lerVendas(r.vendas) : null;
+    ORIGEM_ANUNCIO = (r.vendas && r.vendas.origem_anuncio) || null;
+
+    /* Origem das vendas (04/09): a partir do corte (`origem_anuncio.desde`,
+       set/26) a origem que vale é a ANUNCIADA no Pocket, e a rota já a põe na
+       coluna Origem do bloco `vendas`. A Resumo_Dim lê a Origem crua do CRM
+       (é o resumo_cofre.gs, fora deste repo) — então, desses meses em diante,
+       o gráfico é contado AQUI, sobre as linhas. Antes do corte, e sem o
+       bloco `vendas`, ele continua lendo a Resumo_Dim. */
+    if (NUMEROS && VENDAS && ORIGEM_ANUNCIO && ORIGEM_ANUNCIO.desde){
+      var desde = String(ORIGEM_ANUNCIO.desde).slice(0, 7);
+      Object.keys(NUMEROS).forEach(function (id) {
+        if (id < desde) return;
+        var lista = VENDAS[id]; if (!lista || !lista.length) return;
+        var m = {};
+        lista.forEach(function (x) { var k = x.origem || '—'; m[k] = (m[k] || 0) + 1; });
+        NUMEROS[id].origens = Object.keys(m).map(function (k) { return { rotulo:k, n:m[k] }; })
+          .sort(function (a, b) { return b.n - a.n; });
+        NUMEROS[id].origemDasLinhas = true;
+        NUMEROS[id].comAnuncio = lista.filter(function (x) { return x.origemFonte === 'anuncio'; }).length;
+        NUMEROS[id].semAnuncio = lista.filter(function (x) { return x.origemFonte === 'sem'; })
+          .sort(function (a, b) { return a.data < b.data ? 1 : a.data > b.data ? -1 : 0; });
+      });
+    }
 
     pintar();
   }
