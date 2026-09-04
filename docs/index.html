@@ -1886,8 +1886,19 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
     var nome = ps ? 'Parque da Saudade' : 'Estrela Urbanidade';
     var quando = (ps ? CARIMBO.ps : CARIMBO.eu) || '(sem carimbo)';
     if (CARIMBO.copia) {
-      selo('⚠ <b>Sem conexão com o Cofre.</b> Cópia local — ' + nome +
-           ' atualizado em <b>' + quando + '</b>. Recarregue quando voltar o sinal.', true);
+      /* O motivo manda na frase (04/09). "Sem conexão" só quando é sem conexão;
+         Cofre lento é outra coisa, e quem lê precisa saber qual das duas foi. */
+      var m = CARIMBO.motivo || {}, tipo = m.tipo || 'offline';
+      var msg = String(m.message || '').replace(/[<>&]/g, '');
+      var cabeca =
+        tipo === 'prazo'    ? '<b>O Cofre demorou demais</b> (' + msg + ').' :
+        tipo === 'resposta' ? '<b>O Cofre devolveu uma resposta inválida</b> (' + msg + ').' :
+        tipo === 'erro'     ? '<b>O Cofre respondeu com erro</b> (' + msg + ').' :
+        tipo === 'rede'     ? '<b>Não consegui falar com o Cofre</b> (' + msg + ').' :
+                              '<b>Sem conexão com o Cofre.</b>';
+      selo('⚠ ' + cabeca + ' Cópia local — ' + nome +
+           ' atualizado em <b>' + quando + '</b>. ' +
+           (tipo === 'offline' ? 'Recarregue quando voltar o sinal.' : 'Recarregue para tentar de novo.'), true);
     } else if (ps && CARIMBO.psErro) {
       selo('⚠ <b>A última sincronização do Parque falhou</b>' +
            (CARIMBO.psFalha ? ' em <b>' + CARIMBO.psFalha + '</b>' : '') + ': ' +
@@ -2121,12 +2132,42 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
       var venceu = false;
       var t = setTimeout(function () {
         venceu = true;
-        reject(new Error(oque + ' não respondeu em ' + (ms / 1000) + 's'));
+        reject(falha('prazo', oque + ' não respondeu em ' + (ms / 1000) + 's'));
       }, ms);
       fetch(url)
-        .then(function (r) { return r.json(); })
+        .then(function (r) {
+          return r.text().then(function (txt) {
+            try { return JSON.parse(txt); }
+            catch (e) { throw falha('resposta', oque + ' devolveu algo que não é JSON (HTTP ' + r.status + ')'); }
+          });
+        })
         .then(function (j) { if (!venceu) { clearTimeout(t); resolve(j); } })
-        .catch(function (e) { if (!venceu) { clearTimeout(t); reject(e); } });
+        .catch(function (e) {
+          if (venceu) return;
+          clearTimeout(t);
+          if (e && e.tipo) { reject(e); return; }
+          reject(falha(navigator.onLine === false ? 'offline' : 'rede',
+                       oque + ' não respondeu (' + ((e && e.message) || e) + ')'));
+        });
+    });
+  }
+  /* A falha carrega o TIPO, não só a frase. Em 04/09 uma doGet do Cofre levou
+     101s (Execuções do Apps Script), o prazo de 30s venceu e a tela disse
+     "Sem conexão" — que era mentira: a rede estava de pé, o Cofre é que
+     demorou. Os tipos: prazo · resposta (não é JSON) · rede · offline. */
+  function falha(tipo, msg) { var e = new Error(msg); e.tipo = tipo; return e; }
+
+  /* SEGUNDA TENTATIVA (04/09). O pico das 10:18 foi isolado: a chamada
+     seguinte, 18s depois, levou 8s. Então uma rota que estoura o prazo ou
+     devolve lixo ganha UMA repescagem antes de a tela cair na cópia local.
+     Sem rede (offline) não se repete: não há o que esperar. */
+  function comPrazo2(url, ms, oque) {
+    return comPrazo(url, ms, oque).catch(function (e) {
+      if (e && e.tipo === 'offline') throw e;
+      passo(oque.toLowerCase() + ' demorou — tentando de novo…');
+      return comPrazo(url, ms, oque).catch(function (e2) {
+        throw falha((e2 && e2.tipo) || 'rede', ((e2 && e2.message) || e2) + ', em duas tentativas');
+      });
     });
   }
 
@@ -2142,10 +2183,10 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
     var sEU = (sincronizar === 'eu') ? '&sync=1' : '';
     var sPS = (sincronizar === 'ps') ? '&sync=1' : '';
     passo(sEU ? 'importando as vendas da Estrela…' : 'lendo a Estrela…');
-    return comPrazo(q + '&app=estrela&fn=dados' + sEU, sEU ? 90000 : 30000, 'A Estrela').then(function (eu) {
+    return (sEU ? comPrazo : comPrazo2)(q + '&app=estrela&fn=dados' + sEU, sEU ? 90000 : 30000, 'A Estrela').then(function (eu) {
       if (!eu || !eu.ok) return eu || { ok: false };
       passo(sPS ? 'importando as vendas do Parque…' : 'lendo o Parque…');
-      return comPrazo(q + '&app=vendas&fn=dados' + sPS, sPS ? 90000 : 30000, 'O Parque').then(function (ps) {
+      return (sPS ? comPrazo : comPrazo2)(q + '&app=vendas&fn=dados' + sPS, sPS ? 90000 : 30000, 'O Parque').then(function (ps) {
         if (ps && ps.ok) { eu.ps = ps; }
         else { eu.ps = null; eu.psErro = (ps && ps.error) || 'resposta sem dado'; }
         return eu;
@@ -2317,8 +2358,9 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
       }
       // o token vale e o Cofre falhou: a tela fica como está — o carimbo do
       // selo já diz de quando é o número
-    }).catch(function () {
+    }).catch(function (e) {
       CARIMBO.copia = true;
+      CARIMBO.motivo = e;
       atualizarSelo(document.body.classList.contains('emp-ps') ? 'ps' : 'eu');
     });
     return;
@@ -2336,6 +2378,7 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
       // o token vale; quem falhou foi o Cofre. Não apagar o token, e dizer o
       // que de fato aconteceu — inclusive usando a cópia local, se houver.
       var c = doCache();
+      CARIMBO.motivo = falha('erro', String(j && j.error || 'resposta sem dado'));
       if (c) { subir(c, true); }
       else if (carga) {
         carga.style.display = '';
@@ -2345,8 +2388,9 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
           '<span style="color:#64748b;font-size:13px">O token está válido — isto é falha do servidor.</span></div>';
       }
     }
-  }).catch(function () {
-    // offline: usa a última cópia, deixando claro que é cópia
+  }).catch(function (e) {
+    // sem resposta útil: usa a última cópia, deixando claro que é cópia e por quê
+    CARIMBO.motivo = e;
     var c = doCache();
     if (c) { subir(c, true); }
     else {
