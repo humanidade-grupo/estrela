@@ -47,6 +47,29 @@
   sozinho, esta página é dos três da gestão. Quem abre vê o mês — vendas, VGV,
   ticket, ritmo — e escolhe abrir a comparação individual. Quem "corrigir" isto
   de volta para o protótipo está desfazendo a decisão, não um esquecimento.
+  (01/09: todas as dobras passaram a nascer ABERTAS, pedido do Ricardo.)
+
+  03/09/2026 — TRÊS BLOCOS DO TIME VOLTAM A NASCER RECOLHIDOS, pedido do
+  Ricardo: "O que eles escreveram", "O que atrapalhou" e "O que ajudou a
+  vender". Mesmo <details> das outras dobras; o conteúdo não mudou, só o
+  estado inicial. O artefato não tem isso.
+
+  03/09/2026 — NASCE O BLOCO "COMISSÃO DO MÊS", que o artefato NÃO TEM e não
+  vai ter: resumo por vendedor, extrato por vendedor (11 colunas, as da
+  planilha de fechamento do Ricardo) e "Exportar para Excel". Recolhido por
+  padrão. A RÉGUA mora na constante COMISSAO abaixo, com a fonte; a conta
+  roda AQUI, no navegador, sobre as linhas cruas da Vendas_Facilita que a
+  rota passou a servir no bloco `vendas` — a rota não calcula comissão.
+  ⚠️ A tela é CONFERÊNCIA, não fechamento: o fechamento continua na planilha
+  Comissoes_<Mês>_<Ano>.xlsx. Duas cópias da mesma régua é dívida registrada
+  no INFRA.md. O que a tela faz DIFERENTE da planilha atual do Ricardo:
+    · Desconto (R$) = Valor de Tabela − Vlr Venda, POSITIVO é desconto. A
+      planilha traz o sinal invertido; esta tela nasce com o sinal certo.
+    · À vista × parcelada: a `Condição Pagamento` MANDA quando vier
+      preenchida; vazia (é o caso de agosto/2026 inteiro), deriva de
+      Nº Parcelas = 1. E o ⚠️ na linha diz "confira o contrato" — sem mudar a
+      alíquota — quando Nº Parcelas ≤ 2 ou o Fluxo de Pagamento discorda dele.
+    · Arredonda CADA LINHA a 2 casas; subtotal = soma das linhas arredondadas.
 
   ═══ MECÂNICA (copiada da Esteira do Funil, que é o padrão da casa) ═══
   Token `hub_token_gestao` no localStorage, o mesmo do Painel — quem já usa não
@@ -229,6 +252,34 @@ td{color:var(--text-1)}
 tbody tr:last-child td{border-bottom:0}
 td.num, th.num{text-align:right}
 
+/* -- Comissão do mês (03/09) ----------------------------------------------
+   O extrato tem 11 colunas e rola DENTRO do .table-wrap; o body nunca rola
+   na horizontal. Mesmo corte de 640px do Painel, mais abaixo. */
+.comissao-head{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 14px}
+.btn-export{appearance:none; border:1px solid var(--edge2); background:var(--chip-bg);
+            color:var(--text-1); font:700 12.5px/1.2 var(--f-body); padding:8px 14px;
+            border-radius:999px; cursor:pointer; display:inline-flex; align-items:center;
+            gap:7px; white-space:nowrap}
+.btn-export:hover{border-color:var(--s1); color:var(--s1b)}
+.btn-export[disabled]{opacity:.55; cursor:progress}
+.btn-export:focus-visible{outline:2px solid var(--s1); outline-offset:2px}
+.export-status{font-size:12px; color:var(--text-3)}
+.export-status.erro{color:var(--crit)}
+.table-wrap{max-width:100%}
+.table-wrap.extrato{max-height:none}
+.table-wrap.extrato table{min-width:1080px}
+tfoot td{font-weight:700; color:var(--text-1); border-top:1px solid var(--edge2);
+         border-bottom:0; background:var(--surface-1)}
+tr.total-time td{font-weight:800; color:var(--s1b)}
+tr.alerta td:first-child{box-shadow:inset 3px 0 0 var(--warn)}
+td.neg{color:var(--warn)}
+.derivado{font-style:italic; color:var(--text-2)}
+.aviso-icone{cursor:help; margin-right:4px}
+.vend-total{display:flex; gap:14px; flex-wrap:wrap; align-items:baseline; padding:12px 16px;
+            border:1px solid var(--edge); border-radius:14px; background:var(--card);
+            font-size:13px; color:var(--text-2); font-variant-numeric:tabular-nums}
+.vend-total b{color:var(--s1b); font-size:16px}
+
 /* -- A leitura e o plano, SEM EDIÇÃO ------------------------------------
    No artefato isto era formulário. Aqui é texto: o Painel não escreve, e o
    `white-space:pre-wrap` preserva as quebras de linha de quem colou. */
@@ -322,7 +373,8 @@ td.num, th.num{text-align:right}
 .legenda-m1 i[hidden],.quotes[hidden],.quote[hidden],.escrita[hidden],.campo[hidden],
 .perguntas[hidden],.empty[hidden],.steps[hidden],.linha-aviso[hidden],.resumo-linha[hidden],
 .gate[hidden],.dobra[hidden],.dobra > summary[hidden],section.block[hidden],
-section.block > header[hidden]{display:none}
+section.block > header[hidden],.comissao-head[hidden],.btn-export[hidden],
+.vend-total[hidden]{display:none}
 
 @media (max-width: 860px){
   /* O trilho de meses não cabe ao lado do conteúdo em tela estreita: vira
@@ -425,6 +477,31 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
      formulário com 4 respostas parece completo. */
   var EQUIPE = ['Ana Luiza', 'Guilherme', 'Wanderson', 'Jaime', 'Ana Maria', 'Felipe'];
 
+  /* ═══════════════════════════════════════════════════════════════════════
+     A RÉGUA DE COMISSÃO — política da casa, não invenção desta tela.
+     FONTE: 02-parque-da-saudade/comissao-vendedores/Comissoes_Julho_2026.xlsx,
+     aba "Regras de Comissão" (fechamento de julho/2026, 70 linhas), transcrita
+     em 03/09/2026. Se a régua mudar, muda AQUI e na planilha — são duas cópias
+     da mesma política (dívida registrada no INFRA.md).
+       Base de cálculo = Vlr Venda (Valor de Tabela − Desconto). NUNCA a tabela.
+       Cada linha arredondada a 2 casas; subtotal = soma das linhas arredondadas.
+     ═══════════════════════════════════════════════════════════════════════ */
+  var COMISSAO = {
+    'Perpétuo':   { avista: 0.010, parcelada: 0.008 },
+    'Reserva':    { avista: 0.007, parcelada: 0.005 },
+    'Temporário': { avista: 0.000, parcelada: 0.000 }
+  };
+
+  /* As 11 colunas do extrato, NESTA ORDEM — são as da planilha de fechamento
+     que o Ricardo usa hoje. A tela e o .xlsx usam a mesma lista. */
+  var EXTRATO_COLUNAS = ['Cliente', 'Jazigo', 'Modalidade', 'Tipo Uso', 'Vlr Venda (R$)',
+                         'Desconto (R$)', 'Prazo', 'Meio Pgto', 'Origem', '% Comissão', 'Valor'];
+
+  /* SheetJS, carregado SÓ no clique do botão, de cdnjs, com versão fixa. O
+     sw.js não o cacheia (é cross-origin, passa direto): sem rede, o botão diz
+     que não conseguiu — nunca fica morto em silêncio. */
+  var XLSX_URL = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+
   /* As 13 travas do formulário, na ordem em que ele as oferece. Elas vêm numa
      célula só, separadas por vírgula — e vários rótulos TÊM vírgula dentro
      ("curioso, sem condição de comprar"). Por isso o casamento é por texto
@@ -457,6 +534,10 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
   var MS = null;         // quanto a rota demorou, como no rodapé do Painel
   var AVISOS = [];       // recados que a rota mandou (aba faltando, etc.)
   var ABA = { tipo:'mes', id:null };
+  var VENDAS = null;         // vendas linha a linha, por mês — só para a comissão
+  var VENDAS_CARIMBO = '';   // quando o importador do CRM rodou pela última vez
+  var VENDAS_ERRO = null;    // a rota devolveu o bloco, mas sem linha e com motivo
+  var ROTA_SEM_VENDAS = false; // a rota nem trouxe o bloco: implantação anterior a 03/09
 
   /* ═════════════════════════════ utilidades ═════════════════════════════ */
   var $ = function (s) { return document.querySelector(s); };
@@ -489,6 +570,17 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
     return sinal + 'R$ ' + nf(a, 0);
   };
   var media = function (a) { return a.length ? a.reduce(function (x,y){ return x+y; },0)/a.length : null; };
+  /* Moeda com centavos, para a comissão: aqui o centavo É a diferença. */
+  var brl2 = function (n) {
+    if (n === null || n === undefined || isNaN(n)) return '—';
+    return (n < 0 ? '−' : '') + 'R$ ' + new Intl.NumberFormat('pt-BR',
+      { minimumFractionDigits:2, maximumFractionDigits:2 }).format(Math.abs(n));
+  };
+  var pct1 = function (x) {
+    return (x === null || x === undefined || isNaN(x)) ? '—'
+      : new Intl.NumberFormat('pt-BR', { minimumFractionDigits:1, maximumFractionDigits:1 }).format(x*100) + '%';
+  };
+  var round2 = function (n) { return Math.round((n + Number.EPSILON) * 100) / 100; };
 
   /* A planilha é pt-BR: vírgula é decimal e ponto é milhar. Um ponto único
      seguido de exatamente 3 dígitos é milhar ("879.552" = 879552); com outra
@@ -882,6 +974,128 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
     return Object.keys(saida).length ? saida : null;
   }
 
+  /* ══════════ as vendas linha a linha — só para a comissão (03/09) ══════════
+     O bloco `vendas` da rota: colunas fixas (lista fechada no Retrospectiva.gs)
+     e linhas cruas. Toda classificação — à vista × parcelada, alíquota, ⚠️ —
+     é feita AQUI, e o critério está escrito ao lado de cada regra. */
+  function lerVendas(bloco){
+    if (!bloco || !bloco.colunas || !bloco.colunas.length) return null;
+    var cab = bloco.colunas, c = {};
+    ['Data da Venda','Quadra','Jazigo','Vendedor','Cliente','Modalidade','Valor Face',
+     'Valor Venda','Nº Parcelas','Fluxo de Pagamento','Forma Pagamento','Condição Pagamento',
+     'Origem','Canal','Deal ID','Meio Pgto','Meio origem'].forEach(function (nome) {
+      c[nome] = cab.indexOf(nome);
+    });
+    if (c['Data da Venda'] < 0 || c['Vendedor'] < 0 || c['Valor Venda'] < 0 || c['Modalidade'] < 0) return null;
+    var g = function (l, nome) { var i = c[nome]; return (i < 0 || l[i] == null) ? '' : l[i]; };
+    var porMes = {};
+    (bloco.linhas || []).forEach(function (l) {
+      var data = String(g(l,'Data da Venda')).trim();
+      var id = data.slice(0,7);
+      if (!/^\d{4}-\d{2}$/.test(id)) return;
+      (porMes[id] = porMes[id] || []).push(classificarVenda(l, g, data));
+    });
+    return Object.keys(porMes).length ? porMes : null;
+  }
+
+  function classificarVenda(l, g, data){
+    var quadra = String(g(l,'Quadra')).trim(), jaz = String(g(l,'Jazigo')).trim();
+    var face = numero(g(l,'Valor Face'));
+    var venda = numero(g(l,'Valor Venda')) || 0;
+    var nParc = numero(g(l,'Nº Parcelas'));
+    var cond = String(g(l,'Condição Pagamento')).trim();
+    var fluxo = String(g(l,'Fluxo de Pagamento')).trim();
+    var modalidade = String(g(l,'Modalidade')).trim();
+    var alPrazo = [], alDesc = [], alRegua = [];
+
+    /* À VISTA × PARCELADA, nesta ordem:
+       1. `Condição Pagamento` preenchida MANDA ("À VISTA" = à vista; qualquer
+          outra coisa = parcelada). Em julho/2026 ela dizia À VISTA/MÉDIO/LONGO.
+       2. Vazia (agosto/2026 inteiro), deriva: Nº Parcelas = 1 → à vista;
+          qualquer outro valor → parcelada. E a tela DIZ que derivou (itálico). */
+    var avista, prazoTexto, derivado;
+    if (cond){
+      var cu = cond.toUpperCase();
+      avista = (cu === 'À VISTA' || cu === 'A VISTA');
+      prazoTexto = cond; derivado = false;
+    } else {
+      avista = (nParc === 1);
+      prazoTexto = avista ? 'À vista' : 'Parcelada'; derivado = true;
+    }
+
+    /* ⚠️ "CONFIRA O CONTRATO" — não muda a alíquota. A tela não decide sozinha
+       o que a fonte não sabe: Nº Parcelas ≤ 2 é o caso do M-19-339 de agosto
+       ("1x Entrada + 1x Mensal", 2 parcelas: a planilha do Ricardo paga como à
+       vista, a régua derivada paga 0,8% — R$ 36,60 de diferença que esta marca
+       existe para expor); e Fluxo × Nº Parcelas discordando é o "1x Entrada +
+       23x Mensal" com 72 parcelas. */
+    if (nParc === null || nParc <= 2){
+      alPrazo.push('Nº Parcelas = ' + (nParc === null ? 'vazio' : nParc) +
+                   ': confira no contrato se foi à vista ou parcelada.');
+    }
+    var somaFluxo = 0, temFluxo = false;
+    fluxo.replace(/(\d+)\s*x/gi, function (m, n) { somaFluxo += parseInt(n,10); temFluxo = true; return m; });
+    if (temFluxo && nParc !== null && somaFluxo !== nParc){
+      alPrazo.push('Fluxo de Pagamento diz ' + somaFluxo + (somaFluxo === 1 ? ' parcela' : ' parcelas') +
+                   ' ("' + fluxo + '") e Nº Parcelas diz ' + nParc + ': confira o contrato.');
+    }
+
+    /* DESCONTO = Tabela − Venda. POSITIVO é desconto. Negativo é venda ACIMA
+       da tabela — juros do parcelamento entrando na base — e vai marcado. A
+       planilha atual traz o sinal invertido; aqui nasce certo. */
+    var desconto = (face === null) ? null : round2(face - venda);
+    if (desconto !== null && desconto < 0){
+      alDesc.push('Vendida ACIMA da tabela: tabela ' + brl2(face) + ', venda ' + brl2(venda) +
+                  ' — juros do parcelamento entrando na base.');
+    }
+
+    var regua = COMISSAO[modalidade];
+    var aliquota = regua ? (avista ? regua.avista : regua.parcelada) : null;
+    if (aliquota === null) alRegua.push('Modalidade "' + (modalidade || 'vazia') + '" não está na régua: comissão não calculada.');
+    var valor = aliquota === null ? 0 : round2(venda * aliquota);
+
+    return {
+      data: data, quadra: quadra,
+      jazigo: (quadra && jaz) ? quadra + '-' + jaz : (jaz || quadra || '—'),
+      vendedor: String(g(l,'Vendedor')).trim() || '—',
+      cliente: String(g(l,'Cliente')).trim() || '—',
+      modalidade: modalidade || '—',
+      face: face, venda: venda, desconto: desconto,
+      nParcelas: nParc, fluxo: fluxo, forma: String(g(l,'Forma Pagamento')).trim(),
+      condicao: cond, origem: String(g(l,'Origem')).trim() || '—',
+      canal: String(g(l,'Canal')).trim(), deal: g(l,'Deal ID'),
+      meio: String(g(l,'Meio Pgto')).trim(), meioOrigem: String(g(l,'Meio origem')).trim(),
+      prazoTexto: prazoTexto, prazoDerivado: derivado, avista: avista,
+      aliquota: aliquota, valor: valor,
+      alPrazo: alPrazo, alDesc: alDesc, alRegua: alRegua
+    };
+  }
+
+  /* Agrupa por vendedor, soma linhas JÁ arredondadas, ordena por comissão. */
+  function calcularComissao(linhas){
+    var mapa = {};
+    linhas.forEach(function (x) {
+      var v = mapa[x.vendedor] = mapa[x.vendedor] ||
+        { quem:x.vendedor, n:0, base:0, desconto:0, valor:0, linhas:[], alertas:0 };
+      v.n++; v.base += x.venda; v.desconto += (x.desconto || 0); v.valor += x.valor;
+      v.linhas.push(x);
+      if (x.alPrazo.length || x.alDesc.length || x.alRegua.length) v.alertas++;
+    });
+    var por = Object.keys(mapa).map(function (k) { return mapa[k]; })
+      .sort(function (a,b) { return b.valor - a.valor || b.n - a.n; });
+    por.forEach(function (v) {
+      v.base = round2(v.base); v.desconto = round2(v.desconto); v.valor = round2(v.valor);
+      v.linhas.sort(function (a,b) { return a.data < b.data ? -1 : a.data > b.data ? 1 : 0; });
+    });
+    var total = { n:0, base:0, desconto:0, valor:0, alertas:0 };
+    por.forEach(function (v) {
+      total.n += v.n; total.base += v.base; total.desconto += v.desconto;
+      total.valor += v.valor; total.alertas += v.alertas;
+    });
+    total.base = round2(total.base); total.desconto = round2(total.desconto); total.valor = round2(total.valor);
+    return { porVendedor: por, total: total };
+  }
+
   /* ══════════════════════════════ desenho ══════════════════════════════ */
   function tile(k, v, n, flag){
     var t = el('div', 'tile' + (flag ? ' flag-' + flag : ''));
@@ -894,6 +1108,23 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
     h.append(el('h3', null, titulo));
     if (desc) h.append(el('p', null, desc));
     s.append(h); return s;
+  }
+  /* Bloco que NASCE RECOLHIDO — pedido do Ricardo em 03/09 para três blocos do
+     time ("O que eles escreveram", "O que atrapalhou", "O que ajudou a vender")
+     e para a Comissão do mês. É o mesmo <details> das outras dobras: abre com
+     um clique. A descrição vai para dentro do corpo, porque summary fechado
+     não tem lugar para frase — o texto é o mesmo, só muda de lugar. */
+  function blocoDobrado(titulo, desc, conta){
+    var d = el('details','dobra q solta');
+    var s = el('summary');
+    s.append(el('span','q-tema', titulo));
+    if (conta) s.append(el('span','q-conta', conta));
+    d.append(s);
+    var corpo = el('div','corpo');
+    if (desc) corpo.append(el('p','nota-fina', desc));
+    d.append(corpo);
+    d.corpo = corpo;
+    return d;
   }
   function camada(n, titulo, nota){
     var d = el('div','camada');
@@ -1079,7 +1310,7 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
       var c0 = el('div','corpo'), e0 = el('div','empty');
       if (!NUMEROS){
         e0.append(el('h3', null, 'As abas de resumo ainda não existem no Cofre.'));
-        e0.append(el('p', null, 'Esta página não lê venda linha a linha de propósito. Ela lê as ' +
+        e0.append(el('p', null, 'Os números do mês não leem venda linha a linha de propósito. Eles leem as ' +
           'abas Resumo_Mes, Resumo_Vendedor e Resumo_Dim, que o Apps Script calcula sobre a base ' +
           'inteira — com todas as modalidades contando como venda.'));
         var ol = el('ol','steps');
@@ -1260,6 +1491,265 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
     p.append(d);
   }
 
+  /* ── Comissão do mês (03/09) — CONFERÊNCIA, não fechamento ─────────────
+     Nasce RECOLHIDA. Resumo por vendedor em cima; cada vendedor é um bloco
+     expansível com o extrato de 11 colunas; TOTAL do time ao final. */
+  function secaoComissao(p, id){
+    var d = el('details','dobra comissao');   // fechada de propósito
+    var s = el('summary');
+    var corpo = el('div','corpo');
+    d.append(s, corpo);
+    p.append(d);
+
+    var linhas = VENDAS && VENDAS[id];
+
+    if (ROTA_SEM_VENDAS || VENDAS_ERRO){
+      s.append(el('span','flag crit','comissão'));
+      s.append(el('div','resumo-linha', 'Sem as vendas linha a linha — a comissão não aparece.'));
+      var t = el('div','tarja amarela');
+      t.append(el('div','t', ROTA_SEM_VENDAS ? 'A rota não trouxe o bloco de vendas.'
+                                              : 'O Cofre não serviu as vendas.'));
+      t.append(Object.assign(el('p'), { innerHTML: ROTA_SEM_VENDAS
+        ? 'O <code>?app=retrospectiva&amp;fn=dados</code> respondeu <b>sem o bloco <code>vendas</code></b>: ' +
+          'o Cofre está servindo uma implantação anterior a 03/09. <b>O conserto é republicar</b> — ' +
+          'Implantar ▸ Gerenciar implantações ▸ ✏️ ▸ Nova versão. <code>clasp push</code> sozinho não publica.'
+        : esc(VENDAS_ERRO) }));
+      corpo.append(t);
+      return;
+    }
+
+    if (!linhas || !linhas.length){
+      s.append(el('span','flag','comissão'));
+      s.append(el('div','resumo-linha', 'Nenhuma venda do CRM em ' + nomeMes(id).toLowerCase() + '.'));
+      corpo.append(el('p','nota-fina', 'A aba Vendas_Facilita do Cofre não tem linha para este mês. ' +
+        'O importador do CRM roda de hora em hora; a última rodada foi em ' + (VENDAS_CARIMBO || 'data desconhecida') + '.'));
+      return;
+    }
+
+    var calc = calcularComissao(linhas);
+    var tot = calc.total;
+
+    s.append(el('span','flag ok','comissão'));
+    var linha = el('div','resumo-linha');
+    linha.append(el('b', null, brl2(tot.valor)), el('span', null, 'no mês'));
+    linha.append(el('span', null, '· ' + tot.n + (tot.n === 1 ? ' venda' : ' vendas')));
+    linha.append(el('span', null, '· base ' + brlCurto(tot.base)));
+    if (tot.alertas) linha.append(el('span', null, '· ' + tot.alertas + (tot.alertas === 1 ? ' linha' : ' linhas') + ' para conferir ⚠️'));
+    s.append(linha);
+
+    /* O botão vive no cabeçalho do bloco. Está dentro do <summary>, então o
+       clique precisa NÃO abrir/fechar a dobra. */
+    var bt = el('button','btn-export','⬇ Exportar para Excel');
+    bt.type = 'button';
+    var status = el('span','export-status','');
+    bt.addEventListener('click', function (e) {
+      e.preventDefault(); e.stopPropagation();
+      exportarComissao(id, calc, bt, status);
+    });
+    s.append(bt);
+
+    var head = el('div','comissao-head');
+    head.append(Object.assign(el('p','nota-fina'), { textContent:
+      'Conferência sobre as linhas do CRM (Vendas_Facilita), importadas em ' + (VENDAS_CARIMBO || 'data desconhecida') +
+      '. Régua de julho/2026: Perpétuo 1,0% à vista · 0,8% parcelada; Reserva 0,7% · 0,5%; Temporário 0%. ' +
+      'Base = Vlr Venda (tabela − desconto). Cada linha arredondada a 2 casas; o subtotal soma as linhas. ' +
+      'O fechamento oficial continua na planilha Comissoes_<mês>_<ano>.xlsx.' }));
+    head.append(status);
+    corpo.append(head);
+
+    /* (a) resumo por vendedor — sempre visível ao abrir o bloco */
+    var wrapR = el('div','table-wrap'), tR = el('table');
+    var thR = el('thead'), trR = el('tr');
+    [['Vendedor'],['Vendas',1],['Base total',1],['Comissão',1]].forEach(function (c) {
+      trR.append(el('th', c[1] ? 'num' : null, c[0]));
+    });
+    thR.append(trR); tR.append(thR);
+    var tbR = el('tbody');
+    calc.porVendedor.forEach(function (v) {
+      var r = el('tr');
+      r.append(el('td', null, v.quem + (v.alertas ? ' ' : '')));
+      if (v.alertas){
+        var ic = el('span','aviso-icone','⚠️');
+        ic.title = v.alertas + (v.alertas === 1 ? ' linha para conferir' : ' linhas para conferir');
+        r.firstChild.append(ic);
+      }
+      r.append(el('td','num', String(v.n)), el('td','num', brl2(v.base)), el('td','num', brl2(v.valor)));
+      tbR.append(r);
+    });
+    tR.append(tbR);
+    var tfR = el('tfoot'), trT = el('tr','total-time');
+    trT.append(el('td', null, 'TOTAL do time'), el('td','num', String(tot.n)),
+               el('td','num', brl2(tot.base)), el('td','num', brl2(tot.valor)));
+    tfR.append(trT); tR.append(tfR);
+    wrapR.append(tR); corpo.append(wrapR);
+
+    corpo.append(Object.assign(el('p','nota-fina'), { textContent:
+      'Prazo em itálico foi DERIVADO de Nº Parcelas (a Condição Pagamento veio vazia do CRM). ' +
+      '⚠️ na linha não muda a alíquota: diz "confira o contrato" — Nº Parcelas ≤ 2, Fluxo de ' +
+      'Pagamento discordando de Nº Parcelas, ou venda acima da tabela (desconto negativo). ' +
+      'Tipo Uso não existe no Cofre e aparece como "—". Meio Pgto é o da 1ª parcela do carnê; em ' +
+      'itálico quando o importador o inferiu em vez de ler.' }));
+
+    /* (b) extrato por vendedor — um bloco expansível por pessoa */
+    calc.porVendedor.forEach(function (v) {
+      var dv = el('details','dobra q vend');
+      var sv = el('summary');
+      sv.append(el('span','q-tema','👤 ' + v.quem));
+      sv.append(el('span','q-conta', v.n + (v.n === 1 ? ' venda' : ' vendas') + '  ·  ' + brl2(v.valor)));
+      dv.append(sv);
+      var cv = el('div','corpo');
+      cv.append(tabelaExtrato(v));
+      dv.append(cv);
+      corpo.append(dv);
+    });
+
+    var vt = el('div','vend-total');
+    vt.append(el('span', null, 'TOTAL do time'));
+    vt.append(el('span', null, tot.n + ' vendas'));
+    vt.append(el('span', null, 'Vlr Venda ' + brl2(tot.base)));
+    vt.append(el('span', null, 'Desconto ' + brl2(tot.desconto)));
+    var vb = el('span'); vb.append(el('span', null, 'Comissão '), el('b', null, brl2(tot.valor)));
+    vt.append(vb);
+    corpo.append(vt);
+  }
+
+  function tabelaExtrato(v){
+    var wrap = el('div','table-wrap extrato'), t = el('table');
+    var th = el('thead'), tr = el('tr');
+    var numericas = { 'Vlr Venda (R$)':1, 'Desconto (R$)':1, '% Comissão':1, 'Valor':1 };
+    EXTRATO_COLUNAS.forEach(function (c) { tr.append(el('th', numericas[c] ? 'num' : null, c)); });
+    th.append(tr); t.append(th);
+
+    var tb = el('tbody');
+    v.linhas.forEach(function (x) {
+      var todos = x.alPrazo.concat(x.alDesc, x.alRegua);
+      var r = el('tr', todos.length ? 'alerta' : null);
+      if (todos.length) r.title = todos.join('\n');
+
+      r.append(el('td', null, x.cliente));
+      r.append(el('td', null, x.jazigo));
+      r.append(el('td', null, x.modalidade));
+      r.append(el('td', null, '—'));                       // Tipo Uso: não existe no Cofre
+      r.append(el('td','num', brl2(x.venda)));
+
+      var tdD = el('td','num' + (x.desconto !== null && x.desconto < 0 ? ' neg' : ''));
+      if (x.alDesc.length){ var i1 = el('span','aviso-icone','⚠️'); i1.title = x.alDesc.join('\n'); tdD.append(i1); }
+      tdD.append(document.createTextNode(brl2(x.desconto)));
+      r.append(tdD);
+
+      var tdP = el('td');
+      if (x.alPrazo.length){ var i2 = el('span','aviso-icone','⚠️'); i2.title = x.alPrazo.join('\n'); tdP.append(i2); }
+      tdP.append(x.prazoDerivado ? Object.assign(el('em','derivado', x.prazoTexto),
+                                                 { title:'derivado de Nº Parcelas = ' + (x.nParcelas === null ? 'vazio' : x.nParcelas) })
+                                 : document.createTextNode(x.prazoTexto));
+      r.append(tdP);
+
+      var tdM = el('td');
+      if (!x.meio) tdM.textContent = '—';
+      else if (x.meioOrigem && x.meioOrigem !== 'texto'){
+        tdM.append(Object.assign(el('em','derivado', x.meio), { title:'meio ' + x.meioOrigem + ' pelo importador, não lido do CRM' }));
+      } else tdM.textContent = x.meio;
+      r.append(tdM);
+
+      r.append(el('td', null, x.origem));
+
+      var tdA = el('td','num');
+      if (x.alRegua.length){ var i3 = el('span','aviso-icone','⚠️'); i3.title = x.alRegua.join('\n'); tdA.append(i3); }
+      tdA.append(document.createTextNode(pct1(x.aliquota)));
+      r.append(tdA);
+
+      r.append(el('td','num', brl2(x.valor)));
+      tb.append(r);
+    });
+    t.append(tb);
+
+    var tf = el('tfoot'), trS = el('tr');
+    trS.append(el('td', null, 'Subtotal ' + v.quem));
+    trS.append(el('td'), el('td'), el('td'));
+    trS.append(el('td','num', brl2(v.base)));
+    trS.append(el('td','num' + (v.desconto < 0 ? ' neg' : ''), brl2(v.desconto)));
+    trS.append(el('td'), el('td'), el('td'), el('td'));
+    trS.append(el('td','num', brl2(v.valor)));
+    tf.append(trS); t.append(tf);
+    wrap.append(t);
+    return wrap;
+  }
+
+  /* ── Exportar para Excel ────────────────────────────────────────────────
+     Uma aba, as MESMAS 11 colunas e ordem do extrato, blocos por vendedor
+     com subtotal, TOTAL ao final. Moeda e porcentagem como NÚMERO com formato
+     — não como texto. O ⚠️ vai prefixado no Prazo, para o arquivo não perder
+     a marca sem ganhar coluna. */
+  var xlsxPromise = null;
+  function carregarXLSX(){
+    if (window.XLSX) return Promise.resolve(window.XLSX);
+    if (xlsxPromise) return xlsxPromise;
+    xlsxPromise = new Promise(function (resolve, reject) {
+      var sc = document.createElement('script');
+      sc.src = XLSX_URL; sc.async = true;
+      var t = setTimeout(function () { xlsxPromise = null; sc.remove(); reject(new Error('tempo esgotado')); }, 25000);
+      sc.onload = function () {
+        clearTimeout(t);
+        if (window.XLSX) resolve(window.XLSX);
+        else { xlsxPromise = null; reject(new Error('a biblioteca carregou sem XLSX')); }
+      };
+      sc.onerror = function () { clearTimeout(t); xlsxPromise = null; sc.remove(); reject(new Error('falha ao baixar')); };
+      document.head.appendChild(sc);
+    });
+    return xlsxPromise;
+  }
+
+  function montarPlanilha(X, id, calc){
+    var aoa = [EXTRATO_COLUNAS.slice()];
+    calc.porVendedor.forEach(function (v) {
+      aoa.push([v.quem + ' — ' + v.n + (v.n === 1 ? ' venda' : ' vendas')]);
+      v.linhas.forEach(function (x) {
+        aoa.push([
+          x.cliente, x.jazigo, x.modalidade, '—',
+          x.venda,
+          x.desconto === null ? '' : x.desconto,
+          (x.alPrazo.length ? '⚠️ ' : '') + x.prazoTexto,
+          x.meio || '—',
+          x.origem,
+          x.aliquota === null ? '' : x.aliquota,
+          x.valor
+        ]);
+      });
+      aoa.push(['Subtotal ' + v.quem, '', '', '', v.base, v.desconto, '', '', '', '', v.valor]);
+    });
+    aoa.push(['TOTAL', '', '', '', calc.total.base, calc.total.desconto, '', '', '', '', calc.total.valor]);
+
+    var ws = X.utils.aoa_to_sheet(aoa);
+    for (var r = 1; r < aoa.length; r++){
+      [4, 5, 10].forEach(function (col) {
+        var ref = X.utils.encode_cell({ r:r, c:col });
+        if (ws[ref] && ws[ref].t === 'n') ws[ref].z = '"R$ "#,##0.00';
+      });
+      var pr = X.utils.encode_cell({ r:r, c:9 });
+      if (ws[pr] && ws[pr].t === 'n') ws[pr].z = '0.0%';
+    }
+    ws['!cols'] = [{wch:36},{wch:12},{wch:11},{wch:9},{wch:15},{wch:14},{wch:12},{wch:18},{wch:20},{wch:11},{wch:13}];
+    var wb = X.utils.book_new();
+    X.utils.book_append_sheet(wb, ws, 'Comissões');
+    var pp = id.split('-');
+    return { wb: wb, nome: 'Comissoes_' + MESES_PT[parseInt(pp[1],10)-1] + '_' + pp[0] + '.xlsx' };
+  }
+
+  function exportarComissao(id, calc, botao, status){
+    botao.disabled = true;
+    status.classList.remove('erro'); status.textContent = 'baixando a biblioteca de Excel…';
+    carregarXLSX().then(function (X) {
+      status.textContent = 'gerando…';
+      var pl = montarPlanilha(X, id, calc);
+      X.writeFile(pl.wb, pl.nome);
+      status.textContent = pl.nome + ' gerado.';
+    }).catch(function (e) {
+      status.classList.add('erro');
+      status.textContent = 'Sem conexão para gerar o arquivo (' + (e && e.message ? e.message : e) +
+        '). A biblioteca de Excel é baixada na hora do clique; tente com rede.';
+    }).then(function () { botao.disabled = false; });
+  }
+
   /* ── Camada II · o time ──────────────────────────────────────────────── */
   function secaoTime(p, id){
     var f = FEEDBACK && FEEDBACK[id];
@@ -1283,8 +1773,10 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
     }
 
     if (f.perguntas.length){
-      var b = bloco('O que eles escreveram',
-        'Uma pergunta por vez, com o que todos responderam. Sem edição — é aqui que o número ganha explicação.');
+      /* Recolhido por padrão desde 03/09 (pedido do Ricardo). Conteúdo igual. */
+      var b = blocoDobrado('O que eles escreveram',
+        'Uma pergunta por vez, com o que todos responderam. Sem edição — é aqui que o número ganha explicação.',
+        f.perguntas.length + (f.perguntas.length === 1 ? ' pergunta' : ' perguntas'));
       var lista = el('div','perguntas');
       f.perguntas.forEach(function (q) {
         var d = el('details','dobra q'); d.open = true;
@@ -1303,11 +1795,11 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
         });
         corpo.append(g); d.append(corpo); lista.append(d);
       });
-      b.append(lista);
+      b.corpo.append(lista);
       /* Dito na tela, e não só no comentário: quem lê precisa saber que existe
          uma resposta que ele NÃO está vendo, e por quê. Omissão silenciosa é o
          que faz alguém achar que já leu tudo. */
-      b.append(Object.assign(el('p','nota-fina'), { textContent:
+      b.corpo.append(Object.assign(el('p','nota-fina'), { textContent:
         'Falta aqui uma pergunta: "algo que você não falaria numa reunião com todo mundo junto". ' +
         'O formulário promete ao vendedor que aquilo fica entre ele e o Ricardo, e esta página é ' +
         'aberta aos três da gestão — então a resposta nem sai do servidor. Ela se lê na planilha.' }));
@@ -1349,13 +1841,16 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
     }
 
     if (f.travas.length){
-      var bt = bloco('O que atrapalhou', parcial
+      /* Recolhido por padrão desde 03/09 (pedido do Ricardo). Conteúdo igual. */
+      var deCasa = parcial ? 0 : f.travas.filter(function (t) { return t.n >= 3; }).length;
+      var bt = blocoDobrado('O que atrapalhou', parcial
         ? 'Marcado por quem já respondeu. A régua das travas de casa (3 ou mais) só vale com o time inteiro.'
-        : 'Marcada por 3 ou mais, é trava de casa: vai para a reunião com dono e prazo. Marcada por 1, vira conversa individual.');
+        : 'Marcada por 3 ou mais, é trava de casa: vai para a reunião com dono e prazo. Marcada por 1, vira conversa individual.',
+        f.travas.length + ' marcadas' + (deCasa ? ' · ' + deCasa + ' de casa' : ''));
       var ct = el('div','card');
       ct.append(barras(f.travas.map(function (t) { return { rotulo:t.rotulo, valor:t.n }; }),
         { max:f.respondentes, corte: parcial ? null : 3, rotuloCorte:'trava de casa' }));
-      bt.append(ct); p.append(bt);
+      bt.corpo.append(ct); p.append(bt);
     }
 
     var duas = el('div','duas');
@@ -1376,12 +1871,14 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
     if (duas.children.length) p.append(duas);
 
     if (f.canais.length){
-      var bc = bloco('O que ajudou a vender',
-        'Nota de 1 a 5. O fundo da lista é onde a casa gasta esforço à toa.');
+      /* Recolhido por padrão desde 03/09 (pedido do Ricardo). Conteúdo igual. */
+      var bc = blocoDobrado('O que ajudou a vender',
+        'Nota de 1 a 5. O fundo da lista é onde a casa gasta esforço à toa.',
+        f.canais.length + ' canais');
       var cc = el('div','card');
       cc.append(barras(f.canais.slice().sort(function (a,b2) { return b2.nota - a.nota; })
         .map(function (x) { return { rotulo:x.rotulo, valor:x.nota }; }), { max:5, sufixo:' / 5' }));
-      bc.append(cc); p.append(bc);
+      bc.corpo.append(cc); p.append(bc);
     }
 
     if (f.compromissos.length || semNum.length){
@@ -1457,10 +1954,11 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
   function rodape(){
     var n = el('div','note');
     n.textContent = 'Os números vêm das abas Resumo_* do Cofre, calculadas sobre a base inteira ' +
-      'pelo Apps Script — esta página não lê venda linha a linha. Ritmo e projeção usam dias ' +
-      'corridos: o time vende no fim de semana. As respostas vêm da planilha do formulário, e a ' +
-      'leitura do mês, da aba Leitura dela. Esta página não escreve nada: ela é o espelho de ' +
-      'leitura da gestão, e quem escreve é o Ricardo, no painel da retrospectiva.';
+      'pelo Apps Script. Só a Comissão do mês lê venda linha a linha (aba Vendas_Facilita), e a ' +
+      'conta é feita aqui, no navegador, com a régua escrita na própria página. Ritmo e projeção ' +
+      'usam dias corridos: o time vende no fim de semana. As respostas vêm da planilha do ' +
+      'formulário, e a leitura do mês, da aba Leitura dela. Esta página não escreve nada: ela é o ' +
+      'espelho de leitura da gestão, e quem escreve é o Ricardo, no painel da retrospectiva.';
     return n;
   }
 
@@ -1470,6 +1968,7 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
     if (NUMEROS) Object.keys(NUMEROS).forEach(function (k) { s[k] = true; });
     if (FEEDBACK) Object.keys(FEEDBACK).forEach(function (k) { s[k] = true; });
     if (LEITURA) Object.keys(LEITURA).forEach(function (k) { s[k] = true; });
+    if (VENDAS) Object.keys(VENDAS).forEach(function (k) { s[k] = true; });
     var hoje = new Date();
     s[hoje.getFullYear() + '-' + String(hoje.getMonth()+1).padStart(2,'0')] = true;
     return Object.keys(s).sort().reverse();
@@ -1492,6 +1991,7 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
     p.append(head);
 
     secaoNumeros(p, id);
+    secaoComissao(p, id);
     secaoTime(p, id);
     secaoLeitura(p, id);
     secaoPlano(p, id);
@@ -1597,7 +2097,8 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
     nav.innerHTML = '';
     nav.append(el('span','eyebrow','Meses'));
     meses.forEach(function (id) {
-      var temDado = (NUMEROS && NUMEROS[id]) || (FEEDBACK && FEEDBACK[id]) || (LEITURA && LEITURA[id]);
+      var temDado = (NUMEROS && NUMEROS[id]) || (FEEDBACK && FEEDBACK[id]) || (LEITURA && LEITURA[id]) ||
+                    (VENDAS && VENDAS[id]);
       var b = el('button','tab' + (temDado ? ' has-data' : ''));
       b.type = 'button'; b.setAttribute('role','tab');
       b.setAttribute('aria-selected', ABA.tipo === 'mes' && ABA.id === id ? 'true' : 'false');
@@ -1672,6 +2173,7 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
       });
       if (r.respostas && r.respostas.truncado) det.push('respostas: ' + r.respostas.n + ' de ' + r.respostas.total_aba);
       if (r.leitura && r.leitura.truncado) det.push('leitura: ' + r.leitura.n + ' de ' + r.leitura.total_aba);
+      if (r.vendas && r.vendas.truncado) det.push('vendas: ' + r.vendas.n + ' de ' + r.vendas.total_aba);
       bloqueia('Esta página não vai desenhar: a resposta veio cortada.',
         '<p>' + esc(det.join(' · ') || 'a rota sinalizou corte') + '. Toda conta abaixo sairia ' +
         'sobre um pedaço, <b>com cara de completa</b>.</p>' +
@@ -1696,9 +2198,17 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
     if (r.leitura && r.leitura.erro) AVISOS.push(r.leitura.erro);
     if (r.leitura && r.leitura.aviso) AVISOS.push(r.leitura.aviso);
 
+    /* O bloco `vendas` só existe desde 03/09. Ausente, a comissão não aparece
+       e o bloco diz por quê — o resto da página continua certo e útil. */
+    ROTA_SEM_VENDAS = !r.vendas;
+    VENDAS_ERRO = (r.vendas && r.vendas.erro) || null;
+    VENDAS_CARIMBO = r.vendas ? String(r.vendas.carimbo || '').trim() : '';
+    if (r.vendas && r.vendas.aviso) AVISOS.push('vendas: ' + r.vendas.aviso);
+
     NUMEROS = lerResumo(r.resumo);
     FEEDBACK = lerFeedback(r.respostas);
     LEITURA = lerLeitura(r.leitura);
+    VENDAS = (r.vendas && !r.vendas.erro) ? lerVendas(r.vendas) : null;
 
     pintar();
   }

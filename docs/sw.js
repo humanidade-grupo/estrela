@@ -1,6 +1,14 @@
 /* Painel Comercial — Parque da Saudade + Estrela Urbanidade
    Service worker: instalação PWA + reserva offline.
-   Atualizado em: 01/09/2026 (9ª do dia) — O CIANO SAIU DA ESTEIRA POR
+   Atualizado em: 04/09/2026 — A RETROSPECTIVA GANHA A "COMISSÃO DO MÊS":
+   resumo por vendedor, extrato de 11 colunas por vendedor e "Exportar para
+   Excel" (SheetJS baixado de cdnjs NO CLIQUE, cross-origin — este SW não o
+   cacheia de propósito: sem rede, o botão diz que não conseguiu). A conta
+   roda no navegador sobre o bloco `vendas` novo da rota ?app=retrospectiva
+   (@33). E três blocos do time nascem RECOLHIDOS: "O que eles escreveram",
+   "O que atrapalhou" e "O que ajudou a vender". Sem bump, a gestão abriria a
+   tela velha sem o bloco.
+   Antes, 01/09/2026 (9ª do dia) — O CIANO SAIU DA ESTEIRA POR
    INTEIRO: o --accent da página ainda era o #0e9fc4 da metade Estrela
    (herdado na travessia do artefato) e pintava o "Parque da Saudade ·
    Funil de vendas", as barras da esteira ativa, a matriz, os botões de
@@ -125,7 +133,7 @@
    abas: no Parque escolhem o mês da tela; na Estrela, o fim da janela de 12m.
    Estratégia: rede primeiro (pega versão nova quando online), cache como
    reserva offline. A cada deploy, bumpar a versão em CACHE. */
-const CACHE = 'painel-comercial-260903-1';
+const CACHE = 'painel-comercial-260904-1';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./'])).then(() => self.skipWaiting()));
