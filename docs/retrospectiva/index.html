@@ -276,6 +276,8 @@ td.neg{color:var(--warn)}
 .derivado{font-style:italic; color:var(--text-2)}
 .aviso-icone{cursor:help; margin-right:4px}
 .origem-detalhe{color:var(--text-3)}
+.nota-fina b.orig{color:var(--text-2)}
+.nota-fina em.n{font-style:normal; color:var(--text-2); font-weight:700; font-variant-numeric:tabular-nums}
 .vend-total{display:flex; gap:14px; flex-wrap:wrap; align-items:baseline; padding:12px 16px;
             border:1px solid var(--edge); border-radius:14px; background:var(--card);
             font-size:13px; color:var(--text-2); font-variant-numeric:tabular-nums}
@@ -1494,6 +1496,34 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
         var total = n.comAnuncio + (n.semAnuncio ? n.semAnuncio.length : 0);
         co.append(Object.assign(el('p','nota-fina'), { textContent:
           n.comAnuncio + ' de ' + total + ' com a origem anunciada no Pocket.' }));
+        /* O DETALHE da origem (qual outdoor, qual ponto, quem indicou), agrupado
+           por origem. Texto livre do vendedor: agrupa sem acento e sem caixa e
+           mostra a primeira grafia. */
+        (function () {
+          var lista = (VENDAS && VENDAS[id]) || [];
+          var norm = function (s) { return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim(); };
+          var por = {};
+          lista.forEach(function (x) {
+            if (x.origemFonte !== 'anuncio' || !x.origemDetalhe) return;
+            var o = por[x.origem] = por[x.origem] || { origem: x.origem, n: 0, itens: {} };
+            var k = norm(x.origemDetalhe);
+            if (!o.itens[k]) o.itens[k] = { rotulo: x.origemDetalhe, n: 0 };
+            o.itens[k].n++; o.n++;
+          });
+          var grupos = Object.keys(por).map(function (k) { return por[k]; }).sort(function (a, b) { return b.n - a.n; });
+          if (!grupos.length) return;
+          var pd = el('p','nota-fina');
+          grupos.forEach(function (o, gi) {
+            if (gi) pd.append(el('br'));
+            pd.append(el('b','orig', o.origem));
+            Object.keys(o.itens).map(function (i) { return o.itens[i]; }).sort(function (a, b) { return b.n - a.n; })
+              .forEach(function (i) {
+                pd.append(document.createTextNode(' · ' + i.rotulo + ' '));
+                pd.append(el('em','n', String(i.n)));
+              });
+          });
+          co.append(pd);
+        })();
         if (n.semAnuncio && n.semAnuncio.length){
           var pa = el('p','nota-fina');
           pa.append(el('b', null, '⚠️ ' + n.semAnuncio.length + (n.semAnuncio.length === 1 ? ' venda' : ' vendas') +
