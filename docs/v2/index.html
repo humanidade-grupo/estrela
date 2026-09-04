@@ -84,6 +84,16 @@
   .delta.up{color:#2fbf4f}.delta.down{color:#e46a6a}.delta.flat{color:var(--ink2)}
   .delta .vs{color:var(--muted);font-weight:400}
   .hero .val{font-size:48px;letter-spacing:-.01em}
+  /* vendas do dia, dentro do KPI do mês — quem vendeu hoje, com nome.
+     Fica no rodapé do card do mês de propósito: o número grande é o mês; o
+     dia é a leitura de quem está em campo agora. Só no mês corrente. */
+  .hoje{margin-top:12px;padding-top:10px;border-top:1px solid var(--edge)}
+  .hoje .lb{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .hoje .n{font-size:20px;font-weight:650;margin:1px 0 2px}
+  .hoje .n small{font-size:12.5px;color:var(--ink2);font-weight:500}
+  .hoje .nomes{font-size:12px;color:var(--ink2);line-height:1.5}
+  .hoje .nomes b{color:var(--ink);font-weight:600}
+  .hoje .vazio{padding:3px 0 0;font-size:12px}
   .vazio{color:var(--muted);font-size:12.5px;padding:14px 0}
 
   svg{display:block}
@@ -562,6 +572,29 @@ window.__renderPS = function (dados, ymSel) {
   if (metaOf && esperado) stMes = total >= esperado ? 'good' : (total >= esperado * 0.7 ? 'warn' : 'crit');
   var stTxt = { good: '● no ritmo da meta', warn: '▲ atenção — abaixo do ritmo', crit: '● bem abaixo do ritmo' }[stMes];
 
+  /* -------- vendas de hoje: quantas e de quem --------
+     Agrupa por vendedor e mostra Nome (n). Sem venda hoje, o bloco diz isso —
+     não cai para o último dia com venda, porque "3 vendas" sem data ao lado já
+     foi lido como sendo de hoje mais de uma vez. Em mês fechado não aparece. */
+  var hojeHTML = '';
+  if (mesCorrente) {
+    var dHoje = hoje.getDate();
+    var vHoje = doMes.filter(function (v) { return Number(String(v.data).slice(8, 10)) === dHoje; });
+    var lbHoje = 'Hoje · ' + ('0' + dHoje).slice(-2) + '/' + MES_ABREV[hoje.getMonth()];
+    if (vHoje.length) {
+      var porVend = grupo(vHoje, function (v) { return v.vendedor || 'sem vendedor'; });
+      var nmHoje = Object.keys(porVend).map(function (n) { return { n: n, v: porVend[n].length }; })
+        .sort(function (a, b) { return b.v - a.v || a.n.localeCompare(b.n); })
+        .map(function (o) { return '<b>' + esc(o.n) + '</b> (' + o.v + ')'; }).join(' · ');
+      hojeHTML = '<div class="hoje"><div class="lb">' + esc(lbHoje) + '</div>' +
+        '<div class="n">' + fN(vHoje.length) + ' <small>jazigo' + (vHoje.length > 1 ? 's' : '') + '</small></div>' +
+        '<div class="nomes">' + nmHoje + '</div></div>';
+    } else {
+      hojeHTML = '<div class="hoje"><div class="lb">' + esc(lbHoje) + '</div>' +
+        '<div class="vazio">sem venda registrada até agora</div></div>';
+    }
+  }
+
   /* -------- hero + projeção + tiles -------- */
   g.appendChild(el(
     '<div class="card hero s4"><h3>Vendas de ' + esc(ymLabel(ym)) + '</h3>' +
@@ -571,7 +604,7 @@ window.__renderPS = function (dados, ymSel) {
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;flex-wrap:wrap;gap:6px">' +
     (metaOf ? '<span class="statuschip ' + stMes + '">' + stTxt + '</span>' : '<span class="vazio">defina a meta na Config do Cofre</span>') +
     (esperado && mesCorrente ? '<span style="font-size:11.5px;color:var(--muted)">esperado até hoje: <b style="color:var(--ink2)">' + fN(esperado, 0) + '</b></span>' : '') +
-    '</div></div>'));
+    '</div>' + hojeHTML + '</div>'));
 
   g.appendChild(el(
     '<div class="card s4"><h3>Projeção de fechamento</h3>' +
