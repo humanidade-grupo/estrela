@@ -2340,8 +2340,20 @@ let _rtps; window.addEventListener('resize', ()=>{ clearTimeout(_rtps); _rtps=se
     buscar(token).then(function (j) {
       if (j && j.ok) {
         try { localStorage.setItem(CHAVE_CACHE, JSON.stringify(j)); } catch (e) {}
+        /* Carimbo igual NAO quer dizer numero igual (04/09): a Config do Cofre
+           muda o que a rota serve (portas, vendedores, origem anunciada) sem
+           mexer no carimbo da importacao — e o `Sati IA` digitado em
+           `painel.canal_portas` ficou invisivel na tela ate a rodada seguinte,
+           com a copia local ja atualizada em silencio. Por isso a assinatura do
+           conteudo tambem conta. */
+        var assina = function (x) {
+          try { return JSON.stringify({ e: x.vendas, p: (x.ps || {}).vendas, m: (x.ps || {}).metas,
+                                        o: (x.ps || {}).origem_anuncio }); }
+          catch (e) { return ''; }
+        };
         var mudou = (j.atualizado_em !== copia.atualizado_em) ||
-          (((j.ps || {}).atualizado_em || '') !== (((copia.ps || {}).atualizado_em) || ''));
+          (((j.ps || {}).atualizado_em || '') !== (((copia.ps || {}).atualizado_em) || '')) ||
+          assina(j) !== assina(copia);
         if (mudou) {
           selo('Chegaram números novos do Cofre. ' +
                '<a href="#" id="verNovo" style="color:inherit;font-weight:700;text-decoration:underline">Mostrar</a>');
