@@ -1259,7 +1259,9 @@ window.__renderPS = function (dados, ymSel) {
   }
 
   /* quebras */
-  quebraCard($('#psCanal'), topN(grupo(doMes, function (v) { return v.canal || 'Não informado'; }), 4), total, 'vendas');
+  /* Canal SEM corte (04/09, pedido do Ricardo): com 22 vendas em dez origens o
+     top-4 punha 12 em "Outros", e origem escondida é origem que ninguém cobra. */
+  quebraCard($('#psCanal'), topN(grupo(doMes, function (v) { return v.canal || 'Não informado'; }), 99), total, 'vendas');
 
   /* Origem anunciada (04/09): a partir de set/26 o `canal` vem do Anúncio de
      Venda do Pocket quando ele existe (Anuncio.gs, no Cofre). A venda SEM

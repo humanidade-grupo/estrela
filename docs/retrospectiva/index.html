@@ -1489,8 +1489,8 @@ try { if (window.top !== window.self) document.documentElement.classList.add('em
           'Origem que não existe na lista padronizada é dado velho, não canal.'
         : 'Origem que não existe na lista padronizada é dado velho, não canal.');
       var co = el('div','card');
-      co.append(barras(ant ? pareia(n.origens.slice(0,10), ant.origens, tres, 'origens')
-                           : n.origens.slice(0,10).map(function (x) { return { rotulo:x.rotulo, valor:x.n }; }),
+      co.append(barras(ant ? pareia(n.origens, ant.origens, tres, 'origens')   // todas — sem top-10 (04/09)
+                           : n.origens.map(function (x) { return { rotulo:x.rotulo, valor:x.n }; }),
         Object.assign({}, cmp, { max: Math.max(n.vendas, ant ? ant.vendas : 0) })));
       if (n.origemDasLinhas){
         var total = n.comAnuncio + (n.semAnuncio ? n.semAnuncio.length : 0);
